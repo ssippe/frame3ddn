@@ -22,9 +22,9 @@ namespace Frame3ddn
         public double Radius { get; }
     }
 
-    public class Reaction
+    public class ReactionInput
     {
-        public Reaction(Vec3 position, Vec3 r, bool isFixed)
+        public ReactionInput(Vec3 position, Vec3 r, bool isFixed)
         {
             Position = position;
             R = r;
@@ -133,15 +133,15 @@ namespace Frame3ddn
     public class Input
     {
         public IReadOnlyList<Node> Nodes { get; }
-        public IReadOnlyList<Reaction> Reactions { get; }
+        public IReadOnlyList<ReactionInput> ReactionInputs { get; }
         public IReadOnlyList<FrameElement> FrameElements { get; }
         public IReadOnlyList<LoadCase> LoadCases { get; }
 
-        public Input(IReadOnlyList<Node> nodes, IReadOnlyList<FrameElement> frameElements, IReadOnlyList<Reaction> reactions, IReadOnlyList<LoadCase> loadCases)
+        public Input(IReadOnlyList<Node> nodes, IReadOnlyList<FrameElement> frameElements, IReadOnlyList<ReactionInput> reactionInputs, IReadOnlyList<LoadCase> loadCases)
         {
             Nodes = nodes;
             FrameElements = frameElements;
-            Reactions = reactions;
+            ReactionInputs = reactionInputs;
             LoadCases = loadCases;
         }
 
