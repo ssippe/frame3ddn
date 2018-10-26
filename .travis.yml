@@ -6,5 +6,5 @@ dotnet: 2.1
 install:
  - dotnet restore src/Frame3ddn.sln
 script:
- - dotnet build
+ - dotnet build src/Frame3ddn.sln
  - dotnet test src/Frame3ddn.Test/Frame3ddn.Test.csproj
