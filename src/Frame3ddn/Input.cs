@@ -211,9 +211,9 @@ namespace Frame3ddn
     {
         public bool IncludeShearDeformation { get; }
         public bool IncludeGeometricStiffness { get; }
-        public int ExaggerateMeshDeformations { get; }
-        public int ZoomScale { get; }
-        public int XAxisIncrementForInternalForces { get; set; }
+        public double ExaggerateMeshDeformations { get; }
+        public double ZoomScale { get; }
+        public double XAxisIncrementForInternalForces { get; set; }
 
         public IReadOnlyList<Node> Nodes { get; }
         public IReadOnlyList<ReactionInput> ReactionInputs { get; }
@@ -221,12 +221,19 @@ namespace Frame3ddn
         public IReadOnlyList<LoadCase> LoadCases { get; }
 
         public Input(IReadOnlyList<Node> nodes, IReadOnlyList<FrameElement> frameElements,
-            IReadOnlyList<ReactionInput> reactionInputs, IReadOnlyList<LoadCase> loadCases)
+            IReadOnlyList<ReactionInput> reactionInputs, IReadOnlyList<LoadCase> loadCases,
+            bool includeShearDeformation, bool includeGeometricStiffness, double exaggerateMeshDeformations,
+            double zoomScale, double xAxisIncrementForInternalForces)
         {
             Nodes = nodes;
             FrameElements = frameElements;
             ReactionInputs = reactionInputs;
             LoadCases = loadCases;
+            IncludeShearDeformation = includeShearDeformation;
+            IncludeGeometricStiffness = includeGeometricStiffness;
+            ExaggerateMeshDeformations = exaggerateMeshDeformations;
+            ZoomScale = zoomScale;
+            XAxisIncrementForInternalForces = xAxisIncrementForInternalForces;
         }
 
         /**
@@ -238,7 +245,7 @@ namespace Frame3ddn
             List<FrameElement> frameElements = new List<FrameElement>();
             List<ReactionInput> reactionInputs = new List<ReactionInput>();
             List<LoadCase> loadCases = new List<LoadCase>();
-            List<string> noComentInput = GetNoCommentInput(sr);
+            List<string> noComentInput = GetNoCommentInputCsv(sr);
             int currentLine = 0;
 
             string title = noComentInput[currentLine++];
@@ -261,11 +268,11 @@ namespace Frame3ddn
                 frameElements.Add(FrameElement.Parse(noComentInput[currentLine]));
             }
 
-            bool IncludeShearDeformation = int.Parse(noComentInput[currentLine++]) != 0;
-            bool IncludeGeometricStiffness = int.Parse(noComentInput[currentLine++]) != 0;
-            double ExaggerateMeshDeformations = double.Parse(noComentInput[currentLine++]);
-            double ZoomScale = double.Parse(noComentInput[currentLine++]);
-            double XAxisIncrementForInternalForces = double.Parse(noComentInput[currentLine++]);
+            bool includeShearDeformation = int.Parse(noComentInput[currentLine++]) != 0;
+            bool includeGeometricStiffness = int.Parse(noComentInput[currentLine++]) != 0;
+            double exaggerateMeshDeformations = double.Parse(noComentInput[currentLine++]);
+            double zoomScale = double.Parse(noComentInput[currentLine++]);
+            double xAxisIncrementForInternalForces = double.Parse(noComentInput[currentLine++]);
 
             int LoadCaseNum = int.Parse(noComentInput[currentLine++]);
             for (int i = 0; i < LoadCaseNum; i++)
@@ -313,7 +320,44 @@ namespace Frame3ddn
                 LoadCase loadCase = LoadCase.Parse(loadCaseGravityString, nodeLoads, uniformLoads, trapLoads);
                 loadCases.Add(loadCase);
             }
-            return new Input(nodes, frameElements, reactionInputs, loadCases);
+            return new Input(nodes, frameElements, reactionInputs, loadCases, includeShearDeformation, includeGeometricStiffness,
+                exaggerateMeshDeformations, zoomScale, xAxisIncrementForInternalForces);
+        }
+
+        private static List<string> GetNoCommentInputCsv(StreamReader sr)
+        {
+            List<string> noComentInput = new List<string>();
+            string line;
+            while ((line = sr.ReadLine()) != null)
+            {
+                line = line.Replace('\t', ' ');
+                line = line.Replace("\"", "");
+                line = line.Replace("\\", "");
+                line = line.Replace(" ", "");
+                line = line.Replace(",", " ");
+                line = line.Trim();
+                if (string.IsNullOrEmpty(line)) //eliminate empty line
+                {
+                    continue;
+                }
+                else if (!line.Contains("#")) //save unchanged if there's no comment
+                {
+                    noComentInput.Add(line.Trim());
+                }
+                else //check if the line only contains comment
+                {
+                    string[] data = line.Split('#');
+                    if (string.IsNullOrEmpty(data[0])) //if it does, eliminate it
+                    {
+                        continue;
+                    }
+                    else
+                    {
+                        noComentInput.Add(data[0].Trim()); //otherwise, save the non-comment text only
+                    }
+                }
+            }
+            return noComentInput;
         }
 
         private static List<string> GetNoCommentInput(StreamReader sr)
