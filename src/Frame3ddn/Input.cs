@@ -39,21 +39,21 @@ namespace Frame3ddn
 
     public class ReactionInput
     {
-        public ReactionInput(Vec3 position, Vec3 r, bool isFixed)
+        public ReactionInput(int num, Vec3 position, Vec3 r)
         {
+            Number = num;
             Position = position;
             R = r;
-            IsFixed = isFixed;
         }
 
         public Vec3 Position { get; }
         public Vec3 R { get; }
-        public bool IsFixed { get; }
+        public int Number { get; set; }//This can't be replaced by index
 
         public static ReactionInput Parse(string inputString)
         {
             int[] data = System.Text.RegularExpressions.Regex.Split(inputString, @"\s{1,}").Select(int.Parse).ToArray();
-            return new ReactionInput(new Vec3(data[0], data[1], data[2]), new Vec3(data[3], data[4], data[5]), data[6] != 0);
+            return new ReactionInput(data[0] - 1, new Vec3(data[1], data[2], data[3]), new Vec3(data[4], data[5], data[6]));
         }
     }
 
@@ -72,10 +72,10 @@ namespace Frame3ddn
         public double Roll { get; }
         public double Density { get; }
 
-        public FrameElement(int nodeIdx1, int nodeIdx2, double ax, double asy, double asz, double jx, double iy, double iz, double e, double g, double roll, double density)
+        public FrameElement(int nodeNum1, int nodeNum2, double ax, double asy, double asz, double jx, double iy, double iz, double e, double g, double roll, double density)
         {
-            NodeIdx1 = nodeIdx1;
-            NodeIdx2 = nodeIdx2;
+            NodeIdx1 = nodeNum1 - 1;//Convert the nodes number to be 0 based.
+            NodeIdx2 = nodeNum2 - 1;
             Ax = ax;
             Asy = asy;
             Asz = asz;
@@ -87,6 +87,7 @@ namespace Frame3ddn
             Roll = roll;
             Density = density;
         }
+
         public static FrameElement Parse(string inputString)
         {
             string[] data = System.Text.RegularExpressions.Regex.Split(inputString, @"\s{1,}");
@@ -211,9 +212,9 @@ namespace Frame3ddn
     {
         public bool IncludeShearDeformation { get; }
         public bool IncludeGeometricStiffness { get; }
-        public double ExaggerateMeshDeformations { get; }
-        public double ZoomScale { get; }
-        public double XAxisIncrementForInternalForces { get; set; }
+        public float ExaggerateMeshDeformations { get; }
+        public float ZoomScale { get; }
+        public float XAxisIncrementForInternalForces { get; set; }
 
         public IReadOnlyList<Node> Nodes { get; }
         public IReadOnlyList<ReactionInput> ReactionInputs { get; }
@@ -222,8 +223,8 @@ namespace Frame3ddn
 
         public Input(IReadOnlyList<Node> nodes, IReadOnlyList<FrameElement> frameElements,
             IReadOnlyList<ReactionInput> reactionInputs, IReadOnlyList<LoadCase> loadCases,
-            bool includeShearDeformation, bool includeGeometricStiffness, double exaggerateMeshDeformations,
-            double zoomScale, double xAxisIncrementForInternalForces)
+            bool includeShearDeformation, bool includeGeometricStiffness, float exaggerateMeshDeformations,
+            float zoomScale, float xAxisIncrementForInternalForces)
         {
             Nodes = nodes;
             FrameElements = frameElements;
@@ -270,9 +271,9 @@ namespace Frame3ddn
 
             bool includeShearDeformation = int.Parse(noComentInput[currentLine++]) != 0;
             bool includeGeometricStiffness = int.Parse(noComentInput[currentLine++]) != 0;
-            double exaggerateMeshDeformations = double.Parse(noComentInput[currentLine++]);
-            double zoomScale = double.Parse(noComentInput[currentLine++]);
-            double xAxisIncrementForInternalForces = double.Parse(noComentInput[currentLine++]);
+            float exaggerateMeshDeformations = float.Parse(noComentInput[currentLine++]);
+            float zoomScale = float.Parse(noComentInput[currentLine++]);
+            float xAxisIncrementForInternalForces = float.Parse(noComentInput[currentLine++]);
 
             int LoadCaseNum = int.Parse(noComentInput[currentLine++]);
             for (int i = 0; i < LoadCaseNum; i++)
