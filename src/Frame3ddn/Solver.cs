@@ -65,14 +65,18 @@ namespace Frame3ddn
             List<int> nF = input.LoadCases.Select(l => l.NodeLoads.Count).ToList();
             List<int> nU = input.LoadCases.Select(l => l.UniformLoads.Count).ToList();
             List<int> nW = input.LoadCases.Select(l => l.TrapLoads.Count).ToList();
-            double[,,] U = new double[nL, nE, 4];
-            double[,,] W = new double[nL, nE*10, 13];
+            double[,,] U = new double[nL, nE, 4];//pass in
+            double[,,] W = new double[nL, nE*10, 13];//pass in
+            double[,,] eqFMech = new double[nL, nE, 12];
+            double[,] FMech = new double[nL, Dof];
             bool shear = input.IncludeShearDeformation;
 
             IReadOnlyList<LoadCase> loadCases = input.LoadCases;
 
-            AssembleLoads(nN, nE, nL, Dof, xyz, L, Le, N1, N2, Ax, Asy, Asz, Iy, Iz, E, G, p, d, gX, gY, gZ, shear, nF, nU, nW,
+            AssembleLoads(nN, nE, nL, Dof, xyz, L, Le, N1, N2, Ax, Asy, Asz, Iy, Iz, E, G, p, d, gX, gY, gZ, shear, nF, nU, nW, FMech, eqFMech,
                 U, W, loadCases);
+
+            ReadMassData();
             return null;
         }
 
@@ -81,6 +85,7 @@ namespace Frame3ddn
             List<double> Ax, List<double> Asy, List<double> Asz, List<double> Iy, List<double> Iz, List<double> E,
             List<double> G, List<double> p,
             List<double> d, List<double> gX, List<double> gY, List<double> gZ, bool shear, List<int> nF, List<int> nU, List<int> nW,
+            double[,] FMech, double[,,] eqFMech,
             double[,,] U, double[,,] W, IReadOnlyList<LoadCase> loadCases)
         {
 #pragma warning disable CS0219 // Variable is assigned but its value is never used
@@ -100,8 +105,7 @@ namespace Frame3ddn
                 My2 = 0.0,
                 Mz2 = 0.0;
             double Ln, R1o, R2o, f01, f02;
-            double[,,] eqFMech = new double[nL, nE, 12];
-            double[,] FMech = new double[nL, Dof];
+            
             int n1, n2;
             //todo:init
             for (int lc = 0; lc < nL; lc++) //><
@@ -208,6 +212,7 @@ namespace Frame3ddn
                 ////
 
                 /* trapezoidally distributed loads ----------------------------- */
+                ////V
                 if (nW[lc] < 0 || nW[lc] > 10 * nE)
                     Console.WriteLine("\n  error: valid ranges for nW is 0 ... %d \n", 10 * nE);
 
@@ -220,16 +225,16 @@ namespace Frame3ddn
                             "\n  error in trapezoidally-distributed loads: element number %d is out of range\n", n);
                     W[lc, i, 0] = (double) n;
                     W[lc, i, 1] = trapLoad.LocationStart.X;
-                    W[lc, i, 2] = trapLoad.LocationStart.Y;
-                    W[lc, i, 3] = trapLoad.LocationStart.Z;
-                    W[lc, i, 4] = trapLoad.LocationEnd.X;
-                    W[lc, i, 5] = trapLoad.LocationEnd.Y;
-                    W[lc, i, 6] = trapLoad.LocationEnd.Z;
-                    W[lc, i, 7] = trapLoad.LoadStart.X;
-                    W[lc, i, 8] = trapLoad.LoadStart.Y;
-                    W[lc, i, 9] = trapLoad.LoadStart.Z;
-                    W[lc, i, 10] = trapLoad.LoadEnd.X;
-                    W[lc, i, 11] = trapLoad.LoadEnd.Y;
+                    W[lc, i, 2] = trapLoad.LocationEnd.X;
+                    W[lc, i, 3] = trapLoad.LoadStart.X;
+                    W[lc, i, 4] = trapLoad.LoadEnd.X;
+                    W[lc, i, 5] = trapLoad.LocationStart.Y;
+                    W[lc, i, 6] = trapLoad.LocationEnd.Y;
+                    W[lc, i, 7] = trapLoad.LoadStart.Y;
+                    W[lc, i, 8] = trapLoad.LoadEnd.Y;
+                    W[lc, i, 9] = trapLoad.LocationStart.Z;
+                    W[lc, i, 10] = trapLoad.LocationEnd.Z;
+                    W[lc, i, 11] = trapLoad.LoadStart.Z;
                     W[lc, i, 12] = trapLoad.LoadEnd.Z;
 
                     Ln = L[n];
@@ -305,14 +310,14 @@ namespace Frame3ddn
                     R2o = ((w1 + 2.0 * w2) * x2 * x2 + (w1 - w2) * x1 * x2 -
                            (2.0 * w1 + w2) * x1 * x1) / (6.0 * Ln);
 
-                    f01 = (3.0 * (w2 + 4.0 * w1) * x1 * x1 * x1 * x1 - 3.0 * (w1 + 4.0 * w2) * x2 * x2 * x2 * x2
+                    f01 = (3.0 * (w2 + 4.0 * w1) * x1 * x1 * x1 * x1 - 3.0 * (w1 + 4.0 * w2) * x2 * x2 * x2 * x2//NoAccu
                             - 15.0 * (w2 + 3.0 * w1) * Ln * x1 * x1 * x1 + 15.0 * (w1 + 3.0 * w2) * Ln * x2 * x2 * x2
                            - 3.0 * (w1 - w2) * x1 * x2 * (x1 * x1 + x2 * x2)
                            + 20.0 * (w2 + 2.0 * w1) * Ln * Ln * x1 * x1 - 20.0 * (w1 + 2.0 * w2) * Ln * Ln * x2 * x2
                            + 15.0 * (w1 - w2) * Ln * x1 * x2 * (x1 + x2)
                            - 3.0 * (w1 - w2) * x1 * x1 * x2 * x2 - 20.0 * (w1 - w2) * Ln * Ln * x1 * x2) / 360.0;
 
-                    f02 = (3.0 * (w2 + 4.0 * w1) * x1 * x1 * x1 * x1 - 3.0 * (w1 + 4.0 * w2) * x2 * x2 * x2 * x2
+                    f02 = (3.0 * (w2 + 4.0 * w1) * x1 * x1 * x1 * x1 - 3.0 * (w1 + 4.0 * w2) * x2 * x2 * x2 * x2//NoAccu
                             - 3.0 * (w1 - w2) * x1 * x2 * (x1 * x1 + x2 * x2)
                             - 10.0 * (w2 + 2.0 * w1) * Ln * Ln * x1 * x1 + 10.0 * (w1 + 2.0 * w2) * Ln * Ln * x2 * x2
                            - 3.0 * (w1 - w2) * x1 * x1 * x2 * x2 + 10.0 * (w1 - w2) * Ln * Ln * x1 * x2) / 360.0;
@@ -354,23 +359,37 @@ namespace Frame3ddn
                     double[] t = Coordtrans.coordTrans(xyz, Ln, n1, n2, p[n]);
 
                     /* {F} = [T]'{Q} */
-                    eqFMech[lc, n, 1] += (Nx1 * t[0] + Vy1 * t[3] + Vz1 * t[6]);
-                    eqFMech[lc, n, 2] += (Nx1 * t[1] + Vy1 * t[4] + Vz1 * t[7]);
-                    eqFMech[lc, n, 3] += (Nx1 * t[2] + Vy1 * t[5] + Vz1 * t[8]);
-                    eqFMech[lc, n, 4] += (Mx1 * t[0] + My1 * t[3] + Mz1 * t[6]);
-                    eqFMech[lc, n, 5] += (Mx1 * t[1] + My1 * t[4] + Mz1 * t[7]);
-                    eqFMech[lc, n, 6] += (Mx1 * t[2] + My1 * t[5] + Mz1 * t[8]);
+                    eqFMech[lc, n, 0] += (Nx1 * t[0] + Vy1 * t[3] + Vz1 * t[6]);
+                    eqFMech[lc, n, 1] += (Nx1 * t[1] + Vy1 * t[4] + Vz1 * t[7]);
+                    eqFMech[lc, n, 2] += (Nx1 * t[2] + Vy1 * t[5] + Vz1 * t[8]);
+                    eqFMech[lc, n, 3] += (Mx1 * t[0] + My1 * t[3] + Mz1 * t[6]);
+                    eqFMech[lc, n, 4] += (Mx1 * t[1] + My1 * t[4] + Mz1 * t[7]);
+                    eqFMech[lc, n, 5] += (Mx1 * t[2] + My1 * t[5] + Mz1 * t[8]);
 
-                    eqFMech[lc, n, 7] += (Nx2 * t[0] + Vy2 * t[3] + Vz2 * t[6]);
-                    eqFMech[lc, n, 8] += (Nx2 * t[1] + Vy2 * t[4] + Vz2 * t[7]);
-                    eqFMech[lc, n, 9] += (Nx2 * t[2] + Vy2 * t[5] + Vz2 * t[8]);
-                    eqFMech[lc, n, 10] += (Mx2 * t[0] + My2 * t[3] + Mz2 * t[6]);
-                    eqFMech[lc, n, 11] += (Mx2 * t[1] + My2 * t[4] + Mz2 * t[7]);
-                    eqFMech[lc, n, 12] += (Mx2 * t[2] + My2 * t[5] + Mz2 * t[8]);
+                    eqFMech[lc, n, 6] += (Nx2 * t[0] + Vy2 * t[3] + Vz2 * t[6]);
+                    eqFMech[lc, n, 7] += (Nx2 * t[1] + Vy2 * t[4] + Vz2 * t[7]);
+                    eqFMech[lc, n, 8] += (Nx2 * t[2] + Vy2 * t[5] + Vz2 * t[8]);
+                    eqFMech[lc, n, 9] += (Mx2 * t[0] + My2 * t[3] + Mz2 * t[6]);
+                    eqFMech[lc, n, 10] += (Mx2 * t[1] + My2 * t[4] + Mz2 * t[7]);
+                    eqFMech[lc, n, 11] += (Mx2 * t[2] + My2 * t[5] + Mz2 * t[8]);
                 }
+                ////
 
+                ////Jumped over interior loads, temp loads and prescribed displacements
 
+                ////NoV not confident they are correct, Fmech shouldn't be used.
+                for (int n = 0; n < nE; n++)
+                {
+                    n1 = N1[n]; n2 = N2[n];
+                    for (int i = 0; i < 6; i++) FMech[lc, 6 * n1 + i] += eqFMech[lc, n, i];
+                    for (int i = 6; i < 12; i++) FMech[lc, 6 * n2 - 6 + i] += eqFMech[lc, n, i];
+                }////V
             }
+        }
+
+        private void ReadMassData()
+        {
+
         }
 
 
