@@ -295,7 +295,7 @@ namespace Frame3ddn
 
                 int trapLoadNum = int.Parse(noComentInput[currentLine++]);
                 List<TrapLoad> trapLoads = new List<TrapLoad>();
-                for (int j = currentLine; currentLine < j + trapLoadNum; currentLine = currentLine + 3)
+                for (int j = currentLine; currentLine < j + trapLoadNum * 3; currentLine = currentLine + 3)
                 {
                     string combinedData = noComentInput[currentLine] + " " + 
                                           noComentInput[currentLine + 1] + " " +

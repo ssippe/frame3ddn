@@ -139,26 +139,26 @@ namespace Frame3ddn
                                           (t[5] * t[7] - t[4] * t[8]) * gY[lc]); //><
                 }
 
-                ////UnV
-                for (int i = 0; i < nF[lc]; i++)
-                {
-                    NodeLoad nodeLoad = loadCases[lc].NodeLoads[i];
-                    int j = nodeLoad.NodeIdx;
-                    if (j < 0 || j > nN)
-                        Console.WriteLine(
-                            "\n  error in node load data: node number out of range ... Node : {0}\n   Perhaps you did not specify {1} node loads \n  or perhaps the Input Data file is missing expected data.\n",
-                            j, nF[lc]);
+                ////UnV we don't have nodeloads
+                //for (int i = 0; i < nF[lc]; i++)
+                //{
+                //    NodeLoad nodeLoad = loadCases[lc].NodeLoads[i];
+                //    int j = nodeLoad.NodeIdx;
+                //    if (j < 0 || j > nN)
+                //        Console.WriteLine(
+                //            "\n  error in node load data: node number out of range ... Node : {0}\n   Perhaps you did not specify {1} node loads \n  or perhaps the Input Data file is missing expected data.\n",
+                //            j, nF[lc]);
 
-                    FMech[lc, 6 * j + 0] = nodeLoad.Load.X;
-                    FMech[lc, 6 * j + 1] = nodeLoad.Load.Y;
-                    FMech[lc, 6 * j + 2] = nodeLoad.Load.Z;
-                    FMech[lc, 6 * j + 3] = nodeLoad.Moment.X;
-                    FMech[lc, 6 * j + 4] = nodeLoad.Moment.Y;
-                    FMech[lc, 6 * j + 5] = nodeLoad.Moment.Z;
+                //    FMech[lc, 6 * j + 0] = nodeLoad.Load.X;
+                //    FMech[lc, 6 * j + 1] = nodeLoad.Load.Y;
+                //    FMech[lc, 6 * j + 2] = nodeLoad.Load.Z;
+                //    FMech[lc, 6 * j + 3] = nodeLoad.Moment.X;
+                //    FMech[lc, 6 * j + 4] = nodeLoad.Moment.Y;
+                //    FMech[lc, 6 * j + 5] = nodeLoad.Moment.Z;
 
-                    if (Common.isZeroVector(nodeLoad.Load) && Common.isZeroVector(nodeLoad.Load))
-                        Console.WriteLine("\n   Warning: All node loads applied at node %d  are zero\n", j);
-                }
+                //    if (Common.isZeroVector(nodeLoad.Load) && Common.isZeroVector(nodeLoad.Load))
+                //        Console.WriteLine("\n   Warning: All node loads applied at node %d  are zero\n", j);
+                //}
                 ////
 
                 ////V
