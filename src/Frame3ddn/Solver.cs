@@ -52,6 +52,7 @@ namespace Frame3ddn
             List<double> Ax = input.FrameElements.Select(f => f.Ax).ToList(); //V
             List<double> Asy = input.FrameElements.Select(f => f.Asy).ToList();
             List<double> Asz = input.FrameElements.Select(f => f.Asz).ToList();
+            List<double> Jx = input.FrameElements.Select(f => f.Jx).ToList();
             List<double> Iy = input.FrameElements.Select(f => f.Iy).ToList();
             List<double> Iz = input.FrameElements.Select(f => f.Iz).ToList();
             List<double> E = input.FrameElements.Select(f => f.E).ToList();
@@ -70,14 +71,141 @@ namespace Frame3ddn
             double[,,] eqFMech = new double[nL, nE, 12];
             double[,] FMech = new double[nL, Dof];
             bool shear = input.IncludeShearDeformation;
+            bool geom = input.IncludeGeometricStiffness;
 
             IReadOnlyList<LoadCase> loadCases = input.LoadCases;
 
             AssembleLoads(nN, nE, nL, Dof, xyz, L, Le, N1, N2, Ax, Asy, Asz, Iy, Iz, E, G, p, d, gX, gY, gZ, shear, nF, nU, nW, FMech, eqFMech,
                 U, W, loadCases);
+#pragma warning disable CS0219 // Variable is assigned but its value is never used
+#pragma warning disable CS0168 // Variable is assigned but its value is never used
 
-            ReadMassData();
+            //to be passed back//
+            double totalMass;
+            double structMass;
+            double[] D = new double[Dof];
+            double[] dD = new double[Dof];
+            double[] R = new double[Dof];
+            double[] dR = new double[Dof];
+            double[,] Q = new double[nE,12];
+            double[,] K = new double[Dof,Dof];
+            //to be passed back//
+
+            //ReadMassData()
+            //ReadCondensationData()
+
+            ////Start anlyz
+            /* begin load case analysis loop */
+            for (int lc = 0; lc < nL; lc++)
+            {
+                /*  initialize displacements and displ. increment to {0}  */
+                /*  initialize reactions     and react. increment to {0}  */
+                for (int i = 0; i < Dof; i++)
+                    D[i] = dD[i] = R[i] = dR[i] = 0.0;
+
+                /*  initialize internal element end forces Q = {0}	*/
+                for (int i = 0; i < nE; i++)
+                    for (int j = 0; j < 11; j++)
+                        Q[i, j] = 0.0;
+
+                AssembleK(K, Dof, nE, xyz, r, L, Le, N1, N2, Ax, Asy, Asz, Jx, Iy, Iz, E, G, p, shear, geom, Q);
+
+            }
+
+
             return null;
+        }
+
+        private void AssembleK(double[,] K, 
+            int Dof, int nE,
+            List<Vec3> xyz, double[] r, List<double> L, List<double> Le,
+            List<int> N1, List<int> N2,
+            List<double> Ax, List<double> Asy, List<double> Asz,
+            List<double> Jx, List<double> Iy, List<double> Iz,
+            List<double> E, List<double> G, List<double> p,
+            bool shear, bool geom, double[,] Q)
+        {
+            //to be passed back//
+            double[,] KToPass = new double[Dof, Dof];
+            //to be passed back//
+            
+            for (int i = 0; i < Dof; i++)
+                for (int j = 0; j < Dof; j++)
+                    K[i, j] = 0.0;
+
+            double[,] k = new double[12, 12];
+            double[,] ind = new double[12, nE];
+
+            for (int i = 0; i < nE; i++)
+            {
+                ind[0, i] = 6 * N1[i] - 5; ind[6, i] = 6 * N2[i] - 5;
+                ind[1, i] = ind[0, i] + 1; ind[7, i] = ind[6, i] + 1;
+                ind[2, i] = ind[0, i] + 2; ind[8, i] = ind[6, i] + 2;
+                ind[3, i] = ind[0, i] + 3; ind[9, i] = ind[6, i] + 3;
+                ind[4, i] = ind[0, i] + 4; ind[10, i] = ind[6, i] + 4;
+                ind[5, i] = ind[0, i] + 5; ind[11, i] = ind[6, i] + 5;
+            }
+
+            for (int i = 0; i < nE; i++)
+            {
+                ElasticK(k, xyz, r, L[i], Le[i], N1[i], N2[i],
+                    Ax[i], Asy[i], Asz[i], Jx[i], Iy[i], Iz[i], E[i], G[i], p[i], shear);
+            }
+
+
+        }
+
+        private void ElasticK(double[,] k, List<Vec3> xyz, double[] r,
+            double L, double Le,
+            int n1, int n2,
+            double Ax, double Asy, double Asz,
+            double J, double Iy, double Iz,
+            double E, double G, double p,
+            bool shear)
+        {
+            double t1, t2, t3, t4, t5, t6, t7, t8, t9,     /* coord Xformn */
+                Ksy, Ksz;       /* shear deformatn coefficients	*/
+            int i, j;
+
+            double[] t = Coordtrans.coordTrans(xyz, L, n1, n2, p);
+
+            for (i = 0; i < 12; i++)
+                for (j = 0; j < 12; j++)
+                    k[i, j] = 0.0;
+
+            if (shear)
+            {
+                Ksy = 12.0 * E * Iz / (G * Asy * Le * Le);
+                Ksz = 12.0 * E * Iy / (G * Asz * Le * Le);
+            }
+            else
+            {
+                Ksy = Ksz = 0.0;
+            }
+
+            k[0, 0] = k[6, 6] = E * Ax / Le;
+            k[1, 1] = k[7, 7] = 12.0* E * Iz / (Le * Le * Le * (1.0+ Ksy));
+            k[2, 2] = k[8, 8] = 12.0* E * Iy / (Le * Le * Le * (1.0+ Ksz));
+            k[3, 3] = k[9, 9] = G * J / Le;
+            k[4, 4] = k[10, 10] = (4.0+ Ksz) * E * Iy / (Le * (1.0+ Ksz));
+            k[5, 5] = k[11, 11] = (4.0+ Ksy) * E * Iz / (Le * (1.0+ Ksy));
+
+            k[4, 2] = k[2, 4] = -6.0* E * Iy / (Le * Le * (1.0+ Ksz));
+            k[5, 1] = k[1, 5] = 6.0* E * Iz / (Le * Le * (1.0+ Ksy));
+            k[6, 0] = k[0, 6] = -k[0, 0];
+
+            k[11, 7] = k[7, 11] = k[7, 5] = k[5, 7] = -k[5, 1];
+            k[10, 8] = k[8, 10] = k[8, 4] = k[4, 8] = -k[4, 2];
+            k[9, 3] = k[3, 9] = -k[3, 3];
+            k[10, 2] = k[2, 10] = k[4, 2];
+            k[11, 1] = k[1, 11] = k[5, 1];
+
+            k[7, 1] = k[1, 7] = -k[1, 1];
+            k[8, 2] = k[2, 8] = -k[2, 2];
+            k[10, 4] = k[4, 10] = (2.0- Ksz) * E * Iy / (Le * (1.0+ Ksz));
+            k[11, 5] = k[5, 11] = (2.0- Ksy) * E * Iz / (Le * (1.0+ Ksy));//V
+
+            k = Coordtrans.Atma(t, k, r[n1], r[n2]);
         }
 
         private void AssembleLoads(int nN, int nE, int nL, int Dof, List<Vec3> xyz, List<double> L, List<double> Le,
@@ -387,10 +515,14 @@ namespace Frame3ddn
             }
         }
 
-        private void ReadMassData()
-        {
-
-        }
+        //Dealing with dynamic data, todo check if it is true
+        //private void ReadMassData()
+        //{
+        //    int i, j, jnt, m, b, nA;
+        //    int full_len = 0, len = 0;
+        //    double totalMass = 0.0;
+        //    double structMass = 0.0;
+        //}
 
 
         // ref main.c:265

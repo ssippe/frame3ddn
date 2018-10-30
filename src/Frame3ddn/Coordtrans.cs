@@ -58,5 +58,36 @@ namespace Frame3ddn
             return Math.Sqrt(Math.Pow(nodePosition1.X - nodePosition2.X, 2) + Math.Pow(nodePosition1.Y - nodePosition2.Y, 2) + Math.Pow(
                        nodePosition1.Z - nodePosition2.Z, 2));
         }
+
+        public static double[,] Atma(double[] t, double[,] m, double r1, double r2)
+        {
+            double[,] a = new double[12, 12];
+            double[,] ma = new double[12, 12];
+            int i, j, k;
+
+            for (i = 0; i < 4; i++)
+            {
+                a[3 * i + 0, 3 * i + 0] = t[0];
+                a[3 * i + 0, 3 * i + 1] = t[1];
+                a[3 * i + 0, 3 * i + 2] = t[2];
+                a[3 * i + 1, 3 * i + 0] = t[3];
+                a[3 * i + 1, 3 * i + 1] = t[4];
+                a[3 * i + 1, 3 * i + 2] = t[5];
+                a[3 * i + 2, 3 * i + 0] = t[6];
+                a[3 * i + 2, 3 * i + 1] = t[7];
+                a[3 * i + 2, 3 * i + 2] = t[8];
+            }
+
+            for (j = 0; j < 12; j++)            /*  MT = M T     */
+                for (i = 0; i < 12; i++)
+                    for (k = 0; k < 12; k++)
+                        ma[i, j] += m[i, k] * a[k, j];
+
+            for (i = 0; i < 12; i++)
+                for (j = 0; j < 12; j++)
+                    m[j, i] = m[i, j] = 0.0;
+            return m;
+
+        }
     }
 }
