@@ -55,8 +55,8 @@ namespace Frame3ddn
 
         public static double CalculateSQDistance(Vec3 nodePosition1, Vec3 nodePosition2)
         {
-            return Math.Pow(nodePosition1.X - nodePosition2.X, 2) + Math.Pow(nodePosition1.Y - nodePosition2.Y, 2) + Math.Pow(
-                       nodePosition1.Z - nodePosition2.Z, 2);
+            return Math.Sqrt(Math.Pow(nodePosition1.X - nodePosition2.X, 2) + Math.Pow(nodePosition1.Y - nodePosition2.Y, 2) + Math.Pow(
+                       nodePosition1.Z - nodePosition2.Z, 2));
         }
     }
 }

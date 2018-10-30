@@ -74,8 +74,8 @@ namespace Frame3ddn
 
         public FrameElement(int nodeNum1, int nodeNum2, double ax, double asy, double asz, double jx, double iy, double iz, double e, double g, double roll, double density)
         {
-            NodeIdx1 = nodeNum1 - 1;//Convert the nodes number to be 0 based.
-            NodeIdx2 = nodeNum2 - 1;
+            NodeIdx1 = nodeNum1;
+            NodeIdx2 = nodeNum2;
             Ax = ax;
             Asy = asy;
             Asz = asz;
@@ -92,8 +92,8 @@ namespace Frame3ddn
         {
             string[] data = System.Text.RegularExpressions.Regex.Split(inputString, @"\s{1,}");
             return new FrameElement(
-                int.Parse(data[1]),
-                int.Parse(data[2]),
+                int.Parse(data[1]) - 1,//Convert the nodes number to be 0 based.
+                int.Parse(data[2]) - 1,
                 double.Parse(data[3]),
                 double.Parse(data[4]),
                 double.Parse(data[5]),
@@ -123,7 +123,7 @@ namespace Frame3ddn
         public static NodeLoad Parse(string inputString)
         {
             string[] data = System.Text.RegularExpressions.Regex.Split(inputString, @"\s{1,}");
-            return new NodeLoad(int.Parse(data[0]), 
+            return new NodeLoad(int.Parse(data[0]) - 1, 
                 new Vec3(double.Parse(data[1]), double.Parse(data[2]), double.Parse(data[3])),
                 new Vec3(double.Parse(data[4]), double.Parse(data[5]), double.Parse(data[6])));
         }
@@ -143,7 +143,7 @@ namespace Frame3ddn
         public static UniformLoad Parse(string inputString)
         {
             string[] data = System.Text.RegularExpressions.Regex.Split(inputString, @"\s{1,}");
-            return new UniformLoad(int.Parse(data[0]),
+            return new UniformLoad(int.Parse(data[0]) - 1,
                 new Vec3(double.Parse(data[1]), double.Parse(data[2]), double.Parse(data[3])));
         }
     }
@@ -167,7 +167,7 @@ namespace Frame3ddn
         public static TrapLoad Parse(string inputString)
         {
             string[] data = System.Text.RegularExpressions.Regex.Split(inputString, @"\s{1,}");
-            return new TrapLoad(int.Parse(data[0]),
+            return new TrapLoad(int.Parse(data[0]) - 1,
                 new Vec3(double.Parse(data[1]), double.Parse(data[5]), double.Parse(data[9])),
                 new Vec3(double.Parse(data[2]), double.Parse(data[6]), double.Parse(data[10])),
                 new Vec3(double.Parse(data[3]), double.Parse(data[7]), double.Parse(data[11])),
@@ -300,7 +300,7 @@ namespace Frame3ddn
                     string combinedData = noComentInput[currentLine] + " " + 
                                           noComentInput[currentLine + 1] + " " +
                                           noComentInput[currentLine + 2];
-                    trapLoads.Add(TrapLoad.Parse(noComentInput[currentLine]));
+                    trapLoads.Add(TrapLoad.Parse(combinedData));
                 }
 
                 int internalConcentratedLoadNum = int.Parse(noComentInput[currentLine++]);
