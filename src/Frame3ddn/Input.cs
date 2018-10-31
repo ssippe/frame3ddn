@@ -19,41 +19,55 @@ namespace Frame3ddn
         }
     }
 
+    public struct Vec3Float
+    {
+        public float X;
+        public float Y;
+        public float Z;
+
+        public Vec3Float(float x, float y, float z)
+        {
+            X = x;
+            Y = y;
+            Z = z;
+        }
+    }
+
     public class Node
     {
-        public Node(Vec3 position, double radius)
+        public Node(Vec3Float position, double radius)
         {
             Position = position;
             Radius = radius;
         }
 
-        public Vec3 Position { get; }
+        public Vec3Float Position { get; }
         public double Radius { get; }
 
         public static Node Parse(string inputString)
         {
-            double[] data = System.Text.RegularExpressions.Regex.Split(inputString, @"\s{1,}").Select(Double.Parse).ToArray();
-            return new Node(new Vec3(data[1], data[2], data[3]), data[4]);
+            float[] data = System.Text.RegularExpressions.Regex.Split(inputString, @"\s{1,}").Select(float.Parse).ToArray();
+            return new Node(new Vec3Float(data[1], data[2], data[3]), data[4]);
         }
     }
 
     public class ReactionInput
     {
-        public ReactionInput(int num, Vec3 position, Vec3 r)
+        public ReactionInput(int num, Vec3Float position, Vec3Float r)
         {
             Number = num;
             Position = position;
             R = r;
         }
 
-        public Vec3 Position { get; }
-        public Vec3 R { get; }
+        public Vec3Float Position { get; }
+        public Vec3Float R { get; }
         public int Number { get; set; }//This can't be replaced by index
 
         public static ReactionInput Parse(string inputString)
         {
             int[] data = System.Text.RegularExpressions.Regex.Split(inputString, @"\s{1,}").Select(int.Parse).ToArray();
-            return new ReactionInput(data[0] - 1, new Vec3(data[1], data[2], data[3]), new Vec3(data[4], data[5], data[6]));
+            return new ReactionInput(data[0] - 1, new Vec3Float(data[1], data[2], data[3]), new Vec3Float(data[4], data[5], data[6]));
         }
     }
 
@@ -69,10 +83,10 @@ namespace Frame3ddn
         public double Iz { get; }
         public double E { get; }
         public double G { get; }
-        public double Roll { get; }
+        public float Roll { get; }
         public double Density { get; }
 
-        public FrameElement(int nodeNum1, int nodeNum2, double ax, double asy, double asz, double jx, double iy, double iz, double e, double g, double roll, double density)
+        public FrameElement(int nodeNum1, int nodeNum2, double ax, double asy, double asz, double jx, double iy, double iz, double e, double g, float roll, double density)
         {
             NodeIdx1 = nodeNum1;
             NodeIdx2 = nodeNum2;
@@ -102,7 +116,7 @@ namespace Frame3ddn
                 double.Parse(data[8]),
                 double.Parse(data[9]),
                 double.Parse(data[10]),
-                double.Parse(data[11]),
+                float.Parse(data[11]),
                 double.Parse(data[12]));
         }
     }

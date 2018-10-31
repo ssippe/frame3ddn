@@ -6,7 +6,7 @@ namespace Frame3ddn
 {
     public class Coordtrans
     {
-        public static double[] coordTrans(List<Vec3> xyz, double L, int n1, int n2, double p)
+        public static double[] coordTrans(List<Vec3> xyz, double L, int n1, int n2, float p)
         {
             double[] t = new double[9];
             double Cx, Cy, Cz, den, Cp, Sp;
@@ -59,7 +59,7 @@ namespace Frame3ddn
                        nodePosition1.Z - nodePosition2.Z, 2));
         }
 
-        public static double[,] Atma(double[] t, double[,] m, double r1, double r2)
+        public static double[,] Atma(double[] t, double[,] m, float r1, float r2)
         {
             double[,] a = new double[12, 12];
             double[,] ma = new double[12, 12];
@@ -84,8 +84,14 @@ namespace Frame3ddn
                         ma[i, j] += m[i, k] * a[k, j];
 
             for (i = 0; i < 12; i++)
-                for (j = 0; j < 12; j++)
+                for (j = i; j < 12; j++)
                     m[j, i] = m[i, j] = 0.0;
+
+            for (j = 0; j < 12; j++)            /*  T'MT = T' MT */
+                for (i = 0; i < 12; i++)
+                    for (k = 0; k < 12; k++)
+                        m[i, j] += a[k, i] * ma[k, j];
+
             return m;
 
         }

@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.IO;
 using Xunit;
 
@@ -64,42 +65,29 @@ namespace Frame3ddn.Test
 
         //}
 
-        //[Fact]
-        //public void FindTrapLoadAndNodeLoad()
-        //{
-        //    string workspaceDir = Directory.GetParent(Directory.GetParent(Directory.GetParent(Directory.GetCurrentDirectory().ToString()).ToString()).ToString()).ToString();
-        //    //string[] pdfFiles = Directory.GetFiles(workspaceDir + "\\frame3ddInput24\\frame3ddInput", "*");
-        //    //string[] pdfFiles = Directory.GetFiles(workspaceDir + "\\frame3ddInputBase\\frame3ddInput", "*");
-        //    //string[] pdfFiles = Directory.GetFiles(workspaceDir + "\\frame3ddInputMore\\frame3ddInput", "*");
-        //    string[] pdfFiles = Directory.GetFiles(workspaceDir + "\\frame3ddInputSkil\\frame3ddInput", "*");
-        //    //string[] pdfFiles = Directory.GetFiles(workspaceDir + "\\frame3ddInput", "*");
-        //    for (int i = 0; i < pdfFiles.Length; i++)
-        //    {
-        //        StreamReader sr = new StreamReader(pdfFiles[i]);
-        //        Input input = Input.Parse(sr);
-        //        bool t = false;
-        //        bool n = false;
-        //        foreach (LoadCase inputLoadCase in input.LoadCases)
-        //        {
-        //            if (inputLoadCase.NodeLoads.Count > 0)
-        //                n = true;
-        //            if (inputLoadCase.TrapLoads.Count > 0)
-        //                t = true;
-        //        }
-
-        //        if (n)
-        //        {
-        //            string path = pdfFiles[i];
-        //            Console.WriteLine(pdfFiles[i] + " has node loads.");
-        //        }
-        //        if (t)
-        //        {
-        //            string path = pdfFiles[i];
-        //            Console.WriteLine(pdfFiles[i] + " has trap nodes.");
-        //        }
-
-        //    }
-
-        //}
+        [Fact]
+        public void FindLoads()
+        {
+            string workspaceDir = Directory.GetParent(Directory.GetParent(Directory.GetParent(Directory.GetCurrentDirectory().ToString()).ToString()).ToString()).ToString();
+            List<string[]> directoryList = new List<string[]>();
+            directoryList.Add(Directory.GetFiles(workspaceDir + "\\frame3ddInput24\\frame3ddInput", "*"));
+            directoryList.Add(Directory.GetFiles(workspaceDir + "\\frame3ddInputBase\\frame3ddInput", "*"));
+            directoryList.Add(Directory.GetFiles(workspaceDir + "\\frame3ddInputMore\\frame3ddInput", "*"));
+            directoryList.Add(Directory.GetFiles(workspaceDir + "\\frame3ddInputSkil\\frame3ddInput", "*"));
+            directoryList.Add(Directory.GetFiles(workspaceDir + "\\frame3ddInput\\frame3ddInput", "*"));
+            foreach (string[] pdfFiles in directoryList)
+            {
+                for (int i = 0; i < pdfFiles.Length; i++)
+                {
+                    StreamReader sr = new StreamReader(pdfFiles[i]);
+                    Input input = Input.Parse(sr);
+                    if (!input.IncludeGeometricStiffness)
+                    {
+                        string path = pdfFiles[i];
+                        Console.WriteLine(path);
+                    }
+                }
+            }
+        }
     }
 }

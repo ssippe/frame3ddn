@@ -1,6 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Runtime.CompilerServices;
+using System.Security.Cryptography.X509Certificates;
 using System.Text;
 
 namespace Frame3ddn
@@ -9,15 +11,19 @@ namespace Frame3ddn
     {
         public Output Solve(Input input)
         {
+            //Fixed value
+            int ok = 1;
+            double rmsResid = 1.0;
+
             IReadOnlyList<Node> nodes = input.Nodes;
             IReadOnlyList<FrameElement> frameElements = input.FrameElements;
             int nN = input.Nodes.Count;
-            List<double> rj = input.Nodes.Select(n => n.Radius).ToList();
+            List<float> rj = input.Nodes.Select(n => n.Radius).ToList();
             List<Vec3> xyz = input.Nodes.Select(n => n.Position).ToList(); //V
-            int Dof = 6 * nN;
+            int DoF = 6 * nN;
             int nR = input.ReactionInputs.Count;
-            double[] q = new double[Dof];
-            double[] r = new double[Dof];
+            double[] q = new double[DoF];
+            float[] r = new float[DoF];
             for (int i = 0; i < nR; i++) //><
             {
                 int j = input.ReactionInputs[i].Number; //>< This number is corrected wehen importing
@@ -29,14 +35,14 @@ namespace Frame3ddn
                 r[j * 6 + 5] = input.ReactionInputs[i].R.Z;
             }
 
-            for (int i = 0; i < Dof; i++)
+            for (int i = 0; i < DoF; i++)
             {
                 q[i] = (r[i] == (double) 1) ? 0 : 1;
             }
 
             int nE = input.FrameElements.Count; //V
 
-            List<double> L = input.FrameElements.Select(f =>
+            List<float> L = input.FrameElements.Select(f =>
                     Coordtrans.CalculateSQDistance(input.Nodes[f.NodeIdx1].Position, input.Nodes[f.NodeIdx2].Position))
                 .ToList();
 
@@ -57,7 +63,7 @@ namespace Frame3ddn
             List<double> Iz = input.FrameElements.Select(f => f.Iz).ToList();
             List<double> E = input.FrameElements.Select(f => f.E).ToList();
             List<double> G = input.FrameElements.Select(f => f.G).ToList();
-            List<double> p = input.FrameElements.Select(f => f.Roll).ToList(); //V
+            List<float> p = input.FrameElements.Select(f => f.Roll).ToList(); //V
             List<double> d = input.FrameElements.Select(f => f.Density).ToList();
             int nL = input.LoadCases.Count; //V
             List<double> gX = input.LoadCases.Select(l => l.Gravity.X).ToList(); //V
@@ -69,13 +75,20 @@ namespace Frame3ddn
             double[,,] U = new double[nL, nE, 4];//pass in
             double[,,] W = new double[nL, nE*10, 13];//pass in
             double[,,] eqFMech = new double[nL, nE, 12];
-            double[,] FMech = new double[nL, Dof];
+            double[,] FMech = new double[nL, DoF];
             bool shear = input.IncludeShearDeformation;
             bool geom = input.IncludeGeometricStiffness;
 
+            ////These countings are not used so far
+            int[] nT = new int[nL];
+            int[] nP = new int[nL];
+            int[] nD = new int[nL];
+            double[,] FTemp = new double[nL,DoF];
+            ////
+
             IReadOnlyList<LoadCase> loadCases = input.LoadCases;
 
-            AssembleLoads(nN, nE, nL, Dof, xyz, L, Le, N1, N2, Ax, Asy, Asz, Iy, Iz, E, G, p, d, gX, gY, gZ, shear, nF, nU, nW, FMech, eqFMech,
+            AssembleLoads(nN, nE, nL, DoF, xyz, L, Le, N1, N2, Ax, Asy, Asz, Iy, Iz, E, G, p, d, gX, gY, gZ, shear, nF, nU, nW, FMech, eqFMech,
                 U, W, loadCases);
 #pragma warning disable CS0219 // Variable is assigned but its value is never used
 #pragma warning disable CS0168 // Variable is assigned but its value is never used
@@ -83,16 +96,21 @@ namespace Frame3ddn
             //to be passed back//
             double totalMass;
             double structMass;
-            double[] D = new double[Dof];
-            double[] dD = new double[Dof];
-            double[] R = new double[Dof];
-            double[] dR = new double[Dof];
+            double[] D = new double[DoF];
+            double[] dD = new double[DoF];
+            double[] R = new double[DoF];
+            double[] dR = new double[DoF];
             double[,] Q = new double[nE,12];
-            double[,] K = new double[Dof,Dof];
+            double[,] K = new double[DoF,DoF];
             //to be passed back//
 
-            //ReadMassData()
-            //ReadCondensationData()
+            //Empty values. Only used to prevent error//
+            double[,] Dp = new double[nL,DoF];
+            //Empty values. Only used to prevent error//
+
+
+            //ReadMassData()--NoN
+            //ReadCondensationData()--NoN
 
             ////Start anlyz
             /* begin load case analysis loop */
@@ -100,7 +118,7 @@ namespace Frame3ddn
             {
                 /*  initialize displacements and displ. increment to {0}  */
                 /*  initialize reactions     and react. increment to {0}  */
-                for (int i = 0; i < Dof; i++)
+                for (int i = 0; i < DoF; i++)
                     D[i] = dD[i] = R[i] = dR[i] = 0.0;
 
                 /*  initialize internal element end forces Q = {0}	*/
@@ -108,37 +126,261 @@ namespace Frame3ddn
                     for (int j = 0; j < 11; j++)
                         Q[i, j] = 0.0;
 
-                AssembleK(K, Dof, nE, xyz, r, L, Le, N1, N2, Ax, Asy, Asz, Jx, Iy, Iz, E, G, p, shear, geom, Q);
+                K = AssembleK(DoF, nE, xyz, r, L, Le, N1, N2, Ax, Asy, Asz, Jx, Iy, Iz, E, G, p, shear, geom, Q);//V
 
+                //if (nT[lc] > 0){
+                //Aplly temperature loads only --NoN
+                //}
+
+                if (nF[lc] > 0 || nU[lc] > 0 || nW[lc] > 0 || nP[lc] > 0 || nD[lc] > 0 ||
+                    gX[lc] != 0 || gY[lc] != 0 || gZ[lc] != 0)
+                {
+                    for (int i = 0; i < DoF; i++)
+                        if (!Common.isDoubleZero(r[i]))
+                            dD[i] = Dp[lc, i];
+                }
+                SolveSystem(K, dD, Common.GetRow(FMech, lc), dR, DoF, q, r, ok, rmsResid);
+
+                for (int i = 0; i < DoF; i++)
+                {
+                    if (!Common.isDoubleZero(q[i]))
+                    {
+                        D[i] += dD[i];
+                    }
+                    else
+                    {
+                        D[i] = Dp[lc, i]; dD[i] = 0.0;
+                    }
+                }
+
+                for (int i = 0; i < DoF; i++)
+                    if (!Common.isDoubleZero(r[i]))
+                        R[i] += dR[i];
             }
 
+            
 
             return null;
         }
 
-        private void AssembleK(double[,] K, 
-            int Dof, int nE,
-            List<Vec3> xyz, double[] r, List<double> L, List<double> Le,
+        /*
+         * SOLVE_SYSTEM  -  solve {F} =   [K]{D} via L D L' decomposition        27dec01
+         * Prescribed displacements are "mechanical loads" not "temperature loads"  
+         */
+        private (int ok, double rmsResid) SolveSystem(double[,] K, double[] D, double[] F, double[] R, int DoF, double[] q, float[] r, int ok, double rmsResid)
+        {
+            double[] diag = new double[DoF];
+
+            ok = LdlDcmpPm(K, DoF, diag, F, D, R, q, r, 1, 0);//V
+            //K = result.A;
+            //diag = result.d;
+            //D = result.x;
+            //R = result.c;
+            //ok = result.pd;
+
+            if (ok < 0)
+            {
+                Console.WriteLine(" Make sure that all six");
+                Console.WriteLine(" rigid body translations are restrained!\n");
+            }
+            else
+            {
+                ok = LdlDcmpPm(K, DoF, diag, F, D, R, q, r, 0, 1);
+                rmsResid = ok = 1;
+                do
+                {   /* improve solution for D[q] and R[r] */
+                    var result = LdlMprovePm(K, DoF, diag, F, D, R, q, r, rmsResid);
+                    rmsResid = result.rmsResid;
+                    ok = result.ok;
+                } while (ok != 0);
+            }
+
+            return (ok, rmsResid);
+        }
+
+        private (int ok, double rmsResid) LdlMprovePm(double[,] A, int n, double[] d, double[] b, double[] x, double[] c, double[] q,
+            float[] r, double rmsResid)
+        {
+            double sdp;     // accumulate the r.h.s. in double precision
+            double rms_resid_new = 0.0; // the RMS error of the mprvd solution
+            int j, i, pd;
+
+            double[] dx = new double[n];// the residual error
+            double[] dc = new double[n];// update to partial r.h.s. vector, c
+
+            // calculate the r.h.s. of ...
+            //  [A_qq]{dx_q} = {b_q} - [A_qq]*{x_q} - [A_qr]*{x_r}      
+            //  {dx_r} is left unchanged at 0.0;
+            for (i = 0; i < n; i++)
+            {
+                if (!Common.isDoubleZero(q[i]))
+                {
+                    sdp = b[i];
+                    for (j = 0; j < n; j++)
+                    {
+                        if (!Common.isDoubleZero(q[j]))
+                        {   // A_qq in upper triangle only
+                            if (i <= j) {sdp -= A[i, j] * x[j];
+                                int xxxxx = 1;
+                            }
+                            else sdp -= A[j, i] * x[j];
+                        }
+                    }
+                    for (j = 0; j < n; j++)
+                        if (!Common.isDoubleZero(r[j]))
+                            sdp -= A[i, j] * x[j];
+                    dx[i] = sdp;
+                } // else dx[i] = 0.0; // x[i];
+            }
+
+            // solve for the residual error term, A is already factored
+            LdlDcmpPm(A, n, d, dx, dx, dc, q, r, 0, 1);
+
+            for (i = 0; i < n; i++)
+                if (!Common.isDoubleZero(q[i]))
+                    rms_resid_new += dx[i] * dx[i];
+
+            rms_resid_new = Math.Sqrt(rms_resid_new / (double)n);
+
+            int ok = 0;
+            if (rms_resid_new / rmsResid < 0.90)
+            { /*  enough improvement    */
+                for (i = 0; i < n; i++)
+                {   /*  update the solution 2014-05-14   */
+                    if (!Common.isDoubleZero(q[i]))
+                        x[i] += dx[i];
+                    if (!Common.isDoubleZero(r[i]))
+                        c[i] += dc[i];
+                }
+                rmsResid = rms_resid_new; /* return the new residual   */
+                ok = 1;            /* the solution has improved */
+            }
+
+            return (ok, rmsResid);
+        }
+
+        private int LdlDcmpPm(double[,] A, int n, double[] d, double[] b, double[] x, double[] c, double[] q, float[] r, int reduce, int solve)
+        {
+            int i, j, k, m;
+            int pd = 0;
+            if (reduce != 0)
+            {
+                for (j = 0; j < n; j++)
+                {
+                    d[j] = 0.0;
+
+                    if (!Common.isDoubleZero(q[j]))
+                    { /* reduce column j, except where q[i]==0	*/
+
+                        for (m = 0, i = 0; i < j; i++)  /* scan the sky-line	*/
+                            if (Common.isDoubleZero(A[i, j]))
+                                ++m;
+                            else
+                                break;
+
+                        for (i = m; i < j; i++)
+                        {
+                            if (!Common.isDoubleZero(q[i]))
+                            {
+                                A[j, i] = A[i, j];
+                                for (k = m; k < i; k++)
+                                    if (!Common.isDoubleZero(q[k]))
+                                        A[j, i] -= A[j, k] * A[i, k];
+                            }
+                        }
+
+                        d[j] = A[j, j];
+                        for (i = m; i < j; i++)
+                            if (!Common.isDoubleZero(q[i]))
+                                d[j] -= A[j, i] * A[j, i] / d[i];
+                        for (i = m; i < j; i++)
+                            if (!Common.isDoubleZero(q[i]))
+                                A[j, i] /= d[i];
+
+                        if (Common.isDoubleZero(d[j]))
+                        {
+                            Console.WriteLine(" ldl_dcmp_pm(): zero found on diagonal ...\n");
+                            Console.WriteLine(" d[%d] = %11.4e\n", j, d[j]);
+                            return pd;
+                        }
+                        if (d[j] < 0.0)
+                            (pd)--;
+                    }
+                }
+            }
+
+            if (solve != 0)		/* back substitution to solve for {x}   */
+            {
+                for (i = 0; i < n; i++)
+                {
+                    if (!Common.isDoubleZero(q[i]))
+                    {
+                        x[i] = b[i];
+                        for (j = 0; j < n; j++)
+                            if (!Common.isDoubleZero(r[j]))
+                                x[i] -= A[i, j] * x[j];
+                    }
+                }
+
+                /* {x} is run through the same forward reduction as was [A] */
+                for (i = 0; i < n; i++)
+                    if (!Common.isDoubleZero(q[i]))
+                        for (j = 0; j < i; j++)
+                            if (!Common.isDoubleZero(q[j]))
+                                x[i] -= A[i, j] * x[j];
+
+                for (i = 0; i < n; i++)
+                    if (!Common.isDoubleZero(q[i]))
+                        x[i] /= d[i];
+
+                /* now back substitution is conducted on {x};  [A] is preserved */
+
+                for (i = n - 1; i > 0; i--)
+                    if (!Common.isDoubleZero(q[i]))
+                        for (j = 0; j < i; j++)
+                            if (!Common.isDoubleZero(q[j]))
+                                x[j] -= A[i, j] * x[i];
+
+                /* finally, evaluate c_r	*/
+                for (i = 0; i < n; i++)
+                {
+                    c[i] = 0.0;
+                    if (!Common.isDoubleZero(r[i]))
+                    {
+                        c[i] = -b[i]; // changed from 0.0 to -b[i]; 2014-05-14
+                        for (j = 0; j < n; j++)
+                            c[i] += A[i, j] * x[j];
+                    }
+                }
+            }
+
+            return pd;
+        }
+
+        private double[,] AssembleK(
+            int DoF, int nE,
+            List<Vec3> xyz, float[] r, List<double> L, List<double> Le,
             List<int> N1, List<int> N2,
             List<double> Ax, List<double> Asy, List<double> Asz,
             List<double> Jx, List<double> Iy, List<double> Iz,
-            List<double> E, List<double> G, List<double> p,
+            List<double> E, List<double> G, List<float> p,
             bool shear, bool geom, double[,] Q)
         {
             //to be passed back//
-            double[,] KToPass = new double[Dof, Dof];
+            double[,] K = new double[DoF, DoF];
             //to be passed back//
-            
-            for (int i = 0; i < Dof; i++)
-                for (int j = 0; j < Dof; j++)
+            int ii, jj, ll;
+
+            for (int i = 0; i < DoF; i++)
+                for (int j = 0; j < DoF; j++)
                     K[i, j] = 0.0;
 
             double[,] k = new double[12, 12];
-            double[,] ind = new double[12, nE];
+            int[,] ind = new int[12, nE];
 
             for (int i = 0; i < nE; i++)
             {
-                ind[0, i] = 6 * N1[i] - 5; ind[6, i] = 6 * N2[i] - 5;
+                ind[0, i] = 6 * N1[i]; ind[6, i] = 6 * N2[i];
                 ind[1, i] = ind[0, i] + 1; ind[7, i] = ind[6, i] + 1;
                 ind[2, i] = ind[0, i] + 2; ind[8, i] = ind[6, i] + 2;
                 ind[3, i] = ind[0, i] + 3; ind[9, i] = ind[6, i] + 3;
@@ -149,18 +391,33 @@ namespace Frame3ddn
             for (int i = 0; i < nE; i++)
             {
                 ElasticK(k, xyz, r, L[i], Le[i], N1[i], N2[i],
-                    Ax[i], Asy[i], Asz[i], Jx[i], Iy[i], Iz[i], E[i], G[i], p[i], shear);
+                    Ax[i], Asy[i], Asz[i], Jx[i], Iy[i], Iz[i], E[i], G[i], p[i], shear);//V 
+
+                if (geom)
+                {
+                    throw new Exception("geom N/A");
+                }
+
+                for (int l = 0; l < 12; l++)
+                {
+                    ii = ind[l, i];
+                    for (ll = 0; ll < 12; ll++)
+                    {
+                        jj = ind[ll, i];
+                        K[ii, jj] += k[l, ll];
+                    }
+                }
             }
 
-
+            return K;
         }
 
-        private void ElasticK(double[,] k, List<Vec3> xyz, double[] r,
+        private void ElasticK(double[,] k, List<Vec3> xyz, float[] r,
             double L, double Le,
             int n1, int n2,
             double Ax, double Asy, double Asz,
             double J, double Iy, double Iz,
-            double E, double G, double p,
+            double E, double G, float p,
             bool shear)
         {
             double t1, t2, t3, t4, t5, t6, t7, t8, t9,     /* coord Xformn */
@@ -206,12 +463,44 @@ namespace Frame3ddn
             k[11, 5] = k[5, 11] = (2.0- Ksy) * E * Iz / (Le * (1.0+ Ksy));//V
 
             k = Coordtrans.Atma(t, k, r[n1], r[n2]);
+
+            for (i = 0; i < 12; i++)
+            {
+                for (j = i + 1; j < 12; j++)
+                {
+                    if (k[i, j] != k[j, i])
+                    {
+                        if (Math.Abs(k[i, j] / k[j, i] - 1.0) > 1.0e-6
+                            && (Math.Abs(k[i, j] / k[i, i]) > 1e-6
+                                || Math.Abs(k[j, i] / k[i, i]) > 1e-6
+                            )
+                        )
+                        {
+                            Console.WriteLine("elastic_K: element stiffness matrix not symetric ...\n");
+                            Console.WriteLine(" ... k[%d][%d] = %15.6e \n", i, j, k[i, j]);
+                            Console.WriteLine(" ... k[%d][%d] = %15.6e   ", j, i, k[j, i]);
+                            Console.WriteLine(" ... relative error = %e \n", Math.Abs(k[i, j] / k[j, i] - 1.0));
+                            Console.WriteLine(" ... element matrix saved in file 'kt'\n");
+                            SaveDmatrix("kt", k, 1, 12, 1, 12, 0, "w");
+                        }
+
+                        k[i, j] = k[j, i] = 0.5 * (k[i, j] + k[j, i]);
+                    }
+                }
+            }
         }
 
-        private void AssembleLoads(int nN, int nE, int nL, int Dof, List<Vec3> xyz, List<double> L, List<double> Le,
+        private void SaveDmatrix(string a, double[,] k, int b, int c, int d, int e, int f, string g)
+        {
+            Console.WriteLine("SaveDmatrix N/A");
+            throw new Exception("SaveDmatrix N/A");
+        }
+        
+
+        private void AssembleLoads(int nN, int nE, int nL, int DoF, List<Vec3> xyz, List<double> L, List<double> Le,
             List<int> N1, List<int> N2,
             List<double> Ax, List<double> Asy, List<double> Asz, List<double> Iy, List<double> Iz, List<double> E,
-            List<double> G, List<double> p,
+            List<double> G, List<float> p,
             List<double> d, List<double> gX, List<double> gY, List<double> gZ, bool shear, List<int> nF, List<int> nU, List<int> nW,
             double[,] FMech, double[,,] eqFMech,
             double[,,] U, double[,,] W, IReadOnlyList<LoadCase> loadCases)
@@ -526,7 +815,7 @@ namespace Frame3ddn
 
 
         // ref main.c:265
-        static int Dof(Input input) => input.Nodes.Count * 6;
+        static int DoF(Input input) => input.Nodes.Count * 6;
 
         /// <summary>
         /// global stiffness matrix
@@ -534,7 +823,7 @@ namespace Frame3ddn
         // ref main.c:343
         static double[,] K(Input input)
         {
-            var dof = Dof(input);
+            var dof = DoF(input);
             var k = new double[dof, dof];
             return k;
         }
