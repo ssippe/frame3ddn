@@ -35,14 +35,14 @@ namespace Frame3ddn
 
     public class Node
     {
-        public Node(Vec3Float position, double radius)
+        public Node(Vec3Float position, float radius)
         {
             Position = position;
             Radius = radius;
         }
 
         public Vec3Float Position { get; }
-        public double Radius { get; }
+        public float Radius { get; }
 
         public static Node Parse(string inputString)
         {
@@ -75,18 +75,18 @@ namespace Frame3ddn
     {
         public int NodeIdx1 { get; }
         public int NodeIdx2 { get; }
-        public double Ax { get; }
-        public double Asy { get; }
-        public double Asz { get; set; }
-        public double Jx { get; }
-        public double Iy { get; }
-        public double Iz { get; }
-        public double E { get; }
-        public double G { get; }
+        public float Ax { get; }
+        public float Asy { get; }
+        public float Asz { get; set; }
+        public float Jx { get; }
+        public float Iy { get; }
+        public float Iz { get; }
+        public float E { get; }
+        public float G { get; }
         public float Roll { get; }
-        public double Density { get; }
+        public float Density { get; }
 
-        public FrameElement(int nodeNum1, int nodeNum2, double ax, double asy, double asz, double jx, double iy, double iz, double e, double g, float roll, double density)
+        public FrameElement(int nodeNum1, int nodeNum2, float ax, float asy, float asz, float jx, float iy, float iz, float e, float g, float roll, float density)
         {
             NodeIdx1 = nodeNum1;
             NodeIdx2 = nodeNum2;
@@ -108,16 +108,16 @@ namespace Frame3ddn
             return new FrameElement(
                 int.Parse(data[1]) - 1,//Convert the nodes number to be 0 based.
                 int.Parse(data[2]) - 1,
-                double.Parse(data[3]),
-                double.Parse(data[4]),
-                double.Parse(data[5]),
-                double.Parse(data[6]),
-                double.Parse(data[7]),
-                double.Parse(data[8]),
-                double.Parse(data[9]),
-                double.Parse(data[10]),
+                float.Parse(data[3]),
+                float.Parse(data[4]),
+                float.Parse(data[5]),
+                float.Parse(data[6]),
+                float.Parse(data[7]),
+                float.Parse(data[8]),
+                float.Parse(data[9]),
+                float.Parse(data[10]),
                 float.Parse(data[11]),
-                double.Parse(data[12]));
+                float.Parse(data[12]));
         }
     }
 
@@ -146,9 +146,9 @@ namespace Frame3ddn
     public class UniformLoad
     {
         public int ElementIdx { get; }
-        public Vec3 Load { get; }
+        public Vec3Float Load { get; }
 
-        public UniformLoad(int elementIdx, Vec3 load)
+        public UniformLoad(int elementIdx, Vec3Float load)
         {
             ElementIdx = elementIdx;
             Load = load;
@@ -158,18 +158,18 @@ namespace Frame3ddn
         {
             string[] data = System.Text.RegularExpressions.Regex.Split(inputString, @"\s{1,}");
             return new UniformLoad(int.Parse(data[0]) - 1,
-                new Vec3(double.Parse(data[1]), double.Parse(data[2]), double.Parse(data[3])));
+                new Vec3Float(float.Parse(data[1]), float.Parse(data[2]), float.Parse(data[3])));
         }
     }
 
     public class TrapLoad
     {
         public int ElementIdx { get; }
-        public Vec3 LocationStart { get; }
-        public Vec3 LocationEnd { get; }
-        public Vec3 LoadStart { get; }
-        public Vec3 LoadEnd { get; }
-        public TrapLoad(int elementIdx, Vec3 locationStart, Vec3 locationEnd, Vec3 loadStart, Vec3 loadEnd)
+        public Vec3Float LocationStart { get; }
+        public Vec3Float LocationEnd { get; }
+        public Vec3Float LoadStart { get; }
+        public Vec3Float LoadEnd { get; }
+        public TrapLoad(int elementIdx, Vec3Float locationStart, Vec3Float locationEnd, Vec3Float loadStart, Vec3Float loadEnd)
         {
             ElementIdx = elementIdx;
             LocationStart = locationStart;
@@ -182,22 +182,22 @@ namespace Frame3ddn
         {
             string[] data = System.Text.RegularExpressions.Regex.Split(inputString, @"\s{1,}");
             return new TrapLoad(int.Parse(data[0]) - 1,
-                new Vec3(double.Parse(data[1]), double.Parse(data[5]), double.Parse(data[9])),
-                new Vec3(double.Parse(data[2]), double.Parse(data[6]), double.Parse(data[10])),
-                new Vec3(double.Parse(data[3]), double.Parse(data[7]), double.Parse(data[11])),
-                new Vec3(double.Parse(data[4]), double.Parse(data[8]), double.Parse(data[12]))
+                new Vec3Float(float.Parse(data[1]), float.Parse(data[5]), float.Parse(data[9])),
+                new Vec3Float(float.Parse(data[2]), float.Parse(data[6]), float.Parse(data[10])),
+                new Vec3Float(float.Parse(data[3]), float.Parse(data[7]), float.Parse(data[11])),
+                new Vec3Float(float.Parse(data[4]), float.Parse(data[8]), float.Parse(data[12]))
                 );
         }
     }
 
     public class LoadCase
     {
-        public Vec3 Gravity { get; }
+        public Vec3Float Gravity { get; }
         public IReadOnlyList<NodeLoad> NodeLoads { get; }
         public IReadOnlyList<UniformLoad> UniformLoads { get; }
         public IReadOnlyList<TrapLoad> TrapLoads { get; }
 
-        public LoadCase(Vec3 gravity,
+        public LoadCase(Vec3Float gravity,
             IReadOnlyList<NodeLoad> nodeLoads,
             IReadOnlyList<UniformLoad> uniformLoads,
             IReadOnlyList<TrapLoad> trapLoads)
@@ -212,7 +212,7 @@ namespace Frame3ddn
         {
             string[] data = System.Text.RegularExpressions.Regex.Split(inputGravityString, @"\s{1,}");
             return new LoadCase(
-                new Vec3(double.Parse(data[0]), double.Parse(data[1]), double.Parse(data[2])),
+                new Vec3Float(float.Parse(data[0]), float.Parse(data[1]), float.Parse(data[2])),
                 nodeLoads,
                 uniformLoads,
                 trapLoads

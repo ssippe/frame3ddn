@@ -19,7 +19,7 @@ namespace Frame3ddn
             IReadOnlyList<FrameElement> frameElements = input.FrameElements;
             int nN = input.Nodes.Count;
             List<float> rj = input.Nodes.Select(n => n.Radius).ToList();
-            List<Vec3> xyz = input.Nodes.Select(n => n.Position).ToList(); //V
+            List<Vec3Float> xyz = input.Nodes.Select(n => n.Position).ToList(); //V
             int DoF = 6 * nN;
             int nR = input.ReactionInputs.Count;
             double[] q = new double[DoF];
@@ -55,25 +55,25 @@ namespace Frame3ddn
 
             List<int> N1 = input.FrameElements.Select(f => f.NodeIdx1).ToList(); //V
             List<int> N2 = input.FrameElements.Select(f => f.NodeIdx2).ToList(); //V
-            List<double> Ax = input.FrameElements.Select(f => f.Ax).ToList(); //V
-            List<double> Asy = input.FrameElements.Select(f => f.Asy).ToList();
-            List<double> Asz = input.FrameElements.Select(f => f.Asz).ToList();
-            List<double> Jx = input.FrameElements.Select(f => f.Jx).ToList();
-            List<double> Iy = input.FrameElements.Select(f => f.Iy).ToList();
-            List<double> Iz = input.FrameElements.Select(f => f.Iz).ToList();
-            List<double> E = input.FrameElements.Select(f => f.E).ToList();
-            List<double> G = input.FrameElements.Select(f => f.G).ToList();
+            List<float> Ax = input.FrameElements.Select(f => f.Ax).ToList(); //V
+            List<float> Asy = input.FrameElements.Select(f => f.Asy).ToList();
+            List<float> Asz = input.FrameElements.Select(f => f.Asz).ToList();
+            List<float> Jx = input.FrameElements.Select(f => f.Jx).ToList();
+            List<float> Iy = input.FrameElements.Select(f => f.Iy).ToList();
+            List<float> Iz = input.FrameElements.Select(f => f.Iz).ToList();
+            List<float> E = input.FrameElements.Select(f => f.E).ToList();
+            List<float> G = input.FrameElements.Select(f => f.G).ToList();
             List<float> p = input.FrameElements.Select(f => f.Roll).ToList(); //V
-            List<double> d = input.FrameElements.Select(f => f.Density).ToList();
+            List<float> d = input.FrameElements.Select(f => f.Density).ToList();
             int nL = input.LoadCases.Count; //V
-            List<double> gX = input.LoadCases.Select(l => l.Gravity.X).ToList(); //V
-            List<double> gY = input.LoadCases.Select(l => l.Gravity.Y).ToList(); //V
-            List<double> gZ = input.LoadCases.Select(l => l.Gravity.Z).ToList(); //V
+            List<float> gX = input.LoadCases.Select(l => l.Gravity.X).ToList(); //V
+            List<float> gY = input.LoadCases.Select(l => l.Gravity.Y).ToList(); //V
+            List<float> gZ = input.LoadCases.Select(l => l.Gravity.Z).ToList(); //V
             List<int> nF = input.LoadCases.Select(l => l.NodeLoads.Count).ToList();
             List<int> nU = input.LoadCases.Select(l => l.UniformLoads.Count).ToList();
             List<int> nW = input.LoadCases.Select(l => l.TrapLoads.Count).ToList();
-            double[,,] U = new double[nL, nE, 4];//pass in
-            double[,,] W = new double[nL, nE*10, 13];//pass in
+            float[,,] U = new float[nL, nE, 4];//pass in
+            float[,,] W = new float[nL, nE*10, 13];//pass in
             double[,,] eqFMech = new double[nL, nE, 12];
             double[,] FMech = new double[nL, DoF];
             bool shear = input.IncludeShearDeformation;
@@ -139,7 +139,13 @@ namespace Frame3ddn
                         if (!Common.isDoubleZero(r[i]))
                             dD[i] = Dp[lc, i];
                 }
-                SolveSystem(K, dD, Common.GetRow(FMech, lc), dR, DoF, q, r, ok, rmsResid);
+
+                double[] tempLoadMech = Common.GetRow(FMech, lc);
+                SolveSystem(K, dD, tempLoadMech, dR, DoF, q, r, ok, rmsResid);//a
+                for (int i = 0; i < DoF; i++)
+                {
+                    FMech[lc, i] = tempLoadMech[i];
+                }
 
                 for (int i = 0; i < DoF; i++)
                 {
@@ -359,11 +365,11 @@ namespace Frame3ddn
 
         private double[,] AssembleK(
             int DoF, int nE,
-            List<Vec3> xyz, float[] r, List<double> L, List<double> Le,
+            List<Vec3Float> xyz, float[] r, List<float> L, List<double> Le,
             List<int> N1, List<int> N2,
-            List<double> Ax, List<double> Asy, List<double> Asz,
-            List<double> Jx, List<double> Iy, List<double> Iz,
-            List<double> E, List<double> G, List<float> p,
+            List<float> Ax, List<float> Asy, List<float> Asz,
+            List<float> Jx, List<float> Iy, List<float> Iz,
+            List<float> E, List<float> G, List<float> p,
             bool shear, bool geom, double[,] Q)
         {
             //to be passed back//
@@ -412,7 +418,7 @@ namespace Frame3ddn
             return K;
         }
 
-        private void ElasticK(double[,] k, List<Vec3> xyz, float[] r,
+        private void ElasticK(double[,] k, List<Vec3Float> xyz, float[] r,
             double L, double Le,
             int n1, int n2,
             double Ax, double Asy, double Asz,
@@ -497,13 +503,13 @@ namespace Frame3ddn
         }
         
 
-        private void AssembleLoads(int nN, int nE, int nL, int DoF, List<Vec3> xyz, List<double> L, List<double> Le,
+        private void AssembleLoads(int nN, int nE, int nL, int DoF, List<Vec3Float> xyz, List<float> L, List<double> Le,
             List<int> N1, List<int> N2,
-            List<double> Ax, List<double> Asy, List<double> Asz, List<double> Iy, List<double> Iz, List<double> E,
-            List<double> G, List<float> p,
-            List<double> d, List<double> gX, List<double> gY, List<double> gZ, bool shear, List<int> nF, List<int> nU, List<int> nW,
+            List<float> Ax, List<float> Asy, List<float> Asz, List<float> Iy, List<float> Iz, List<float> E,
+            List<float> G, List<float> p,
+            List<float> d, List<float> gX, List<float> gY, List<float> gZ, bool shear, List<int> nF, List<int> nU, List<int> nW,
             double[,] FMech, double[,,] eqFMech,
-            double[,,] U, double[,,] W, IReadOnlyList<LoadCase> loadCases)
+            float[,,] U, float[,,] W, IReadOnlyList<LoadCase> loadCases)
         {
 #pragma warning disable CS0219 // Variable is assigned but its value is never used
 #pragma warning disable CS0168 // Variable is assigned but its value is never used
@@ -591,7 +597,7 @@ namespace Frame3ddn
                         Console.WriteLine("\n  error in uniform distributed loads: element number %d is out of range\n",
                             n);
 
-                    U[lc, i, 0] = (double) n;
+                    U[lc, i, 0] = (float) n;
                     U[lc, i, 1] = uniformLoad.Load.X;
                     U[lc, i, 2] = uniformLoad.Load.Y;
                     U[lc, i, 3] = uniformLoad.Load.Z;
@@ -640,7 +646,7 @@ namespace Frame3ddn
                     if (n < 0 || n > nE)
                         Console.WriteLine(
                             "\n  error in trapezoidally-distributed loads: element number %d is out of range\n", n);
-                    W[lc, i, 0] = (double) n;
+                    W[lc, i, 0] = (float) n;
                     W[lc, i, 1] = trapLoad.LocationStart.X;
                     W[lc, i, 2] = trapLoad.LocationEnd.X;
                     W[lc, i, 3] = trapLoad.LoadStart.X;

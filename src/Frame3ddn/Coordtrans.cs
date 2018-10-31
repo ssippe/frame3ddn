@@ -6,7 +6,7 @@ namespace Frame3ddn
 {
     public class Coordtrans
     {
-        public static double[] coordTrans(List<Vec3> xyz, double L, int n1, int n2, float p)
+        public static double[] coordTrans(List<Vec3Float> xyz, double L, int n1, int n2, float p)
         {
             double[] t = new double[9];
             double Cx, Cy, Cz, den, Cp, Sp;
@@ -53,10 +53,10 @@ namespace Frame3ddn
             return t;
         }
 
-        public static double CalculateSQDistance(Vec3 nodePosition1, Vec3 nodePosition2)
+        public static float CalculateSQDistance(Vec3Float nodePosition1, Vec3Float nodePosition2)
         {
-            return Math.Sqrt(Math.Pow(nodePosition1.X - nodePosition2.X, 2) + Math.Pow(nodePosition1.Y - nodePosition2.Y, 2) + Math.Pow(
-                       nodePosition1.Z - nodePosition2.Z, 2));
+            return (float)Math.Sqrt((Math.Pow(nodePosition1.X - nodePosition2.X, 2) + Math.Pow(nodePosition1.Y - nodePosition2.Y, 2) + Math.Pow(
+                                 nodePosition1.Z - nodePosition2.Z, 2)));
         }
 
         public static double[,] Atma(double[] t, double[,] m, float r1, float r2)
