@@ -14,6 +14,7 @@ namespace Frame3ddn
             //Fixed value
             int ok = 1;
             double rmsResid = 1.0;
+            int axialStrainWarning = 0;
 
             IReadOnlyList<Node> nodes = input.Nodes;
             IReadOnlyList<FrameElement> frameElements = input.FrameElements;
@@ -42,7 +43,7 @@ namespace Frame3ddn
 
             int nE = input.FrameElements.Count; //V
 
-            List<float> L = input.FrameElements.Select(f =>
+            List<double> L = input.FrameElements.Select(f =>
                     Coordtrans.CalculateSQDistance(input.Nodes[f.NodeIdx1].Position, input.Nodes[f.NodeIdx2].Position))
                 .ToList();
 
@@ -84,7 +85,10 @@ namespace Frame3ddn
             int[] nP = new int[nL];
             int[] nD = new int[nL];
             double[,] FTemp = new double[nL,DoF];
+            double[,,] eqFTemp = new double[nL,nE,12];
             ////
+
+            
 
             IReadOnlyList<LoadCase> loadCases = input.LoadCases;
 
@@ -162,12 +166,178 @@ namespace Frame3ddn
                 for (int i = 0; i < DoF; i++)
                     if (!Common.isDoubleZero(r[i]))
                         R[i] += dR[i];
+
+                ////--NoN
+                /*  combine {F} = {F_t} + {F_m} */
+                //// 
+
+
+                double[,] tempTArray = Common.GetArray(eqFTemp, lc);
+                double[,] tempMArray = Common.GetArray(eqFMech, lc);
+                ElementEndForces(Q, nE, xyz, L, Le, N1, N2,
+                    Ax, Asy, Asz, Jx, Iy, Iz, E, G, p,
+                    tempTArray, tempMArray, D, shear, geom,
+                    axialStrainWarning);
             }
 
             
 
             return null;
         }
+
+        private void ElementEndForces(double[,] Q, int nE, List<Vec3Float> xyz, List<double> L, List<double> Le, List<int> N1, List<int> N2,
+            List<float> Ax, List<float> Asy, List<float> Asz, List<float> Jx, List<float> Iy, List<float> Iz, List<float> E, List<float> G, List<float> p,
+            double[,] eqFTempArray, double[,] eqFMechArray, double[] D, bool shear, bool geom,
+            int axialStrainWarning)
+        {
+            double axialStrain = 0;
+            int m, j;
+
+            double[] s = new double[12];
+
+            axialStrainWarning = 0;//to return
+            for (m = 0; m < nE; m++)
+            {
+                double[] tempFRow = Common.GetRow(eqFMechArray, m);
+                double[] tempTRow = Common.GetRow(eqFTempArray, m);
+                FrameElementForce(s, xyz, L[m], Le[m], N1[m], N2[m],
+                    Ax[m], Asy[m], Asz[m], Jx[m], Iy[m], Iz[m], E[m], G[m], p[m],
+                    tempTRow, tempFRow, D, shear, geom, axialStrain);
+
+                for (j = 0; j < 12; j++) Q[m, j] = s[j];
+
+                if (Math.Abs(axialStrain) > 0.001)
+                {
+                    Console.WriteLine(" Warning! Frame element %2d has an average axial strain of %8.6f\n", m, axialStrain);
+                    ++axialStrainWarning;
+                }
+
+            }
+        }
+
+        private void FrameElementForce(double[] s, List<Vec3Float> xyz, double L, double Le, int n1, int n2,
+            float Ax, float Asy, float Asz, float J, float Iy, float Iz, float E, float G, float p, double[] fT, double[] fM,
+            double[] D, bool shear, bool geom, double axialStrain)//return s
+        {
+            double t1, t2, t3, t4, t5, t6, t7, t8, t9, /* coord Xformn	*/
+                d1, d2, d3, d4, d5, d6, d7, d8, d9, d10, d11, d12,
+                // x1, y1, z1, x2, y2, z2,	/* node coordinates	*/
+                //  Ls,			/* stretched length of element */
+                delta = 0.0,        /* stretch in the frame element */
+                Ksy, Ksz, Dsy, Dsz, /* shear deformation coeff's	*/
+                T = 0.0;        /* axial force for geometric stiffness */
+
+            double f1 = 0, f2 = 0, f3 = 0, f4 = 0, f5 = 0, f6 = 0,
+                f7 = 0, f8 = 0, f9 = 0, f10 = 0, f11 = 0, f12 = 0;
+
+            double[] t = Coordtrans.coordTrans(xyz, L, n1, n2, p);
+
+            n1 = 6 * n1; n2 = 6 * n2;
+
+            d1 = D[n1 + 0]; d2 = D[n1 + 1]; d3 = D[n1 + 2];
+            d4 = D[n1 + 3]; d5 = D[n1 + 4]; d6 = D[n1 + 5];
+            d7 = D[n2 + 0]; d8 = D[n2 + 1]; d9 = D[n2 + 2];
+            d10 = D[n2 + 3]; d11 = D[n2 + 4]; d12 = D[n2 + 5];
+
+            if (shear)
+            {
+                Ksy = 12.0 * E * Iz / (G * Asy * Le * Le);
+                Ksz = 12.0 * E * Iy / (G * Asz * Le * Le);
+                Dsy = (1 + Ksy) * (1 + Ksy);
+                Dsz = (1 + Ksz) * (1 + Ksz);
+            }
+            else
+            {
+                Ksy = Ksz = 0.0;
+                Dsy = Dsz = 1.0;
+            }
+            delta = (d7 - d1) * t[0] + (d8 - d2) * t[1] + (d9 - d3) * t[2];
+            axialStrain = delta / Le; // log(Ls/Le);
+
+            s[0] = -(Ax * E / Le) * ((d7 - d1) * t[0] + (d8 - d2) * t[1] + (d9 - d3) * t[2]);
+
+            if (geom) T = -s[0];
+
+            s[1] = -(12.0* E * Iz / (Le * Le * Le * (1.0+ Ksy)) +
+                   T / L * (1.2 + 2.0 * Ksy + Ksy * Ksy) / Dsy) *
+                        ((d7 - d1) * t[3] + (d8 - d2) * t[4] + (d9 - d3) * t[5])
+                + (6.0* E * Iz / (Le * Le * (1.0+ Ksy)) + T / 10.0 / Dsy) *
+                        ((d4 + d10) * t[6] + (d5 + d11) * t[7] + (d6 + d12) * t[8]);
+            s[2] = -(12.0* E * Iy / (Le * Le * Le * (1.0+ Ksz)) +
+                  T / L * (1.2 + 2.0 * Ksz + Ksz * Ksz) / Dsz) *
+                        ((d7 - d1) * t[6] + (d8 - d2) * t[7] + (d9 - d3) * t[8])
+                - (6.0* E * Iy / (Le * Le * (1.0+ Ksz)) + T / 10.0 / Dsz) *
+                        ((d4 + d10) * t[3] + (d5 + d11) * t[4] + (d6 + d12) * t[5]);
+            s[3] = -(G * J / Le) * ((d10 - d4) * t[0] + (d11 - d5) * t[1] + (d12 - d6) * t[2]);
+            s[4] = (6.0* E * Iy / (Le * Le * (1.0+ Ksz)) + T / 10.0 / Dsz) *
+                        ((d7 - d1) * t[6] + (d8 - d2) * t[7] + (d9 - d3) * t[8])
+                + ((4.0+ Ksz) * E * Iy / (Le * (1.0+ Ksz)) +
+                    T * L * (2.0 / 15.0 + Ksz / 6.0 + Ksz * Ksz / 12.0) / Dsz) *
+                        (d4 * t[3] + d5 * t[4] + d6 * t[5])
+                + ((2.0- Ksz) * E * Iy / (Le * (1.0+ Ksz)) -
+                    T * L * (1.0 / 30.0 + Ksz / 6.0 + Ksz * Ksz / 12.0) / Dsz) *
+                        (d10 * t[3] + d11 * t[4] + d12 * t[5]);
+            s[5] = -(6.0* E * Iz / (Le * Le * (1.0+ Ksy)) + T / 10.0 / Dsy) *
+                        ((d7 - d1) * t[3] + (d8 - d2) * t[4] + (d9 - d3) * t[5])
+                + ((4.0+ Ksy) * E * Iz / (Le * (1.0+ Ksy)) +
+                    T * L * (2.0 / 15.0 + Ksy / 6.0 + Ksy * Ksy / 12.0) / Dsy) *
+                        (d4 * t[6] + d5 * t[7] + d6 * t[8])
+                + ((2.0- Ksy) * E * Iz / (Le * (1.0+ Ksy)) -
+                    T * L * (1.0 / 30.0 + Ksy / 6.0 + Ksy * Ksy / 12.0) / Dsy) *
+                        (d10 * t[6] + d11 * t[7] + d12 * t[8]);
+            s[6] = -s[0];
+            s[7] = -s[1];
+            s[8] = -s[2];
+            s[9] = -s[3];
+
+            s[10] = (6.0* E * Iy / (Le * Le * (1.0+ Ksz)) + T / 10.0 / Dsz) *
+                        ((d7 - d1) * t[6] + (d8 - d2) * t[7] + (d9 - d3) * t[8])
+                + ((4.0+ Ksz) * E * Iy / (Le * (1.0+ Ksz)) +
+                    T * L * (2.0 / 15.0 + Ksz / 6.0 + Ksz * Ksz / 12.0) / Dsz) *
+                        (d10 * t[3] + d11 * t[4] + d12 * t[5])
+                + ((2.0- Ksz) * E * Iy / (Le * (1.0+ Ksz)) -
+                    T * L * (1.0 / 30.0 + Ksz / 6.0 + Ksz * Ksz / 12.0) / Dsz) *
+                        (d4 * t[3] + d5 * t[4] + d6 * t[5]);
+            s[11] = -(6.0* E * Iz / (Le * Le * (1.0+ Ksy)) + T / 10.0 / Dsy) *
+                        ((d7 - d1) * t[3] + (d8 - d2) * t[4] + (d9 - d3) * t[5])
+                + ((4.0+ Ksy) * E * Iz / (Le * (1.0+ Ksy)) +
+                    T * L * (2.0 / 15.0 + Ksy / 6.0 + Ksy * Ksy / 12.0) / Dsy) *
+                        (d10 * t[6] + d11 * t[7] + d12 * t[8])
+                + ((2.0- Ksy) * E * Iz / (Le * (1.0+ Ksy)) -
+                    T * L * (1.0 / 30.0 + Ksy / 6.0 + Ksy * Ksy / 12.0) / Dsy) *
+                        (d4 * t[6] + d5 * t[7] + d6 * t[8]);
+
+            // add fixed end forces to internal element forces
+            // 18oct[1]012, 14may1204, 15may2014
+
+            // add temperature fixed-end-forces to variables f1-f12
+            // add mechanical load fixed-end-forces to variables f1-f12
+            // f1 ...  f12 are in the global element coordinate system
+            f1 = fT[0] + fM[0]; f2 = fT[1] + fM[1]; f3 = fT[2] + fM[2];
+            f4 = fT[3] + fM[3]; f5 = fT[4] + fM[4]; f6 = fT[5] + fM[5];
+            f7 = fT[6] + fM[6]; f8 = fT[7] + fM[7]; f9 = fT[8] + fM[8];
+            f10 = fT[9] + fM[9]; f11 = fT[10] + fM[10]; f12 = fT[11] + fM[11];
+
+            // transform f1 ... f12 to local element coordinate system and
+            // add local fixed end forces (-equivalent loads) to internal loads 
+            // {Q} = [T]{f}
+
+            s[0] -= (f1 * t[0] + f2 * t[1] + f3 * t[2]);
+            s[1] -= (f1 * t[3] + f2 * t[4] + f3 * t[5]);
+            s[2] -= (f1 * t[6] + f2 * t[7] + f3 * t[8]);
+            s[3] -= (f4 * t[0] + f5 * t[1] + f6 * t[2]);
+            s[4] -= (f4 * t[3] + f5 * t[4] + f6 * t[5]);
+            s[5] -= (f4 * t[6] + f5 * t[7] + f6 * t[8]);
+
+            s[6] -= (f7 * t[0] + f8 * t[1] + f9 * t[2]);
+            s[7] -= (f7 * t[3] + f8 * t[4] + f9 * t[5]);
+            s[8] -= (f7 * t[6] + f8 * t[7] + f9 * t[8]);
+            s[9] -= (f10 * t[0] + f11 * t[1] + f12 * t[2]);
+            s[10] -= (f10 * t[3] + f11 * t[4] + f12 * t[5]);
+            s[11] -= (f10 * t[6] + f11 * t[7] + f12 * t[8]);
+
+        }
+
 
         /*
          * SOLVE_SYSTEM  -  solve {F} =   [K]{D} via L D L' decomposition        27dec01
@@ -365,7 +535,7 @@ namespace Frame3ddn
 
         private double[,] AssembleK(
             int DoF, int nE,
-            List<Vec3Float> xyz, float[] r, List<float> L, List<double> Le,
+            List<Vec3Float> xyz, float[] r, List<double> L, List<double> Le,
             List<int> N1, List<int> N2,
             List<float> Ax, List<float> Asy, List<float> Asz,
             List<float> Jx, List<float> Iy, List<float> Iz,
@@ -503,7 +673,7 @@ namespace Frame3ddn
         }
         
 
-        private void AssembleLoads(int nN, int nE, int nL, int DoF, List<Vec3Float> xyz, List<float> L, List<double> Le,
+        private void AssembleLoads(int nN, int nE, int nL, int DoF, List<Vec3Float> xyz, List<double> L, List<double> Le,
             List<int> N1, List<int> N2,
             List<float> Ax, List<float> Asy, List<float> Asz, List<float> Iy, List<float> Iz, List<float> E,
             List<float> G, List<float> p,

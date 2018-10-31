@@ -25,8 +25,19 @@ namespace Frame3ddn
         {
             var columns = matrix.GetLength(1);
             var array = new T[columns];
-            for (int i = 0; i < columns; ++i)
+            for (int i = 0; i < columns; i++)
                 array[i] = matrix[row, i];
+            return array;
+        }
+
+        public static T[,] GetArray<T>(T[,,] matrix, int row)
+        {
+            var columns1 = matrix.GetLength(1);
+            var columns2 = matrix.GetLength(2);
+            var array = new T[columns1, columns2];
+            for (int i = 0; i < columns1; i++)
+                for (int j = 0; j < columns2; j++)
+                    array[i, j] = matrix[row, i, j];
             return array;
         }
     }

@@ -53,9 +53,9 @@ namespace Frame3ddn
             return t;
         }
 
-        public static float CalculateSQDistance(Vec3Float nodePosition1, Vec3Float nodePosition2)
+        public static double CalculateSQDistance(Vec3Float nodePosition1, Vec3Float nodePosition2)
         {
-            return (float)Math.Sqrt((Math.Pow(nodePosition1.X - nodePosition2.X, 2) + Math.Pow(nodePosition1.Y - nodePosition2.Y, 2) + Math.Pow(
+            return Math.Sqrt((Math.Pow(nodePosition1.X - nodePosition2.X, 2) + Math.Pow(nodePosition1.Y - nodePosition2.Y, 2) + Math.Pow(
                                  nodePosition1.Z - nodePosition2.Z, 2)));
         }
 
