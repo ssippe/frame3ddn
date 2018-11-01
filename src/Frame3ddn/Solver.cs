@@ -16,7 +16,8 @@ namespace Frame3ddn
             double rmsResid = 1.0;
             double error = 1.0;
             int axialStrainWarning = 0;
-            
+            int axialSign = 1;
+
 
             IReadOnlyList<Node> nodes = input.Nodes;
             IReadOnlyList<FrameElement> frameElements = input.FrameElements;
@@ -91,9 +92,15 @@ namespace Frame3ddn
             int[] nD = new int[nL];
             double[,] FTemp = new double[nL,DoF];
             double[,,] eqFTemp = new double[nL,nE,12];
+            int iter = 0;
+            double tol = 1.0e-9;
             ////
 
-            
+            ////Options
+            int writeMatrix = 0;//0 is default
+            ////Options
+
+
 
             IReadOnlyList<LoadCase> loadCases = input.LoadCases;
 
@@ -186,11 +193,184 @@ namespace Frame3ddn
                     axialStrainWarning);//V
 
                 error = EquilibriumError(dF, F, K, D, DoF, q, r);
+
+                //if (geom && verbose)
+                //    fprintf(stdout, "\n Non-Linear Elastic Analysis ...\n");
+
+                if (geom)
+                {
+                    //NoN
+                }
+
+                while (geom && error > tol && iter < 500 && ok >= 0)
+                {
+                    //NoN
+                }
+
+                //NoN
+                /*   strain limit failure ... */
+                //if (axial_strain_warning > 0 && ExitCode == 0) ExitCode = 182;
+                /*   strain limit _and_ buckling failure ... */
+                //if (axial_strain_warning > 0 && ExitCode == 181) ExitCode = 183;
+                //if (geom) compute_reaction_forces(R, F, K, D, DoF, r);
+                if (writeMatrix != 0)/* write static stiffness matrix */
+                {
+                    //save_ut_dmatrix("Ks", K, DoF, "w");//NoN
+                }
+                /*  display RMS equilibrium error */
+                //if (verbose && ok >= 0)
+                //    evaluate(error, rms_resid, tol, geom);
+
+                WriteStaticCsv(nN, nE, nL, lc, DoF, N1, N2, F, D, R, r, Q, error, ok, axialSign);
+
+            }
+            return null;
+        }
+
+        private void WriteStaticCsv(int nN, int nE, int nL, int lc, int DoF, List<int> J1, List<int> J2, double[] F,
+            double[] D, double[] R, float[] r, double[,] Q, double error, int ok, int axialSign)
+        {
+            double disp;
+            int i, j, n;
+            
+            List<NodeDisplacement> nodeDisplacements = new List<NodeDisplacement>();
+            //Node Displacements
+            for (j = 0; j < nN; j++)
+            {
+                disp = 0.0;
+                for (i = 0; i < 6; i++)
+                    disp += Math.Abs(D[6 * j + i]);
+                if (disp > 0.0)
+                {
+                    double[] tempSingResult = new double[6];
+                    for (i = 0; i < 6; i++)
+                    {
+                        if (Math.Abs(D[6 * j + i]) < 1.0e-8)
+                        {
+                            tempSingResult[i] = 0.0;
+                        }
+                        else
+                        {
+                            tempSingResult[i] = D[6 * j + i];
+                        }
+                    }
+                    NodeDisplacement nodeDisplacement = new NodeDisplacement(j, 
+                        new Vec3(tempSingResult[0], tempSingResult[1], tempSingResult[2]),
+                        new Vec3(tempSingResult[3], tempSingResult[4], tempSingResult[5]));
+                    nodeDisplacements.Add(nodeDisplacement);
+                }
+            }//V
+
+            List<FrameElementEndForce> frameElementEndForces = new List<FrameElementEndForce>();
+            //Frame Element End Forces
+            for (n = 0; n < nE; n++)
+            {
+                double nx;
+                string nxType = "";
+                double[] temp = new double[5];
+
+                if (Math.Abs(Q[n, 0]) < 0.0001)
+                {
+                    nx = 0.0;
+                }
+                else
+                {
+                    nx = Q[n, 0];
+                }
+
+                if (Q[n, 0] >= 0.0001 && axialSign != 0)
+                {
+                    nxType = "c";
+                }
+
+                if (Q[n, 0] <= -0.0001 && axialSign != 0)
+                {
+                    nxType = "t";
+                }
+
+                if (axialSign == 0)
+                {
+                    nxType = " ";
+                }
+
+                for (i = 1; i < 6; i++)
+                {
+                    if (Math.Abs(Q[n, i]) < 0.0001)
+                    {
+                        temp[i - 1] = 0.0;
+                    }
+                    else
+                    {
+                        temp[i - 1] = Q[n, i];
+                    }
+                }
+                frameElementEndForces.Add(
+                    new FrameElementEndForce(n, J1[n], nx, nxType, temp[0], temp[1], temp[2], temp[3], temp[4]));
+                
+                //Do not copy above code to the following.
+                if (Math.Abs(Q[n, 6]) < 0.0001)
+                {
+                    nx = 0.0;
+                }
+                else
+                {
+                    nx = Q[n, 6];
+                }
+
+                if (Q[n, 6] >= 0.0001 && axialSign != 0)
+                {
+                    nxType = "t";
+                }
+
+                if (Q[n, 6] <= -0.0001 && axialSign != 0)
+                {
+                    nxType = "c";
+                }
+
+                if (axialSign == 0)
+                {
+                    nxType = " ";
+                }
+
+                for (i = 7; i < 12; i++)
+                {
+                    if (Math.Abs(Q[n, i]) < 0.0001)
+                    {
+                        temp[i - 7] = 0.0;
+                    }
+                    else
+                    {
+                        temp[i - 7] = Q[n, i];
+                    }
+                }
+                frameElementEndForces.Add(
+                    new FrameElementEndForce(n, J2[n], nx, nxType, temp[0], temp[1], temp[2], temp[3], temp[4]));
+            }//V
+
+            List<ReactionOutput> reactionOutputs = new List<ReactionOutput>();
+            //Reactions
+            for (j = 0; j < nN; j++)
+            {
+                if (!Common.isDoubleZero(r[6 * j + 0]) || !Common.isDoubleZero(r[6 * j + 1]) || !Common.isDoubleZero(r[6 * j + 2]) ||
+                    !Common.isDoubleZero(r[6 * j + 3]) || !Common.isDoubleZero(r[6 * j + 4]) || !Common.isDoubleZero(r[6 * j + 5]))
+                {
+                    double[] temp = new double[6];
+                    for (i = 0; i < 6; i++)
+                    {
+                        if (!Common.isDoubleZero(r[6 * j + i]))
+                        {
+                            temp[i] = R[6 * j + i];
+                        }
+                        else
+                        {
+                            temp[i] = 0.0;
+                        }
+                    }
+                    reactionOutputs.Add(new ReactionOutput(j, new Vec3(temp[0], temp[1], temp[2]), new Vec3(temp[3], temp[4], temp[5])));
+                }
             }
 
-            
-
-            return null;
+            string rmsRelativeEquilibriumError;
         }
 
         private double EquilibriumError(double[] dF, double[] F, double[,] K, double[] D, int DoF, double[] q, float[] r)

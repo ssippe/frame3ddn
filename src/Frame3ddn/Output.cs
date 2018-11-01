@@ -24,18 +24,20 @@ namespace Frame3ddn
         public int ElementIdx { get; }
         public int NodeIdx { get; }
         public double Nx { get; }
+        public string NxType { get; }
         public double Vy { get; }
         public double Vz { get; }
         public double Txx { get; }
         public double Myy { get; }
         public double Mzz { get; }
 
-        public FrameElementEndForce(int elementIdx, int nodeIdx, double nx, double vy, double vz, double txx, double myy,
+        public FrameElementEndForce(int elementIdx, int nodeIdx, double nx, string nxType, double vy, double vz, double txx, double myy,
             double mzz)
         {
             ElementIdx = elementIdx;
             NodeIdx = nodeIdx;
             Nx = nx;
+            NxType = nxType;
             Vz = vz;
             Vy = vy;
             Txx = txx;
