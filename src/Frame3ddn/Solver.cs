@@ -14,7 +14,9 @@ namespace Frame3ddn
             //Fixed value
             int ok = 1;
             double rmsResid = 1.0;
+            double error = 1.0;
             int axialStrainWarning = 0;
+            
 
             IReadOnlyList<Node> nodes = input.Nodes;
             IReadOnlyList<FrameElement> frameElements = input.FrameElements;
@@ -79,6 +81,9 @@ namespace Frame3ddn
             double[,] FMech = new double[nL, DoF];
             bool shear = input.IncludeShearDeformation;
             bool geom = input.IncludeGeometricStiffness;
+
+            double[] F = new double[DoF];
+            double[] dF = new double[DoF];
 
             ////These countings are not used so far
             int[] nT = new int[nL];
@@ -167,9 +172,10 @@ namespace Frame3ddn
                     if (!Common.isDoubleZero(r[i]))
                         R[i] += dR[i];
 
-                ////--NoN
+
                 /*  combine {F} = {F_t} + {F_m} */
-                //// 
+                for (int i = 0; i < DoF; i++)
+                    F[i] = FTemp[lc, i] + FMech[lc, i];
 
 
                 double[,] tempTArray = Common.GetArray(eqFTemp, lc);
@@ -177,12 +183,52 @@ namespace Frame3ddn
                 ElementEndForces(Q, nE, xyz, L, Le, N1, N2,
                     Ax, Asy, Asz, Jx, Iy, Iz, E, G, p,
                     tempTArray, tempMArray, D, shear, geom,
-                    axialStrainWarning);
+                    axialStrainWarning);//V
+
+                error = EquilibriumError(dF, F, K, D, DoF, q, r);
             }
 
             
 
             return null;
+        }
+
+        private double EquilibriumError(double[] dF, double[] F, double[,] K, double[] D, int DoF, double[] q, float[] r)
+        {
+            double ss_dF = 0.0, //  sum of squares of dF
+                ss_F = 0.0, //  sum of squares of F	
+                errF = 0.0;
+            int i, j;
+
+            // compute equilibrium error at free coord's (q)
+            for (i = 0; i < DoF; i++)
+            {
+                errF = 0.0;
+                if (!Common.isDoubleZero(q[i]))
+                {
+                    errF = F[i];
+                    for (j = 0; j < DoF; j++)
+                    {
+                        if (!Common.isDoubleZero(q[j]))
+                        {   // K_qq in upper triangle only
+                            if (i <= j) errF -= K[i, j] * D[j];
+                            else errF -= K[j, i] * D[j];
+                        }
+                    }
+                    for (j = 0; j < DoF; j++)
+                        if (!Common.isDoubleZero(r[j])) errF -= K[i, j] * D[j];
+                }
+                dF[i] = errF;
+            }
+
+            for (i = 0; i < DoF; i++)
+                if (!Common.isDoubleZero(q[i]))
+                    ss_dF += (dF[i] * dF[i]);
+            for (i = 0; i < DoF; i++)
+                if (!Common.isDoubleZero(q[i]))
+                    ss_F += (F[i] * F[i]);
+
+            return (Math.Sqrt(ss_dF) / Math.Sqrt(ss_F));	// convergence criterion
         }
 
         private void ElementEndForces(double[,] Q, int nE, List<Vec3Float> xyz, List<double> L, List<double> Le, List<int> N1, List<int> N2,
