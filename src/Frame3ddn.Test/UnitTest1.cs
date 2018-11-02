@@ -20,7 +20,7 @@ namespace Frame3ddn.Test
         [Fact]
         public void Run()
         {
-            const string inputFileName = "TEST3.csv";
+            const string inputFileName = "TEST4.csv";
             string workspaceDir = Directory.GetParent(Directory.GetParent(Directory.GetParent(Directory.GetCurrentDirectory().ToString()).ToString()).ToString()).ToString();
             StreamReader sr = new StreamReader(workspaceDir + "\\TestData\\" + inputFileName);
             Input input = Input.Parse(sr);
@@ -32,21 +32,43 @@ namespace Frame3ddn.Test
         [Fact]
         public void BatchCompare()
         {
+            string workspaceDir = Directory.GetParent(Directory.GetParent(Directory.GetParent(Directory.GetCurrentDirectory().ToString()).ToString()).ToString()).ToString();
+            workspaceDir = workspaceDir + "\\TestData\\frame3ddInput25";
+            DirectoryInfo d = new DirectoryInfo(workspaceDir + "\\frame3ddInput");
+            FileInfo[] Files = d.GetFiles("*.csv"); 
+            List<string> fileNameList = new List<string>();
+            foreach (FileInfo file in Files)
+            {
+                string filename = file.Name.Substring(2, file.Name.Length - 6);
+                fileNameList.Add(filename);
+            }
+
+            for(int i = 0; i < fileNameList.Count; i ++)
+            {
+                string fileName = fileNameList[i];
+                Compare(
+                    workspaceDir + "\\frame3ddInput\\" + "f3" + fileName + ".csv",
+                    workspaceDir + "\\p4Output\\" + "p4" + fileName + ".txt"
+                );
+                System.Diagnostics.Debug.WriteLine("finished comparing file: " + i + " " + fileName);
+            }
 
         }
 
-        private void Compare()
+        private void Compare(string inputFilePath, string outputFilePath)
         {
-            const string inputFileName = "TEST3.csv";
-            string workspaceDir1 = Directory.GetParent(Directory.GetParent(Directory.GetParent(Directory.GetCurrentDirectory().ToString()).ToString()).ToString()).ToString();
-            StreamReader sr = new StreamReader(workspaceDir1 + "\\TestData\\" + inputFileName);
+            //const string inputFileName = "TEST3.csv";
+            //string workspaceDir1 = Directory.GetParent(Directory.GetParent(Directory.GetParent(Directory.GetCurrentDirectory().ToString()).ToString()).ToString()).ToString();
+            //StreamReader sr = new StreamReader(workspaceDir1 + "\\TestData\\" + inputFileName);
+            StreamReader sr = new StreamReader(inputFilePath);
             Input input = Input.Parse(sr);
             Solver solver = new Solver();
             Output output = solver.Solve(input);
 
-            const string outputFileName = "TEST3.txt";
-            string workspaceDir = Directory.GetParent(Directory.GetParent(Directory.GetParent(Directory.GetCurrentDirectory().ToString()).ToString()).ToString()).ToString();
-            string file = File.ReadAllText(workspaceDir + "\\TestData\\" + outputFileName);
+            //const string outputFileName = "TEST3.txt";
+            //string workspaceDir = Directory.GetParent(Directory.GetParent(Directory.GetParent(Directory.GetCurrentDirectory().ToString()).ToString()).ToString()).ToString();
+            //string file = File.ReadAllText(workspaceDir + "\\TestData\\" + outputFileName);
+            string file = File.ReadAllText(outputFilePath);
             var result = ParseLines(file);
 
             for (int i = 0; i < output.LoadCaseOutputs.Count; i++)
@@ -121,7 +143,7 @@ namespace Frame3ddn.Test
 
         private bool CompareDouble(double num1, double num2)
         {
-            if (Math.Abs(num1 - num2) < Math.Abs(num1) * 0.01 || Math.Abs(num1 - num2) < 0.00001)
+            if (Math.Abs(num1 - num2) < Math.Abs(num1) * 0.01 || Math.Abs(num1 - num2) < 0.01)
                 return true;
             return false;
         }
