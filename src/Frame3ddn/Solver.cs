@@ -18,7 +18,7 @@ namespace Frame3ddn
             int axialStrainWarning = 0;
             int axialSign = 1;
 
-
+            string title = input.Title;
             IReadOnlyList<Node> nodes = input.Nodes;
             IReadOnlyList<FrameElement> frameElements = input.FrameElements;
             int nN = input.Nodes.Count;
@@ -82,6 +82,7 @@ namespace Frame3ddn
             double[,] FMech = new double[nL, DoF];
             bool shear = input.IncludeShearDeformation;
             bool geom = input.IncludeGeometricStiffness;
+            float dx = input.XAxisIncrementForInternalForces;
 
             double[] F = new double[DoF];
             double[] dF = new double[DoF];
@@ -94,6 +95,7 @@ namespace Frame3ddn
             double[,,] eqFTemp = new double[nL,nE,12];
             int iter = 0;
             double tol = 1.0e-9;
+            float[,,] P = new float[nL,10*nE,5];
             ////
 
             ////Options
@@ -185,8 +187,8 @@ namespace Frame3ddn
                     F[i] = FTemp[lc, i] + FMech[lc, i];
 
 
-                double[,] tempTArray = Common.GetArray(eqFTemp, lc);
-                double[,] tempMArray = Common.GetArray(eqFMech, lc);
+                double[,] tempTArray = Common.GetArray(eqFTemp, lc);//This array is not an output of the following method
+                double[,] tempMArray = Common.GetArray(eqFMech, lc);//This array is not an output of the following method
                 ElementEndForces(Q, nE, xyz, L, Le, N1, N2,
                     Ax, Asy, Asz, Jx, Iy, Iz, E, G, p,
                     tempTArray, tempMArray, D, shear, geom,
@@ -223,8 +225,375 @@ namespace Frame3ddn
 
                 WriteStaticCsv(nN, nE, nL, lc, DoF, N1, N2, F, D, R, r, Q, error, ok, axialSign);
 
+                ////NoN
+                //if (filetype == 1)
+                //{       // .CSV format output
+                //    write_static_csv(OUT_file, title,
+                //        nN, nE, nL, lc, DoF, N1, N2, F, D, R, r, Q, error, ok);
+                //}
+
+                //if (filetype == 2)
+                //{       // .m matlab format output
+                //    write_static_mfile(OUT_file, title, nN, nE, nL, lc, DoF,
+                //        N1, N2, F, D, R, r, Q, error, ok);
+                //}
+
+                float[,] tempU2DArray = Common.GetArray(U, lc);
+                float[,] tempW2DArray = Common.GetArray(W, lc);
+                float[,] tempP2DArray = Common.GetArray(P, lc);
+                
+                
+                WriteInternalForces(lc, nL, title, dx, xyz,
+                    Q, nN, nE, L, N1, N2,
+                    Ax, Asy, Asz, Jx, Iy, Iz, E, G, p,
+                    d, gX[lc], gY[lc], gZ[lc],
+                    nU[lc], tempU2DArray, nW[lc], tempW2DArray, nP[lc], tempP2DArray,
+                    D, shear, error);
             }
             return null;
+        }
+
+        private void WriteInternalForces(int lc, int nl, string title, float dx, List<Vec3Float> xyz,
+            double[,] Q, int nN, int nE, List<double> L, List<int> J1, List<int> J2, List<float> Ax, List<float> Asy, List<float> Asz,
+            List<float> Jx, List<float> Iy, List<float> Iz, List<float> E, List<float> G, List<float> p,
+            List<float> d, float gX, float gY, float gZ, int nU, float[,] U, int nW, float[,] W, int nP, float[,] P,
+            double[] D, bool shear, double error)
+        {
+            double t1, t2, t3, t4, t5, t6, t7, t8, t9, /* coord transformation */
+            u1, u2, u3, u4, u5, u6, u7, u8, u9, u10, u11, u12; /* displ. */
+
+            double xx1, xx2, wx1, wx2,  /* trapz load data, local x dir */
+                xy1, xy2, wy1, wy2, /* trapz load data, local y dir */
+                xz1, xz2, wz1, wz2; /* trapz load data, local z dir */
+
+            double wx = 0, wy = 0, wz = 0, // distributed loads in local coords at x[i] 
+                wx_ = 0, wy_ = 0, wz_ = 0,// distributed loads in local coords at x[i-1]
+                wxg = 0, wyg = 0, wzg = 0,// gravity loads in local x, y, z coord's
+                tx = 0.0, tx_ = 0.0;  // distributed torque about local x coord 
+
+            double xp;      /* location of internal point loads	*/
+
+            double dx_, dxnx;	/* distance along frame element		*/
+
+            
+            
+            
+
+            double maxNx, maxVy, maxVz,     /*  maximum internal forces	*/
+                maxTx, maxMy, maxMz,    /*  maximum internal moments	*/
+                maxDx, maxDy, maxDz,    /*  maximum element displacements */
+                maxRx, maxSy, maxSz;    /*  maximum element rotations	*/
+
+            double minNx, minVy, minVz,     /*  minimum internal forces	*/
+                minTx, minMy, minMz,    /*  minimum internal moments	*/
+                minDx, minDy, minDz,    /*  minimum element displacements */
+                minRx, minSy, minSz;    /*  minimum element rotations	*/
+
+            int n, m,       /* frame element number			*/
+                cU = 0, cW = 0, cP = 0, /* counters for U, W, and P loads	*/
+                i, nx,      /* number of sections alont x axis	*/
+                n1, n2, i1, i2; /* starting and stopping node no's	*/
+
+            if (dx == -1.0)
+                return;	// skip calculation of internal forces and displ
+
+            List<PeakFrameElementInternalForce> peakFrameElementInternalForces = new List<PeakFrameElementInternalForce>();
+            for (m = 0; m < nE; m++) //m is used as index of 1 based arrays, so decrease it by 1
+            {
+                n1 = J1[m];
+                n2 = J2[m];
+                nx = (int) Math.Floor(L[m] / dx);
+                if (nx < 1)
+                    nx = 1;
+
+                double[] x = new double[nx + 1]; /* distance along frame element		*/
+                double[] Nx = new double[nx + 1]; /* axial force within frame el.		*/
+                double[] Vy = new double[nx + 1];
+                double[] Vz = new double[nx + 1]; /* shear forces within frame el.	    */
+                double[] Tx = new double[nx + 1]; /* torsional moment within frame el.	*/
+                double[] My = new double[nx + 1];
+                double[] Mz = new double[nx + 1]; /* bending moments within frame el.	*/
+                double[] Sy = new double[nx + 1];
+                double[] Sz = new double[nx + 1]; /* transverse slopes of frame el.	    */
+                double[] Dx = new double[nx + 1];
+                double[] Dy = new double[nx + 1];
+                double[] Dz = new double[nx + 1]; /* frame el. displ. in local x,y,z, dir's */
+                double[] Rx = new double[nx + 1]; /* twist rotation about the local x-axis */
+
+
+
+
+                for (i = 0; i < nx; i++) //i is used as index of 0 based arrays here. Remain unchanged.
+                    x[i] = i * dx;
+                x[nx] = L[m];
+                dxnx = x[nx] - x[nx - 1];
+
+                double[] t = Coordtrans.coordTrans(xyz, L[m], n1, n2, p[m]);
+
+                wxg = d[m] * Ax[m] * (t[0] * gX + t[1] * gY + t[2] * gZ);
+                wyg = d[m] * Ax[m] * (t[3] * gX + t[4] * gY + t[5] * gZ);
+                wzg = d[m] * Ax[m] * (t[6] * gX + t[7] * gY + t[8] * gZ);
+
+                for (n = 0; n < nE && cU < nU; n++) //n is used as index of 1 based arrays, so decrease it by 1
+                {
+                    if ((int) U[n, 0] == m)
+                    {
+                        wxg += U[n, 1];
+                        wyg += U[n, 2];
+                        wzg += U[n, 3];
+                        ++cU;
+                    }
+                }
+
+                Nx[0] = -Q[m, 0]; // positive Nx is tensile
+                Vy[0] = -Q[m, 1]; // positive Vy in local y direction
+                Vz[0] = -Q[m, 2]; // positive Vz in local z direction
+                Tx[0] = -Q[m, 3]; // positive Tx r.h.r. about local x axis
+                My[0] = Q[m, 4]; // positive My -> positive x-z curvature
+                Mz[0] = -Q[m, 5]; // positive Mz -> positive x-y curvature
+
+                dx_ = dx;
+
+                for (i = 1; i <= nx; i++) //i is used as index of 0 based arrays here. Remain unchanged.
+                {
+                    wx = wxg;
+                    wy = wyg;
+                    wz = wzg;
+
+                    if (i == 1)
+                    {
+                        wx_ = wxg;
+                        wy_ = wyg;
+                        wz_ = wzg;
+                        tx_ = tx;
+                    }
+
+                    for (n = 0; n < 10 * nE && cW < nW; n++) //n is used as index of 1 based arrays here, so decrease it by 1
+                    {
+                        if ((int) W[n, 0] == m + 1)//here m is used as a value not a index, need to add 1 back
+                        {
+                            if (i == nx)
+                                ++cW;
+                            xx1 = W[n, 1];
+                            xx2 = W[n, 2];
+                            wx1 = W[n, 3];
+                            wx2 = W[n, 4];
+                            xy1 = W[n, 5];
+                            xy2 = W[n, 6];
+                            wy1 = W[n, 7];
+                            wy2 = W[n, 8];
+                            xz1 = W[n, 9];
+                            xz2 = W[n, 10];
+                            wz1 = W[n, 11];
+                            wz2 = W[n, 12];
+
+                            if (x[i] > xx1 && x[i] <= xx2)
+                                wx += wx1 + (wx2 - wx1) * (x[i] - xx1) / (xx2 - xx1);
+                            if (x[i] > xy1 && x[i] <= xy2)
+                                wy += wy1 + (wy2 - wy1) * (x[i] - xy1) / (xy2 - xy1);
+                            if (x[i] > xz1 && x[i] <= xz2)
+                                wz += wz1 + (wz2 - wz1) * (x[i] - xz1) / (xz2 - xz1);
+                        }
+                    }
+
+                    if (i == nx)
+                        dx_ = dxnx;
+
+                    Nx[i] = Nx[i - 1] - 0.5 * (wx + wx_) * dx_;
+                    Vy[i] = Vy[i - 1] - 0.5 * (wy + wy_) * dx_;
+                    Vz[i] = Vz[i - 1] - 0.5 * (wz + wz_) * dx_;
+                    Tx[i] = Tx[i - 1] - 0.5 * (tx + tx_) * dx_;
+
+                    wx_ = wx;
+                    wy_ = wy;
+                    wz_ = wz;
+                    tx_ = tx;
+
+                    for (n = 0; n < 10 * nE && cP < nP; n++)
+                    {
+                        if ((int) P[n, 0] == m + 1)//here m is used as a value not a index, need to add 1 back
+                        {
+                            if (i == nx)
+                                ++cP;
+                            xp = P[n, 4];
+                            if (x[i] <= xp && xp < x[i] + dx)
+                            {
+                                Nx[i] -= P[n, 1] * 0.5 * (1.0 - (xp - x[i]) / dx);
+                                Vy[i] -= P[n, 2] * 0.5 * (1.0 - (xp - x[i]) / dx);
+                                Vz[i] -= P[n, 3] * 0.5 * (1.0 - (xp - x[i]) / dx);
+
+                            }
+                            if (x[i] - dx <= xp && xp < x[i])
+                            {
+                                Nx[i] -= P[n, 1] * 0.5 * (1.0 - (x[i] - dx - xp) / dx);
+                                Vy[i] -= P[n, 2] * 0.5 * (1.0 - (x[i] - dx - xp) / dx);
+                                Vz[i] -= P[n, 3] * 0.5 * (1.0 - (x[i] - dx - xp) / dx);
+                            }
+                        }
+                    }
+                }
+
+                // linear correction of forces for bias in trapezoidal integration
+                for (i = 1; i <= nx; i++)
+                {
+                    Nx[i] -= (Nx[nx] - Q[m, 6]) * i / nx;
+                    Vy[i] -= (Vy[nx] - Q[m, 7]) * i / nx;
+                    Vz[i] -= (Vz[nx] - Q[m, 8]) * i / nx;
+                    Tx[i] -= (Tx[nx] - Q[m, 9]) * i / nx;
+                }
+                // trapezoidal integration of shear force for bending momemnt
+                dx_ = dx;
+                for (i = 1; i <= nx; i++)
+                {
+                    if (i == nx) dx_ = dxnx;
+                    My[i] = My[i - 1] - 0.5 * (Vz[i] + Vz[i - 1]) * dx_;
+                    Mz[i] = Mz[i - 1] - 0.5 * (Vy[i] + Vy[i - 1]) * dx_;
+
+                }
+                // linear correction of moments for bias in trapezoidal integration
+                for (i = 1; i <= nx; i++)
+                {
+                    My[i] -= (My[nx] + Q[m, 10]) * i / nx;
+                    Mz[i] -= (Mz[nx] - Q[m, 11]) * i / nx;
+                }
+
+                // find interior transverse displacements 
+                i1 = 6 * n1;
+                i2 = 6 * n2;
+
+                /* compute end deflections in local coordinates */
+
+                u1 = t[0] * D[i1 + 0] + t[1] * D[i1 + 1] + t[2] * D[i1 + 2];
+                u2 = t[3] * D[i1 + 0] + t[4] * D[i1 + 1] + t[5] * D[i1 + 2];
+                u3 = t[6] * D[i1 + 0] + t[7] * D[i1 + 1] + t[8] * D[i1 + 2];
+
+                u4 = t[0] * D[i1 + 3] + t[1] * D[i1 + 4] + t[2] * D[i1 + 5];
+                u5 = t[3] * D[i1 + 3] + t[4] * D[i1 + 4] + t[5] * D[i1 + 5];
+                u6 = t[6] * D[i1 + 3] + t[7] * D[i1 + 4] + t[8] * D[i1 + 5];
+
+                u7 = t[0] * D[i2 + 0] + t[1] * D[i2 + 1] + t[2] * D[i2 + 2];
+                u8 = t[3] * D[i2 + 0] + t[4] * D[i2 + 1] + t[5] * D[i2 + 2];
+                u9 = t[6] * D[i2 + 0] + t[7] * D[i2 + 1] + t[8] * D[i2 + 2];
+
+                u10 = t[0] * D[i2 + 3] + t[1] * D[i2 + 4] + t[2] * D[i2 + 5];
+                u11 = t[3] * D[i2 + 3] + t[4] * D[i2 + 4] + t[5] * D[i2 + 5];
+                u12 = t[6] * D[i2 + 3] + t[7] * D[i2 + 4] + t[8] * D[i2 + 5];
+
+
+                // rotations and displacements for frame element "m" at (x=0)
+                Dx[0] = u1; // displacement in  local x dir  at node N1
+                Dy[0] = u2; // displacement in  local y dir  at node N1
+                Dz[0] = u3; // displacement in  local z dir  at node N1
+                Rx[0] = u4; // rotationin about local x axis at node N1
+                Sy[0] = u6; // slope in  local y  direction  at node N1
+                Sz[0] = -u5;    // slope in  local z  direction  at node N1
+
+                // axial displacement along frame element "m"
+                dx_ = dx;
+                for (i = 1; i <= nx; i++)
+                {
+                    if (i == nx) dx_ = dxnx;
+                    Dx[i] = Dx[i - 1] + 0.5 * (Nx[i - 1] + Nx[i]) / (E[m] * Ax[m]) * dx_;
+                }
+                // linear correction of axial displacement for bias in trapezoidal integration
+                for (i = 1; i <= nx; i++)
+                {
+                    Dx[i] -= (Dx[nx] - u7) * i / nx;
+                }
+
+                // torsional rotation along frame element "m"
+                dx_ = dx;
+                for (i = 1; i <= nx; i++)
+                {
+                    if (i == nx) dx_ = dxnx;
+                    Rx[i] = Rx[i - 1] + 0.5 * (Tx[i - 1] + Tx[i]) / (G[m] * Jx[m]) * dx_;
+                }
+                // linear correction of torsional rot'n for bias in trapezoidal integration
+                for (i = 1; i <= nx; i++)
+                {
+                    Rx[i] -= (Rx[nx] - u10) * i / nx;
+                }
+
+                // transverse slope along frame element "m"
+                dx_ = dx;
+                for (i = 1; i <= nx; i++)
+                {
+                    if (i == nx) dx_ = dxnx;
+                    Sy[i] = Sy[i - 1] + 0.5 * (Mz[i - 1] + Mz[i]) / (E[m] * Iz[m]) * dx_;
+                    Sz[i] = Sz[i - 1] + 0.5 * (My[i - 1] + My[i]) / (E[m] * Iy[m]) * dx_;
+                }
+                // linear correction for bias in trapezoidal integration
+                for (i = 1; i <= nx; i++)
+                {
+                    Sy[i] -= (Sy[nx] - u12) * i / nx;
+                    Sz[i] -= (Sz[nx] + u11) * i / nx;
+                }
+                if (shear)
+                {       // add-in slope due to shear deformation
+                    for (i = 0; i <= nx; i++)
+                    {
+                        Sy[i] += Vy[i] / (G[m] * Asy[m]);
+                        Sz[i] += Vz[i] / (G[m] * Asz[m]);
+                    }
+                }
+                // displacement along frame element "m"
+                dx_ = dx;
+                for (i = 1; i <= nx; i++)
+                {
+                    if (i == nx) dx_ = dxnx;
+                    Dy[i] = Dy[i - 1] + 0.5 * (Sy[i - 1] + Sy[i]) * dx_;
+                    Dz[i] = Dz[i - 1] + 0.5 * (Sz[i - 1] + Sz[i]) * dx_;
+                }
+                // linear correction for bias in trapezoidal integration
+                for (i = 1; i <= nx; i++)
+                {
+                    Dy[i] -= (Dy[nx] - u8) * i / nx;
+                    Dz[i] -= (Dz[nx] - u9) * i / nx;
+                }
+
+                // initialize the maximum and minimum element forces and displacements 
+                maxNx = minNx = Nx[0]; maxVy = minVy = Vy[0]; maxVz = minVz = Vz[0];    //  maximum internal forces
+                maxTx = minTx = Tx[0]; maxMy = minMy = My[0]; maxMz = minMz = Mz[0];    //  maximum internal moments
+                maxDx = minDx = Dx[0]; maxDy = minDy = Dy[0]; maxDz = minDz = Dz[0];    //  maximum element displacements
+                maxRx = minRx = Rx[0]; maxSy = minSy = Sy[0]; maxSz = minSz = Sz[0];    //  maximum element rotations
+
+                // find maximum and minimum internal element forces
+                for (i = 1; i <= nx; i++)
+                {
+                    maxNx = (Nx[i] > maxNx) ? Nx[i] : maxNx;//i can't be 0, but max and min are default to be value of index 0.
+                    minNx = (Nx[i] < minNx) ? Nx[i] : minNx;
+                    maxVy = (Vy[i] > maxVy) ? Vy[i] : maxVy;
+                    minVy = (Vy[i] < minVy) ? Vy[i] : minVy;
+                    maxVz = (Vz[i] > maxVz) ? Vz[i] : maxVz;
+                    minVz = (Vz[i] < minVz) ? Vz[i] : minVz;
+
+                    maxTx = (Tx[i] > maxTx) ? Tx[i] : maxTx;
+                    minTx = (Tx[i] < minTx) ? Tx[i] : minTx;
+                    maxMy = (My[i] > maxMy) ? My[i] : maxMy;
+                    minMy = (My[i] < minMy) ? My[i] : minMy;
+                    maxMz = (Mz[i] > maxMz) ? Mz[i] : maxMz;
+                    minMz = (Mz[i] < minMz) ? Mz[i] : minMz;
+                }
+
+                // find maximum and minimum internal element displacements
+                for (i = 1; i <= nx; i++)
+                {
+                    maxDx = (Dx[i] > maxDx) ? Dx[i] : maxDx;
+                    minDx = (Dx[i] < minDx) ? Dx[i] : minDx;
+                    maxDy = (Dy[i] > maxDy) ? Dy[i] : maxDy;
+                    minDy = (Dy[i] < minDy) ? Dy[i] : minDy;
+                    maxDz = (Dz[i] > maxDz) ? Dz[i] : maxDz;
+                    minDz = (Dz[i] < minDz) ? Dz[i] : minDz;
+                    maxRx = (Rx[i] > maxRx) ? Rx[i] : maxRx;
+                    minRx = (Rx[i] < minRx) ? Rx[i] : minRx;
+                    maxSy = (Sy[i] > maxSy) ? Sy[i] : maxSy;
+                    minSy = (Sy[i] < minSy) ? Sy[i] : minSy;
+                    maxSz = (Sz[i] > maxSz) ? Sz[i] : maxSz;
+                    minSz = (Sz[i] < minSz) ? Sz[i] : minSz;
+                }
+                peakFrameElementInternalForces.Add(new PeakFrameElementInternalForce(m, false, maxNx, maxVy, maxVz, maxTx, maxMy, maxMz));
+                peakFrameElementInternalForces.Add(new PeakFrameElementInternalForce(m, true, minNx, minVy, minVz, minTx, minMy, minMz));
+            }
         }
 
         private void WriteStaticCsv(int nN, int nE, int nL, int lc, int DoF, List<int> J1, List<int> J2, double[] F,
@@ -368,9 +737,10 @@ namespace Frame3ddn
                     }
                     reactionOutputs.Add(new ReactionOutput(j, new Vec3(temp[0], temp[1], temp[2]), new Vec3(temp[3], temp[4], temp[5])));
                 }
-            }
+            }//V
 
-            string rmsRelativeEquilibriumError;
+            string rmsRelativeEquilibriumError = "RMS RELATIVE EQUILIBRIUM ERROR:" + error;
+
         }
 
         private double EquilibriumError(double[] dF, double[] F, double[,] K, double[] D, int DoF, double[] q, float[] r)

@@ -224,6 +224,7 @@ namespace Frame3ddn
 
     public class Input
     {
+        public string Title { get; }
         public bool IncludeShearDeformation { get; }
         public bool IncludeGeometricStiffness { get; }
         public float ExaggerateMeshDeformations { get; }
@@ -235,11 +236,12 @@ namespace Frame3ddn
         public IReadOnlyList<FrameElement> FrameElements { get; }
         public IReadOnlyList<LoadCase> LoadCases { get; }
 
-        public Input(IReadOnlyList<Node> nodes, IReadOnlyList<FrameElement> frameElements,
+        public Input(string title, IReadOnlyList<Node> nodes, IReadOnlyList<FrameElement> frameElements,
             IReadOnlyList<ReactionInput> reactionInputs, IReadOnlyList<LoadCase> loadCases,
             bool includeShearDeformation, bool includeGeometricStiffness, float exaggerateMeshDeformations,
             float zoomScale, float xAxisIncrementForInternalForces)
         {
+            Title = title;
             Nodes = nodes;
             FrameElements = frameElements;
             ReactionInputs = reactionInputs;
@@ -335,7 +337,7 @@ namespace Frame3ddn
                 LoadCase loadCase = LoadCase.Parse(loadCaseGravityString, nodeLoads, uniformLoads, trapLoads);
                 loadCases.Add(loadCase);
             }
-            return new Input(nodes, frameElements, reactionInputs, loadCases, includeShearDeformation, includeGeometricStiffness,
+            return new Input(title, nodes, frameElements, reactionInputs, loadCases, includeShearDeformation, includeGeometricStiffness,
                 exaggerateMeshDeformations, zoomScale, xAxisIncrementForInternalForces);
         }
 
