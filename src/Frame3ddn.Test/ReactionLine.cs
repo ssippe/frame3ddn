@@ -19,38 +19,38 @@ namespace Frame3ddn.Test
         /// <summary>
         /// Force in x global axis [N]
         /// </summary>
-        public readonly decimal Fx;
+        public readonly double Fx;
 
         /// <summary>
         /// Force in y global axis [N]
         /// </summary>
-        public readonly decimal Fy;
+        public readonly double Fy;
 
         /// <summary>
         /// Force in z global axis [N]
         /// </summary>
-        public readonly decimal Fz;
+        public readonly double Fz;
 
 
         /// <summary>
         /// Momentem in x global axis [N.mm]
         /// </summary>
-        public readonly decimal Mxx;
+        public readonly double Mxx;
 
         /// <summary>
         /// Momentem in y global axis [N.mm]
         /// </summary>
-        public readonly decimal Myy;
+        public readonly double Myy;
 
         /// <summary>
         /// Momentem in z global axis [N.mm]
         /// </summary>
-        public readonly decimal Mzz;
+        public readonly double Mzz;
 
         public ReactionLine(int loadCaseIdx,
             int nodeIndex,
-            decimal fx, decimal fy, decimal fz,
-            decimal mxx, decimal myy, decimal mzz)
+            double fx, double fy, double fz,
+            double mxx, double myy, double mzz)
         {
             LoadCaseIdx = loadCaseIdx;
             NodeIndex = nodeIndex;
@@ -84,12 +84,12 @@ R E A C T I O N S							(global)
                 return null;
             var col = 0;
             var nodeIdx = Int32.Parse(splits[col++]) - 1;
-            var fx = Decimal.Parse(splits[col++]); //N        
-            var fy = Decimal.Parse(splits[col++]); //N        
-            var fz = Decimal.Parse(splits[col++]); //N        
-            var mxx = Decimal.Parse(splits[col++]); //N.mm        
-            var myy = Decimal.Parse(splits[col++]); //N.mm        
-            var mzz = Decimal.Parse(splits[col++]); //N.mm        
+            var fx = double.Parse(splits[col++]); //N        
+            var fy = double.Parse(splits[col++]); //N        
+            var fz = double.Parse(splits[col++]); //N        
+            var mxx = double.Parse(splits[col++]); //N.mm        
+            var myy = double.Parse(splits[col++]); //N.mm        
+            var mzz = double.Parse(splits[col++]); //N.mm        
 
             return new ReactionLine(loadCaseIdx, nodeIdx, fx, fy, fz, mxx, myy, mzz);
         }

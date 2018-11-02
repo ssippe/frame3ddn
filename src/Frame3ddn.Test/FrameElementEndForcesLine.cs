@@ -9,14 +9,14 @@ namespace Frame3ddn.Test
         public readonly int LoadCaseIdx;
         public readonly int Elmnt;
         public readonly int Node;
-        public readonly decimal Nx;
-        public readonly decimal Vy;
-        public readonly decimal Vz;
-        public readonly decimal Txx;
-        public readonly decimal Myy;
-        public readonly decimal Mzz;
+        public readonly double Nx;
+        public readonly double Vy;
+        public readonly double Vz;
+        public readonly double Txx;
+        public readonly double Myy;
+        public readonly double Mzz;
 
-        public FrameElementEndForcesLine(int loadCaseIdx, int elmnt, int node, decimal nx, decimal vy, decimal vz, decimal txx, decimal myy, decimal mzz)
+        public FrameElementEndForcesLine(int loadCaseIdx, int elmnt, int node, double nx, double vy, double vz, double txx, double myy, double mzz)
         {
             LoadCaseIdx = loadCaseIdx;
             Elmnt = elmnt;
@@ -49,13 +49,13 @@ EXAMPLE LINES
             var Elmnt = Int32.Parse(splits[col++]) - 1;
             var Node = Int32.Parse(splits[col++]) - 1;
             string nxstring = splits[col++];
-            var nx = Decimal.Parse(nxstring.Substring(0, nxstring.Length - 1)); //N
-            var vy = Decimal.Parse(splits[col++]); //N
-            var vz = Decimal.Parse(splits[col++]); //N
-            var txx = Decimal.Parse(splits[col++]); //Nmm -> Nm
-            var myy = Decimal.Parse(splits[col++]); //Nmm -> Nm
+            var nx = double.Parse(nxstring.Substring(0, nxstring.Length - 1)); //N
+            var vy = double.Parse(splits[col++]); //N
+            var vz = double.Parse(splits[col++]); //N
+            var txx = double.Parse(splits[col++]); //Nmm -> Nm
+            var myy = double.Parse(splits[col++]); //Nmm -> Nm
             string mzzString = splits[col++];
-            var mzz = Decimal.Parse(mzzString); //Nmm -> Nm
+            var mzz = double.Parse(mzzString); //Nmm -> Nm
             return new FrameElementEndForcesLine(loadCaseIdx, Elmnt, Node, nx, vy, vz, txx, myy, mzz);
         }
     }

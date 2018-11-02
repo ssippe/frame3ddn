@@ -18,20 +18,20 @@ namespace Frame3ddn.Test
         /// <summary>
         /// mm
         /// </summary>
-        public readonly decimal DisplacementX;
+        public readonly double DisplacementX;
         /// <summary>
         /// mm
         /// </summary>
-        public readonly decimal DisplacementY;
+        public readonly double DisplacementY;
 
-        public readonly decimal Fz;
-        public readonly decimal Mxx;
-        public readonly decimal Myy;
-        public readonly decimal Mzz;
+        public readonly double Fz;
+        public readonly double Mxx;
+        public readonly double Myy;
+        public readonly double Mzz;
 
-        public decimal DisplacementAbs => (decimal)Math.Sqrt((double)(DisplacementX * DisplacementX + DisplacementY * DisplacementY));
+        public double DisplacementAbs => (double)Math.Sqrt((double)(DisplacementX * DisplacementX + DisplacementY * DisplacementY));
 
-        public NodeDeflectionLine(int loadCaseIdx, int nodeIdx, decimal displacementX, decimal displacementY)
+        public NodeDeflectionLine(int loadCaseIdx, int nodeIdx, double displacementX, double displacementY)
         {
             LoadCaseIdx = loadCaseIdx;
             NodeIdx = nodeIdx;
@@ -39,7 +39,7 @@ namespace Frame3ddn.Test
             DisplacementY = displacementY;
         }
 
-        public NodeDeflectionLine(int loadCaseIdx, int nodeIdx, decimal displacementX, decimal displacementY, decimal fz, decimal mxx, decimal myy, decimal mzz)
+        public NodeDeflectionLine(int loadCaseIdx, int nodeIdx, double displacementX, double displacementY, double fz, double mxx, double myy, double mzz)
         {
             LoadCaseIdx = loadCaseIdx;
             NodeIdx = nodeIdx;
@@ -75,12 +75,12 @@ N O D E   D I S P L A C E M E N T S  					(global)
                 return null;
             var col = 0;
             var nodeIdx = Int32.Parse(splits[col++]) - 1;
-            var x = Decimal.Parse(splits[col++]);
-            var y = Decimal.Parse(splits[col++]);
-            var z = Decimal.Parse(splits[col++]);
-            var mx = Decimal.Parse(splits[col++]);
-            var my = Decimal.Parse(splits[col++]);
-            var mz = Decimal.Parse(splits[col++]);
+            var x = double.Parse(splits[col++]);
+            var y = double.Parse(splits[col++]);
+            var z = double.Parse(splits[col++]);
+            var mx = double.Parse(splits[col++]);
+            var my = double.Parse(splits[col++]);
+            var mz = double.Parse(splits[col++]);
             
             return new NodeDeflectionLine(loadCaseIdx, nodeIdx, x, y, z, mx, my, mz);
         }

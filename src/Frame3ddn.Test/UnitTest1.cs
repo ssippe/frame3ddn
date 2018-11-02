@@ -30,17 +30,98 @@ namespace Frame3ddn.Test
         }
 
         [Fact]
-        public void Compare()
+        public void BatchCompare()
         {
+
+        }
+
+        private void Compare()
+        {
+            const string inputFileName = "TEST3.csv";
+            string workspaceDir1 = Directory.GetParent(Directory.GetParent(Directory.GetParent(Directory.GetCurrentDirectory().ToString()).ToString()).ToString()).ToString();
+            StreamReader sr = new StreamReader(workspaceDir1 + "\\TestData\\" + inputFileName);
+            Input input = Input.Parse(sr);
+            Solver solver = new Solver();
+            Output output = solver.Solve(input);
+
             const string outputFileName = "TEST3.txt";
             string workspaceDir = Directory.GetParent(Directory.GetParent(Directory.GetParent(Directory.GetCurrentDirectory().ToString()).ToString()).ToString()).ToString();
             string file = File.ReadAllText(workspaceDir + "\\TestData\\" + outputFileName);
             var result = ParseLines(file);
+
+            for (int i = 0; i < output.LoadCaseOutputs.Count; i++)
+            {
+                LoadCaseOutput loadCaseOutput = output.LoadCaseOutputs[i];
+                OutputLine loadCaseOutputToCompare = result[i];
+                for (int j = 0; j < loadCaseOutput.NodeDisplacements.Count; j++)
+                {
+                    NodeDisplacement nodeDisplacement = loadCaseOutput.NodeDisplacements[j];
+                    NodeDeflectionLine nodeDisplacementToCompare = loadCaseOutputToCompare.NodeDeflectionLines[j];
+                    GetCompareResult(nodeDisplacement.NodeIdx, nodeDisplacementToCompare.NodeIdx);
+                    GetCompareResult(nodeDisplacement.Displacement.X, nodeDisplacementToCompare.DisplacementX);
+                    GetCompareResult(nodeDisplacement.Displacement.Y, nodeDisplacementToCompare.DisplacementY);
+                    GetCompareResult(nodeDisplacement.Displacement.Z, nodeDisplacementToCompare.Fz);
+                    GetCompareResult(nodeDisplacement.Rotation.X, nodeDisplacementToCompare.Mxx);
+                    GetCompareResult(nodeDisplacement.Rotation.Y, nodeDisplacementToCompare.Myy);
+                    GetCompareResult(nodeDisplacement.Rotation.Z, nodeDisplacementToCompare.Mzz);
+                }
+
+                for (int j = 0; j < loadCaseOutput.FrameElementEndForces.Count; j++)
+                {
+                    FrameElementEndForce frameElementEndForce = loadCaseOutput.FrameElementEndForces[j];
+                    FrameElementEndForcesLine frameElementEndForcesToCompare =
+                        loadCaseOutputToCompare.FrameElementEndForcesLines[j];
+                    GetCompareResult(frameElementEndForce.ElementIdx, frameElementEndForcesToCompare.Elmnt);
+                    GetCompareResult(frameElementEndForce.NodeIdx, frameElementEndForcesToCompare.Node);
+                    GetCompareResult(frameElementEndForce.Nx, frameElementEndForcesToCompare.Nx);
+                    GetCompareResult(frameElementEndForce.Vy, frameElementEndForcesToCompare.Vy);
+                    GetCompareResult(frameElementEndForce.Vz, frameElementEndForcesToCompare.Vz);
+                    GetCompareResult(frameElementEndForce.Txx, frameElementEndForcesToCompare.Txx);
+                    GetCompareResult(frameElementEndForce.Myy, frameElementEndForcesToCompare.Myy);
+                    GetCompareResult(frameElementEndForce.Mzz, frameElementEndForcesToCompare.Mzz);
+                }
+
+                for (int j = 0; j < loadCaseOutput.ReactionOutputs.Count; j++)
+                {
+                    ReactionOutput reactionOutput = loadCaseOutput.ReactionOutputs[j];
+                    ReactionLine reactionOutputToCompare = loadCaseOutputToCompare.ReactionLines[j];
+                    GetCompareResult(reactionOutput.NodeIdx, reactionOutputToCompare.NodeIndex);
+                    GetCompareResult(reactionOutput.M.X, reactionOutputToCompare.Mxx);
+                    GetCompareResult(reactionOutput.M.Y, reactionOutputToCompare.Myy);
+                    GetCompareResult(reactionOutput.M.Z, reactionOutputToCompare.Mzz);
+                    GetCompareResult(reactionOutput.F.X, reactionOutputToCompare.Fx);
+                    GetCompareResult(reactionOutput.F.Y, reactionOutputToCompare.Fy);
+                    GetCompareResult(reactionOutput.F.Z, reactionOutputToCompare.Fz);
+                }
+
+                for (int j = 0; j < loadCaseOutput.PeakFrameElementInternalForces.Count; j++)
+                {
+                    PeakFrameElementInternalForce peakFrameElementInternalForce =
+                        loadCaseOutput.PeakFrameElementInternalForces[j];
+                    PeakFrameElementInternalForceLine peakFrameElementInternalForceToCompare =
+                        loadCaseOutputToCompare.PeakFrameElementInternalForceLines[j];
+                    GetCompareResult(peakFrameElementInternalForce.ElementIdx, peakFrameElementInternalForceToCompare.MemberIndex);
+                    GetCompareResult(peakFrameElementInternalForce.Nx, peakFrameElementInternalForceToCompare.Nx);
+                    GetCompareResult(peakFrameElementInternalForce.Vy, peakFrameElementInternalForceToCompare.Vy);
+                    GetCompareResult(peakFrameElementInternalForce.Vz, peakFrameElementInternalForceToCompare.Vz);
+                    GetCompareResult(peakFrameElementInternalForce.Txx, peakFrameElementInternalForceToCompare.Txx);
+                    GetCompareResult(peakFrameElementInternalForce.Myy, peakFrameElementInternalForceToCompare.Myy);
+                    GetCompareResult(peakFrameElementInternalForce.Mzz, peakFrameElementInternalForceToCompare.Mzz);
+                    if (peakFrameElementInternalForce.IsMin == peakFrameElementInternalForceToCompare.IsMax)
+                        throw new Exception(peakFrameElementInternalForce.IsMin + " " + !peakFrameElementInternalForceToCompare.IsMax);
+                }
+            }
         }
 
-        public bool CompareDecimal(double num1, double num2)
+        private void GetCompareResult(double num1, double num2)
         {
-            if (Math.Abs(num1 - num2) < num1 * 0.01)
+            if (!CompareDouble(num1, num2))
+                throw new Exception(num1 + " " + num2);
+        }
+
+        private bool CompareDouble(double num1, double num2)
+        {
+            if (Math.Abs(num1 - num2) < Math.Abs(num1) * 0.01 || Math.Abs(num1 - num2) < 0.00001)
                 return true;
             return false;
         }

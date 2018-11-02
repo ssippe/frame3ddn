@@ -18,37 +18,37 @@ namespace Frame3ddn.Test
         /// <summary>
         /// Newtons (N) Force along the primiary axis of the member. +ve tension, -ve compression
         /// </summary>
-        public readonly decimal Nx;
+        public readonly double Nx;
         /// <summary>
         /// Newtons (N)
         /// </summary>
-        public readonly decimal Vy;
+        public readonly double Vy;
         /// <summary>
         /// Newtons (N)
         /// </summary>
-        public readonly decimal Vz;
+        public readonly double Vz;
         /// <summary>
         /// Newton.Metres (Nm)
         /// </summary>
-        public readonly decimal Txx;
+        public readonly double Txx;
         /// <summary>
         /// Newton.Metres (Nm)
         /// </summary>
-        public readonly decimal Myy;
+        public readonly double Myy;
         /// <summary>
         /// Newton.Metres (Nm)
         /// </summary>
-        public readonly decimal Mzz;
+        public readonly double Mzz;
 
         public PeakFrameElementInternalForceLine(int loadCaseIdx,
             int memberIndex,
             bool isMax,
-            decimal nx,
-            decimal vy,
-            decimal vz,
-            decimal txx,
-            decimal myy,
-            decimal mzz)
+            double nx,
+            double vy,
+            double vz,
+            double txx,
+            double myy,
+            double mzz)
         {
             LoadCaseIdx = loadCaseIdx;
             MemberIndex = memberIndex;
@@ -82,12 +82,12 @@ EXAMPLE LINES
             var col = 0;
             var memberIdx = Int32.Parse(splits[col++]) - 1;
             var isMax = splits[col++] == "max";
-            var nx = Decimal.Parse(splits[col++]); //N
-            var vy = Decimal.Parse(splits[col++]); //N
-            var vz = Decimal.Parse(splits[col++]); //N
-            var txx = Decimal.Parse(splits[col++]); //Nmm -> Nm
-            var myy = Decimal.Parse(splits[col++]); //Nmm -> Nm
-            var mzz = Decimal.Parse(splits[col++]); //Nmm -> Nm
+            var nx = double.Parse(splits[col++]); //N
+            var vy = double.Parse(splits[col++]); //N
+            var vz = double.Parse(splits[col++]); //N
+            var txx = double.Parse(splits[col++]); //Nmm -> Nm
+            var myy = double.Parse(splits[col++]); //Nmm -> Nm
+            var mzz = double.Parse(splits[col++]); //Nmm -> Nm
             return new PeakFrameElementInternalForceLine(loadCaseIdx, memberIdx, isMax, nx, vy, vz, txx, myy, mzz);
         }
     }
