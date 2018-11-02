@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Text;
+using System.Text.RegularExpressions;
 using Xunit;
 
 namespace Frame3ddn.Test
@@ -26,6 +27,22 @@ namespace Frame3ddn.Test
             Solver solver = new Solver();
             Output output = solver.Solve(input);
             ExportOutput(output, workspaceDir + "\\TestData\\testResult.csv");
+        }
+
+        [Fact]
+        public void Compare()
+        {
+            const string outputFileName = "TEST3.txt";
+            string workspaceDir = Directory.GetParent(Directory.GetParent(Directory.GetParent(Directory.GetCurrentDirectory().ToString()).ToString()).ToString()).ToString();
+            string file = File.ReadAllText(workspaceDir + "\\TestData\\" + outputFileName);
+            var result = ParseLines(file);
+        }
+
+        public bool CompareDecimal(double num1, double num2)
+        {
+            if (Math.Abs(num1 - num2) < num1 * 0.01)
+                return true;
+            return false;
         }
 
         private void ExportOutput(Output output, string outputPath)
@@ -92,6 +109,118 @@ namespace Frame3ddn.Test
                 
             }
         }
+
+        private string ReadUntil(StringReader reader, Func<string, bool> stop)
+        {
+            string currentLine;
+            while (true)
+            {
+                currentLine = reader.ReadLine();
+                if (currentLine == null)
+                    return null;
+                if (stop(currentLine))
+                    return currentLine;
+            }
+        }
+
+        private List<OutputLine> ParseLines(string frame3DDoutput)
+        {
+            
+            List<OutputLine> outputLines = new List<OutputLine>();
+            var reader = new StringReader(frame3DDoutput);
+            while (true)
+            {
+                string currentLine = ReadUntil(reader, (s) => s.StartsWith("L O A D   C A S E"));
+                var forceLines = new List<PeakFrameElementInternalForceLine>();
+                var displacementLines = new List<NodeDeflectionLine>();
+                var reactionLines = new List<ReactionLine>();
+                var frameElementEndForceLines = new List<FrameElementEndForcesLine>();
+
+                if (currentLine == null)
+                    return outputLines;
+                int loadCaseIdx =
+                    int.Parse(Regex.Match(currentLine, @"L O A D   C A S E\s*(\d+)\s*O F\s*(\d+)").Groups[1].Value) - 1;
+
+
+                ////////////////////////
+                // node displacements
+                if (ReadUntil(reader,
+                    s => s.StartsWith("N O D E   D I S P L A C E M E N T S  					(global)")) == null)
+                    break;
+                if (reader.ReadLine() == null) //skip headers
+                    break;
+                while (true)
+                {
+                    var resultLine = NodeDeflectionLine.FromLine(reader.ReadLine(), loadCaseIdx);
+                    if (resultLine == null)
+                        break;
+                    displacementLines.Add(resultLine);
+                }
+
+                ////////////////////////
+                // frame element end forces
+                if (ReadUntil(reader,
+                        s => s.Contains("Elmnt")) == null)
+                    break;
+                while (true)
+                {
+                    var resultLine = FrameElementEndForcesLine.FromLine(reader.ReadLine(), loadCaseIdx);
+                    if (resultLine == null)
+                        break;
+                    frameElementEndForceLines.Add(resultLine);
+                }
+
+                ////////////////////////
+                // reactions                
+                if (ReadUntil(reader,
+                    s => s.Contains("Node")) == null)
+                    break;
+                while (true)
+                {
+                    var resultLine = ReactionLine.FromLine(reader.ReadLine(), loadCaseIdx);
+                    if (resultLine == null)
+                        break;
+                    reactionLines.Add(resultLine);
+                }
+
+                ////////////////////////
+                // internal forces
+                if (ReadUntil(reader,
+                    s => s.StartsWith("P E A K   F R A M E   E L E M E N T   I N T E R N A L   F O R C E S")) == null)
+                    break;
+                if (reader.ReadLine() == null) //skip headers
+                    break;
+                while (true)
+                {
+                    var resultLine = PeakFrameElementInternalForceLine.FromLine(reader.ReadLine(), loadCaseIdx);
+                    if (resultLine == null)
+                        break;
+                    forceLines.Add(resultLine);
+                }
+                outputLines.Add(new OutputLine(frameElementEndForceLines, displacementLines, reactionLines, forceLines));
+            }
+            return outputLines;
+        }
+
+        //private static List<string> GetOutput(StreamReader sr)
+        //{
+        //    List<string> output = new List<string>();
+        //    string line;
+        //    while ((line = sr.ReadLine()) != null)
+        //    {
+        //        if (line.Contains("E L A S T I C   S T I F F N E S S   A N A L Y S I S"))
+        //        {
+        //            int readingState = 0;
+        //            while ((line = sr.ReadLine()) != null)
+        //            {
+
+        //            }
+        //        }
+
+        //        break;
+        //    }
+        //    return noComentInput;
+        //}
 
         //[Fact]
         //public void FindTrapLoadAndNodeLoad()
