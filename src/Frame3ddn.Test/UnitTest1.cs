@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Text;
 using Xunit;
 
 namespace Frame3ddn.Test
@@ -12,19 +13,84 @@ namespace Frame3ddn.Test
         {
             string workspaceDir = Directory.GetParent(Directory.GetParent(Directory.GetParent(Directory.GetCurrentDirectory().ToString()).ToString()).ToString()).ToString();
             StreamReader sr = new StreamReader(workspaceDir + "\\TestData\\TEST.csv");
-            //StreamReader sr = new StreamReader(workspaceDir + "\\TestData\\exA.3dd");
             Input input = Input.Parse(sr);
         }
 
         [Fact]
         public void Run()
         {
+            const string inputFileName = "TEST3.csv";
             string workspaceDir = Directory.GetParent(Directory.GetParent(Directory.GetParent(Directory.GetCurrentDirectory().ToString()).ToString()).ToString()).ToString();
-            StreamReader sr = new StreamReader(workspaceDir + "\\TestData\\TEST2.csv");
-            //StreamReader sr = new StreamReader(workspaceDir + "\\TestData\\exA.3dd");
+            StreamReader sr = new StreamReader(workspaceDir + "\\TestData\\" + inputFileName);
             Input input = Input.Parse(sr);
             Solver solver = new Solver();
-            solver.Solve(input);
+            Output output = solver.Solve(input);
+            ExportOutput(output, workspaceDir + "\\TestData\\testResult.csv");
+        }
+
+        private void ExportOutput(Output output, string outputPath)
+        {
+            File.WriteAllText(outputPath, "");
+            var nL = output.LoadCaseOutputs.Count;
+            for(int i = 0; i < nL; i ++)
+            {
+                LoadCaseOutput loadCaseOutput = output.LoadCaseOutputs[i];
+                var csv = new StringBuilder();
+                string newLine;
+                csv.AppendLine("------------------Load case " + (i + 1) + "------------------");
+
+                csv.AppendLine("* Node displacements");
+                newLine = string.Format("{0},{1},{2},{3},{4},{5},{6}",
+                    "Node", "X-dsp", "Y-dsp", "z-dsp", "X-rot", "Y-rot", "Z-rot");
+                csv.AppendLine(newLine);
+                foreach (var nodeDisplacement in loadCaseOutput.NodeDisplacements)
+                {
+                    newLine = string.Format("{0},{1},{2},{3},{4},{5},{6}", 
+                        nodeDisplacement.NodeIdx + 1, nodeDisplacement.Displacement.X, nodeDisplacement.Displacement.Y, nodeDisplacement.Displacement.Z,
+                        nodeDisplacement.Rotation.X, nodeDisplacement.Rotation.Y, nodeDisplacement.Rotation.Z);
+                    csv.AppendLine(newLine);
+                }
+
+                csv.AppendLine("* Frame Element End Force");
+                newLine = string.Format("{0},{1},{2},{3},{4},{5},{6},{7}",
+                    "Elmnt", "Node", "Nx", "Vy", "Vz", "Txx", "Myy", "Mzz");
+                csv.AppendLine(newLine);
+                foreach (var frameElementEndForce in loadCaseOutput.FrameElementEndForces)
+                {
+                    newLine = string.Format("{0},{1},{2},{3},{4},{5},{6},{7}",
+                        frameElementEndForce.ElementIdx + 1, frameElementEndForce.NodeIdx + 1, frameElementEndForce.Nx + frameElementEndForce.NxType,
+                        frameElementEndForce.Vy, frameElementEndForce.Vz, frameElementEndForce.Txx, frameElementEndForce.Myy, frameElementEndForce.Mzz);
+                    csv.AppendLine(newLine);
+                }
+
+                csv.AppendLine("* Reactions");
+                newLine = string.Format("{0},{1},{2},{3},{4},{5},{6}",
+                    "Node", "Fx", "Fy", "Fz", "Mxx", "Myy", "Mzz");
+                csv.AppendLine(newLine);
+                foreach (var reactionOutput in loadCaseOutput.ReactionOutputs)
+                {
+                    newLine = string.Format("{0},{1},{2},{3},{4},{5},{6}",
+                        reactionOutput.NodeIdx + 1, reactionOutput.F.X, reactionOutput.F.Y, reactionOutput.F.Z,
+                        reactionOutput.M.X, reactionOutput.M.Y, reactionOutput.M.Z);
+                    csv.AppendLine(newLine);
+                }
+                csv.AppendLine("RMS Relative Equilibrium Error: " + loadCaseOutput.RmsRelativeEquilibriumError);
+
+                csv.AppendLine("* Peak Frame Element Internal Forces");
+                newLine = string.Format("{0},{1},{2},{3},{4},{5},{6},{7}",
+                    "Elmnt", ".", "Nx", "Vy", "Vz", "Txx", "Myy", "Mzz");
+                csv.AppendLine(newLine);
+                foreach (var peakFrameElementInternalForce in loadCaseOutput.PeakFrameElementInternalForces)
+                {
+                    newLine = string.Format("{0},{1},{2},{3},{4},{5},{6},{7}",
+                        peakFrameElementInternalForce.ElementIdx + 1, peakFrameElementInternalForce.IsMin? "min" : "max",
+                        peakFrameElementInternalForce.Nx, peakFrameElementInternalForce.Vy, peakFrameElementInternalForce.Vz,
+                        peakFrameElementInternalForce.Txx, peakFrameElementInternalForce.Myy, peakFrameElementInternalForce.Mzz);
+                    csv.AppendLine(newLine);
+                }
+                File.AppendAllText(outputPath, csv.ToString());
+                
+            }
         }
 
         //[Fact]

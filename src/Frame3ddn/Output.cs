@@ -89,23 +89,25 @@ namespace Frame3ddn
 
     public class LoadCaseOutput
     {
+        public double RmsRelativeEquilibriumError { get; }
         public IReadOnlyList<NodeDisplacement> NodeDisplacements { get; }
         public IReadOnlyList<FrameElementEndForce> FrameElementEndForces { get; }
         public IReadOnlyList<ReactionOutput> ReactionOutputs { get; }
         public IReadOnlyList<PeakFrameElementInternalForce> PeakFrameElementInternalForces { get; }
-        public LoadCaseOutput(IReadOnlyList<NodeDisplacement> nodeDisplacements, IReadOnlyList<FrameElementEndForce> frameElementEndForces, IReadOnlyList<ReactionOutput> reactionOutputs, IReadOnlyList<PeakFrameElementInternalForce> peakFrameElementInternalForces)
+
+        public LoadCaseOutput(double rmsRelativeEquilibriumError, IReadOnlyList<NodeDisplacement> nodeDisplacements, IReadOnlyList<FrameElementEndForce> frameElementEndForces, IReadOnlyList<ReactionOutput> reactionOutputs, IReadOnlyList<PeakFrameElementInternalForce> peakFrameElementInternalForces)
         {
+            RmsRelativeEquilibriumError = rmsRelativeEquilibriumError;
+            NodeDisplacements = nodeDisplacements;
             FrameElementEndForces = frameElementEndForces;
             ReactionOutputs = reactionOutputs;
             PeakFrameElementInternalForces = peakFrameElementInternalForces;
-            NodeDisplacements = nodeDisplacements;
         }
-                
     }
 
     public class Output
     {
-        IReadOnlyList<LoadCaseOutput> LoadCaseOutputs { get; }
+        public IReadOnlyList<LoadCaseOutput> LoadCaseOutputs { get; }
         public Output(IReadOnlyList<LoadCaseOutput> loadCaseOutputs)
         {
             LoadCaseOutputs = loadCaseOutputs;

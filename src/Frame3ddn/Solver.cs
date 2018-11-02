@@ -132,6 +132,7 @@ namespace Frame3ddn
 
             ////Start anlyz
             /* begin load case analysis loop */
+            List<LoadCaseOutput> loadCaseOutputs = new List<LoadCaseOutput>();
             for (int lc = 0; lc < nL; lc++)
             {
                 /*  initialize displacements and displ. increment to {0}  */
@@ -223,7 +224,7 @@ namespace Frame3ddn
                 //if (verbose && ok >= 0)
                 //    evaluate(error, rms_resid, tol, geom);
 
-                WriteStaticCsv(nN, nE, nL, lc, DoF, N1, N2, F, D, R, r, Q, error, ok, axialSign);
+                var staticResults = GetStaticResults(nN, nE, nL, lc, DoF, N1, N2, F, D, R, r, Q, error, ok, axialSign);
 
                 ////NoN
                 //if (filetype == 1)
@@ -241,19 +242,23 @@ namespace Frame3ddn
                 float[,] tempU2DArray = Common.GetArray(U, lc);
                 float[,] tempW2DArray = Common.GetArray(W, lc);
                 float[,] tempP2DArray = Common.GetArray(P, lc);
-                
-                
-                WriteInternalForces(lc, nL, title, dx, xyz,
+
+
+                List<PeakFrameElementInternalForce> internalForce = GetInternalForces(lc, nL, title, dx, xyz,
                     Q, nN, nE, L, N1, N2,
                     Ax, Asy, Asz, Jx, Iy, Iz, E, G, p,
                     d, gX[lc], gY[lc], gZ[lc],
                     nU[lc], tempU2DArray, nW[lc], tempW2DArray, nP[lc], tempP2DArray,
                     D, shear, error);
+
+                loadCaseOutputs.Add(new LoadCaseOutput(error, staticResults.nodeDisplacements, staticResults.frameElementEndForces,
+                        staticResults.reactionOutputs, internalForce));
             }
-            return null;
+            Output output = new Output(loadCaseOutputs);
+            return output;
         }
 
-        private void WriteInternalForces(int lc, int nl, string title, float dx, List<Vec3Float> xyz,
+        private List<PeakFrameElementInternalForce> GetInternalForces(int lc, int nl, string title, float dx, List<Vec3Float> xyz,
             double[,] Q, int nN, int nE, List<double> L, List<int> J1, List<int> J2, List<float> Ax, List<float> Asy, List<float> Asz,
             List<float> Jx, List<float> Iy, List<float> Iz, List<float> E, List<float> G, List<float> p,
             List<float> d, float gX, float gY, float gZ, int nU, float[,] U, int nW, float[,] W, int nP, float[,] P,
@@ -295,7 +300,7 @@ namespace Frame3ddn
                 n1, n2, i1, i2; /* starting and stopping node no's	*/
 
             if (dx == -1.0)
-                return;	// skip calculation of internal forces and displ
+                return null;	// skip calculation of internal forces and displ
 
             List<PeakFrameElementInternalForce> peakFrameElementInternalForces = new List<PeakFrameElementInternalForce>();
             for (m = 0; m < nE; m++) //m is used as index of 1 based arrays, so decrease it by 1
@@ -594,9 +599,11 @@ namespace Frame3ddn
                 peakFrameElementInternalForces.Add(new PeakFrameElementInternalForce(m, false, maxNx, maxVy, maxVz, maxTx, maxMy, maxMz));
                 peakFrameElementInternalForces.Add(new PeakFrameElementInternalForce(m, true, minNx, minVy, minVz, minTx, minMy, minMz));
             }
+
+            return peakFrameElementInternalForces;
         }
 
-        private void WriteStaticCsv(int nN, int nE, int nL, int lc, int DoF, List<int> J1, List<int> J2, double[] F,
+        private (List<NodeDisplacement> nodeDisplacements, List<FrameElementEndForce> frameElementEndForces, List<ReactionOutput> reactionOutputs) GetStaticResults(int nN, int nE, int nL, int lc, int DoF, List<int> J1, List<int> J2, double[] F,
             double[] D, double[] R, float[] r, double[,] Q, double error, int ok, int axialSign)
         {
             double disp;
@@ -739,8 +746,7 @@ namespace Frame3ddn
                 }
             }//V
 
-            string rmsRelativeEquilibriumError = "RMS RELATIVE EQUILIBRIUM ERROR:" + error;
-
+            return (nodeDisplacements, frameElementEndForces, reactionOutputs);
         }
 
         private double EquilibriumError(double[] dF, double[] F, double[,] K, double[] D, int DoF, double[] q, float[] r)
