@@ -77,6 +77,17 @@ namespace Frame3ddn
             List<int> nU = input.LoadCases.Select(l => l.UniformLoads.Count).ToList();
             List<int> nW = input.LoadCases.Select(l => l.TrapLoads.Count).ToList();
             float[,,] U = new float[nL, nE, 4];//pass in
+            for (int i = 0; i < nL; i ++)
+            {
+                for (int j = 0; j < nE; j++)
+                {
+                    //U[i, j, 0] will store node index, but not all of them will be assigned a value.
+                    //For those not assigned, it's behaving as if there is value for node index 0.
+                    //This will cause some trouble later, so have to be initialized with another value.
+                    //The problem is caused by converting from 1 based array in the C code to 0 based array in C# here.
+                    U[i, j, 0] = -1;
+                }
+            }
             float[,,] W = new float[nL, nE*10, 13];//pass in
             double[,,] eqFMech = new double[nL, nE, 12];
             double[,] FMech = new double[nL, DoF];
