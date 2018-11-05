@@ -89,6 +89,13 @@ namespace Frame3ddn
                 }
             }
             float[,,] W = new float[nL, nE*10, 13];//pass in
+            for (int i = 0; i < nL; i++)
+            {
+                for (int j = 0; j < nE * 10; j++)
+                {
+                    W[i, j, 0] = -1;//Same reason for array U
+                }
+            }
             double[,,] eqFMech = new double[nL, nE, 12];
             double[,] FMech = new double[nL, DoF];
             bool shear = input.IncludeShearDeformation;
@@ -386,7 +393,9 @@ namespace Frame3ddn
 
                     for (n = 0; n < 10 * nE && cW < nW; n++) //n is used as index of 1 based arrays here, so decrease it by 1
                     {
-                        if ((int) W[n, 0] == m + 1)//here m is used as a value not a index, need to add 1 back
+                        //here m is used as a value not a index, it should need to add 1 back,
+                        //but the W[n, 0] is actually storing 0 based node index, so finally, it should remain unchanged.
+                        if ((int) W[n, 0] == m)
                         {
                             if (i == nx)
                                 ++cW;
