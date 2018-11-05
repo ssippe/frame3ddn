@@ -137,16 +137,6 @@ namespace Frame3ddn.Test
 
         private bool CompareDouble(double num1, double num2)
         {
-            string num1S = num1.ToString();
-            string num2S = num2.ToString();
-            if (num1S.Length > num2S.Length && num1S.Contains(".") && num2S.Contains("."))
-            {
-                num1 = Math.Round(num1, num2S.Substring(num2S.IndexOf(".") + 1).Length, MidpointRounding.AwayFromZero);
-            } else if (num2S.Length > num1S.Length && num1S.Contains(".") && num2S.Contains("."))
-            {
-                num2 = Math.Round(num2, num1S.Substring(num1S.IndexOf(".")).Length, MidpointRounding.AwayFromZero);
-            }
-
             if (Math.Abs(num1 - num2) < Math.Abs(num1) * 0.01 || Math.Abs(num1 - num2) < 0.01)
                 return true;
             return false;
