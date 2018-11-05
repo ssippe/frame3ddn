@@ -252,7 +252,6 @@ namespace Frame3ddn
                 float[,] tempW2DArray = Common.GetArray(W, lc);
                 float[,] tempP2DArray = Common.GetArray(P, lc);
 
-
                 List<PeakFrameElementInternalForce> internalForce = Frame3ddIO.GetInternalForces(lc, nL, title, dx, xyz,
                     Q, nN, nE, L, N1, N2,
                     Ax, Asy, Asz, Jx, Iy, Iz, E, G, p,
@@ -262,12 +261,15 @@ namespace Frame3ddn
 
                 loadCaseOutputs.Add(new LoadCaseOutput(error, staticResults.nodeDisplacements, staticResults.frameElementEndForces,
                         staticResults.reactionOutputs, internalForce));
+
+                //static_mesh ()
             }
+
             Output output = new Output(loadCaseOutputs);
             return output;
         }
         
-        //Dealing with dynamic data, todo check if it is true
+        //Dealing with dynamic data
         //private void ReadMassData()
         //{
         //    int i, j, jnt, m, b, nA;
