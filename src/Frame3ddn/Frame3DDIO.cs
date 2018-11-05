@@ -32,7 +32,7 @@ namespace Frame3ddn
             double Ln, R1o, R2o, f01, f02;
 
             int n1, n2;
-            //todo:init
+
             for (int lc = 0; lc < nL; lc++)
             {
                 for (int n = 0; n < nE; n++)
