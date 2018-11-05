@@ -20,21 +20,21 @@ namespace Frame3ddn.Test
         [Fact]
         public void Run()
         {
-            const string inputFileName = "TEST4.csv";
+            const string inputFileName = "TEST7.csv";
             string workspaceDir = Directory.GetParent(Directory.GetParent(Directory.GetParent(Directory.GetCurrentDirectory().ToString()).ToString()).ToString()).ToString();
             StreamReader sr = new StreamReader(workspaceDir + "\\TestData\\" + inputFileName);
             Input input = Input.Parse(sr);
             Solver solver = new Solver();
             Output output = solver.Solve(input);
-            ExportOutput(output, workspaceDir + "\\TestData\\testResult.csv");
+            Frame3ddIO.ExportOutput(output, workspaceDir + "\\TestData\\testResult.csv");
         }
 
         [Fact]
         public void BatchCompare()
         {
             string workspaceDir = Directory.GetParent(Directory.GetParent(Directory.GetParent(Directory.GetCurrentDirectory().ToString()).ToString()).ToString()).ToString();
-            workspaceDir = workspaceDir + "\\TestData\\frame3ddInput25";
-            DirectoryInfo d = new DirectoryInfo(workspaceDir + "\\frame3ddInput");
+            workspaceDir = workspaceDir + "\\TestData\\Batch";
+            DirectoryInfo d = new DirectoryInfo(workspaceDir + "\\Input");
             FileInfo[] Files = d.GetFiles("*.csv"); 
             List<string> fileNameList = new List<string>();
             foreach (FileInfo file in Files)
@@ -47,8 +47,8 @@ namespace Frame3ddn.Test
             {
                 string fileName = fileNameList[i];
                 Compare(
-                    workspaceDir + "\\frame3ddInput\\" + "f3" + fileName + ".csv",
-                    workspaceDir + "\\p4Output\\" + "p4" + fileName + ".txt"
+                    workspaceDir + "\\Input\\" + "f3" + fileName + ".csv",
+                    workspaceDir + "\\Output\\" + "p4" + fileName + ".txt"
                 );
                 System.Diagnostics.Debug.WriteLine("finished comparing file: " + i + " " + fileName);
             }
@@ -57,17 +57,11 @@ namespace Frame3ddn.Test
 
         private void Compare(string inputFilePath, string outputFilePath)
         {
-            //const string inputFileName = "TEST3.csv";
-            //string workspaceDir1 = Directory.GetParent(Directory.GetParent(Directory.GetParent(Directory.GetCurrentDirectory().ToString()).ToString()).ToString()).ToString();
-            //StreamReader sr = new StreamReader(workspaceDir1 + "\\TestData\\" + inputFileName);
             StreamReader sr = new StreamReader(inputFilePath);
             Input input = Input.Parse(sr);
             Solver solver = new Solver();
             Output output = solver.Solve(input);
 
-            //const string outputFileName = "TEST3.txt";
-            //string workspaceDir = Directory.GetParent(Directory.GetParent(Directory.GetParent(Directory.GetCurrentDirectory().ToString()).ToString()).ToString()).ToString();
-            //string file = File.ReadAllText(workspaceDir + "\\TestData\\" + outputFileName);
             string file = File.ReadAllText(outputFilePath);
             var result = ParseLines(file);
 
@@ -143,74 +137,19 @@ namespace Frame3ddn.Test
 
         private bool CompareDouble(double num1, double num2)
         {
+            string num1S = num1.ToString();
+            string num2S = num2.ToString();
+            if (num1S.Length > num2S.Length && num1S.Contains(".") && num2S.Contains("."))
+            {
+                num1 = Math.Round(num1, num2S.Substring(num2S.IndexOf(".") + 1).Length, MidpointRounding.AwayFromZero);
+            } else if (num2S.Length > num1S.Length && num1S.Contains(".") && num2S.Contains("."))
+            {
+                num2 = Math.Round(num2, num1S.Substring(num1S.IndexOf(".")).Length, MidpointRounding.AwayFromZero);
+            }
+
             if (Math.Abs(num1 - num2) < Math.Abs(num1) * 0.01 || Math.Abs(num1 - num2) < 0.01)
                 return true;
             return false;
-        }
-
-        private void ExportOutput(Output output, string outputPath)
-        {
-            File.WriteAllText(outputPath, "");
-            var nL = output.LoadCaseOutputs.Count;
-            for(int i = 0; i < nL; i ++)
-            {
-                LoadCaseOutput loadCaseOutput = output.LoadCaseOutputs[i];
-                var csv = new StringBuilder();
-                string newLine;
-                csv.AppendLine("------------------Load case " + (i + 1) + "------------------");
-
-                csv.AppendLine("* Node displacements");
-                newLine = string.Format("{0},{1},{2},{3},{4},{5},{6}",
-                    "Node", "X-dsp", "Y-dsp", "z-dsp", "X-rot", "Y-rot", "Z-rot");
-                csv.AppendLine(newLine);
-                foreach (var nodeDisplacement in loadCaseOutput.NodeDisplacements)
-                {
-                    newLine = string.Format("{0},{1},{2},{3},{4},{5},{6}", 
-                        nodeDisplacement.NodeIdx + 1, nodeDisplacement.Displacement.X, nodeDisplacement.Displacement.Y, nodeDisplacement.Displacement.Z,
-                        nodeDisplacement.Rotation.X, nodeDisplacement.Rotation.Y, nodeDisplacement.Rotation.Z);
-                    csv.AppendLine(newLine);
-                }
-
-                csv.AppendLine("* Frame Element End Force");
-                newLine = string.Format("{0},{1},{2},{3},{4},{5},{6},{7}",
-                    "Elmnt", "Node", "Nx", "Vy", "Vz", "Txx", "Myy", "Mzz");
-                csv.AppendLine(newLine);
-                foreach (var frameElementEndForce in loadCaseOutput.FrameElementEndForces)
-                {
-                    newLine = string.Format("{0},{1},{2},{3},{4},{5},{6},{7}",
-                        frameElementEndForce.ElementIdx + 1, frameElementEndForce.NodeIdx + 1, frameElementEndForce.Nx + frameElementEndForce.NxType,
-                        frameElementEndForce.Vy, frameElementEndForce.Vz, frameElementEndForce.Txx, frameElementEndForce.Myy, frameElementEndForce.Mzz);
-                    csv.AppendLine(newLine);
-                }
-
-                csv.AppendLine("* Reactions");
-                newLine = string.Format("{0},{1},{2},{3},{4},{5},{6}",
-                    "Node", "Fx", "Fy", "Fz", "Mxx", "Myy", "Mzz");
-                csv.AppendLine(newLine);
-                foreach (var reactionOutput in loadCaseOutput.ReactionOutputs)
-                {
-                    newLine = string.Format("{0},{1},{2},{3},{4},{5},{6}",
-                        reactionOutput.NodeIdx + 1, reactionOutput.F.X, reactionOutput.F.Y, reactionOutput.F.Z,
-                        reactionOutput.M.X, reactionOutput.M.Y, reactionOutput.M.Z);
-                    csv.AppendLine(newLine);
-                }
-                csv.AppendLine("RMS Relative Equilibrium Error: " + loadCaseOutput.RmsRelativeEquilibriumError);
-
-                csv.AppendLine("* Peak Frame Element Internal Forces");
-                newLine = string.Format("{0},{1},{2},{3},{4},{5},{6},{7}",
-                    "Elmnt", ".", "Nx", "Vy", "Vz", "Txx", "Myy", "Mzz");
-                csv.AppendLine(newLine);
-                foreach (var peakFrameElementInternalForce in loadCaseOutput.PeakFrameElementInternalForces)
-                {
-                    newLine = string.Format("{0},{1},{2},{3},{4},{5},{6},{7}",
-                        peakFrameElementInternalForce.ElementIdx + 1, peakFrameElementInternalForce.IsMin? "min" : "max",
-                        peakFrameElementInternalForce.Nx, peakFrameElementInternalForce.Vy, peakFrameElementInternalForce.Vz,
-                        peakFrameElementInternalForce.Txx, peakFrameElementInternalForce.Myy, peakFrameElementInternalForce.Mzz);
-                    csv.AppendLine(newLine);
-                }
-                File.AppendAllText(outputPath, csv.ToString());
-                
-            }
         }
 
         private string ReadUntil(StringReader reader, Func<string, bool> stop)
@@ -243,9 +182,7 @@ namespace Frame3ddn.Test
                     return outputLines;
                 int loadCaseIdx =
                     int.Parse(Regex.Match(currentLine, @"L O A D   C A S E\s*(\d+)\s*O F\s*(\d+)").Groups[1].Value) - 1;
-
-
-                ////////////////////////
+                
                 // node displacements
                 if (ReadUntil(reader,
                     s => s.StartsWith("N O D E   D I S P L A C E M E N T S  					(global)")) == null)
@@ -259,8 +196,7 @@ namespace Frame3ddn.Test
                         break;
                     displacementLines.Add(resultLine);
                 }
-
-                ////////////////////////
+                
                 // frame element end forces
                 if (ReadUntil(reader,
                         s => s.Contains("Elmnt")) == null)
@@ -272,8 +208,7 @@ namespace Frame3ddn.Test
                         break;
                     frameElementEndForceLines.Add(resultLine);
                 }
-
-                ////////////////////////
+                
                 // reactions                
                 if (ReadUntil(reader,
                     s => s.Contains("Node")) == null)
@@ -285,8 +220,7 @@ namespace Frame3ddn.Test
                         break;
                     reactionLines.Add(resultLine);
                 }
-
-                ////////////////////////
+                
                 // internal forces
                 if (ReadUntil(reader,
                     s => s.StartsWith("P E A K   F R A M E   E L E M E N T   I N T E R N A L   F O R C E S")) == null)
@@ -303,89 +237,6 @@ namespace Frame3ddn.Test
                 outputLines.Add(new OutputLine(frameElementEndForceLines, displacementLines, reactionLines, forceLines));
             }
             return outputLines;
-        }
-
-        //private static List<string> GetOutput(StreamReader sr)
-        //{
-        //    List<string> output = new List<string>();
-        //    string line;
-        //    while ((line = sr.ReadLine()) != null)
-        //    {
-        //        if (line.Contains("E L A S T I C   S T I F F N E S S   A N A L Y S I S"))
-        //        {
-        //            int readingState = 0;
-        //            while ((line = sr.ReadLine()) != null)
-        //            {
-
-        //            }
-        //        }
-
-        //        break;
-        //    }
-        //    return noComentInput;
-        //}
-
-        //[Fact]
-        //public void FindTrapLoadAndNodeLoad()
-        //{
-        //    string workspaceDir = Directory.GetParent(Directory.GetParent(Directory.GetParent(Directory.GetCurrentDirectory().ToString()).ToString()).ToString()).ToString();
-        //    //string[] pdfFiles = Directory.GetFiles(workspaceDir + "\\frame3ddInput24\\frame3ddInput", "*");
-        //    //string[] pdfFiles = Directory.GetFiles(workspaceDir + "\\frame3ddInputBase\\frame3ddInput", "*");
-        //    //string[] pdfFiles = Directory.GetFiles(workspaceDir + "\\frame3ddInputMore\\frame3ddInput", "*");
-        //    string[] pdfFiles = Directory.GetFiles(workspaceDir + "\\frame3ddInputSkil\\frame3ddInput", "*");
-        //    //string[] pdfFiles = Directory.GetFiles(workspaceDir + "\\frame3ddInput", "*");
-        //    for (int i = 0; i < pdfFiles.Length; i++)
-        //    {
-        //        StreamReader sr = new StreamReader(pdfFiles[i]);
-        //        Input input = Input.Parse(sr);
-        //        bool t = false;
-        //        bool n = false;
-        //        foreach (LoadCase inputLoadCase in input.LoadCases)
-        //        {
-        //            if (inputLoadCase.NodeLoads.Count > 0)
-        //                n = true;
-        //            if (inputLoadCase.TrapLoads.Count > 0)
-        //                t = true;
-        //        }
-
-        //        if (n)
-        //        {
-        //            string path = pdfFiles[i];
-        //            Console.WriteLine(pdfFiles[i] + " has node loads.");
-        //        }
-        //        if (t)
-        //        {
-        //            string path = pdfFiles[i];
-        //            Console.WriteLine(pdfFiles[i] + " has trap nodes.");
-        //        }
-
-        //    }
-
-        //}
-
-        [Fact]
-        public void FindLoads()
-        {
-            string workspaceDir = Directory.GetParent(Directory.GetParent(Directory.GetParent(Directory.GetCurrentDirectory().ToString()).ToString()).ToString()).ToString();
-            List<string[]> directoryList = new List<string[]>();
-            directoryList.Add(Directory.GetFiles(workspaceDir + "\\frame3ddInput24\\frame3ddInput", "*"));
-            directoryList.Add(Directory.GetFiles(workspaceDir + "\\frame3ddInputBase\\frame3ddInput", "*"));
-            directoryList.Add(Directory.GetFiles(workspaceDir + "\\frame3ddInputMore\\frame3ddInput", "*"));
-            directoryList.Add(Directory.GetFiles(workspaceDir + "\\frame3ddInputSkil\\frame3ddInput", "*"));
-            directoryList.Add(Directory.GetFiles(workspaceDir + "\\frame3ddInput\\frame3ddInput", "*"));
-            foreach (string[] pdfFiles in directoryList)
-            {
-                for (int i = 0; i < pdfFiles.Length; i++)
-                {
-                    StreamReader sr = new StreamReader(pdfFiles[i]);
-                    Input input = Input.Parse(sr);
-                    if (!input.IncludeGeometricStiffness)
-                    {
-                        string path = pdfFiles[i];
-                        Console.WriteLine(path);
-                    }
-                }
-            }
         }
     }
 }
