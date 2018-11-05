@@ -26,27 +26,27 @@ namespace Frame3ddn
             {
                 if (Math.Abs(Cz) == Math.Abs(1))
                 {
-                    t[2] = Cz;//><
-                    t[3] = -Cz * Sp;//><
-                    t[4] = Cp;//><
-                    t[6] = -Cz * Cp;//><
-                    t[7] = -Sp;//><
+                    t[2] = Cz;
+                    t[3] = -Cz * Sp;
+                    t[4] = Cp;
+                    t[6] = -Cz * Cp;
+                    t[7] = -Sp;
                 }
                 else
                 {
                     den = Math.Sqrt(1.0 - Cz * Cz);
 
-                    t[0] = Cx;//><
-                    t[1] = Cy;//><
-                    t[2] = Cz;//><
+                    t[0] = Cx;
+                    t[1] = Cy;
+                    t[2] = Cz;
 
-                    t[3] = (-Cx * Cz * Sp - Cy * Cp) / den;//><
-                    t[4] = (-Cy * Cz * Sp + Cx * Cp) / den;//><
-                    t[5] = Sp * den;//><
+                    t[3] = (-Cx * Cz * Sp - Cy * Cp) / den;
+                    t[4] = (-Cy * Cz * Sp + Cx * Cp) / den;
+                    t[5] = Sp * den;
 
-                    t[6] = (-Cx * Cz * Cp + Cy * Sp) / den;//><
-                    t[7] = (-Cy * Cz * Cp - Cx * Sp) / den;//><
-                    t[8] = Cp * den;//><
+                    t[6] = (-Cx * Cz * Cp + Cy * Sp) / den;
+                    t[7] = (-Cy * Cz * Cp - Cx * Sp) / den;
+                    t[8] = Cp * den;
                 }
             }
 
