@@ -11,12 +11,13 @@ namespace Frame3ddn
     {
         public Output Solve(Input input)
         {
-            //Fixed value
+            //Fixed values
             int ok = 1;
             double rmsResid = 1.0;
             double error = 1.0;
             int axialStrainWarning = 0;
             int axialSign = 1;
+            int writeMatrix = 0;
 
             string title = input.Title;
             IReadOnlyList<Node> nodes = input.Nodes;
@@ -30,7 +31,7 @@ namespace Frame3ddn
             float[] r = new float[DoF];
             for (int i = 0; i < nR; i++) 
             {
-                int j = input.ReactionInputs[i].Number;  //This number is corrected when importing
+                int j = input.ReactionInputs[i].Number;  //This index number is decreased by 1 when importing
                 r[j * 6 + 0] = input.ReactionInputs[i].Position.X;
                 r[j * 6 + 1] = input.ReactionInputs[i].Position.Y;
                 r[j * 6 + 2] = input.ReactionInputs[i].Position.Z;
@@ -82,7 +83,7 @@ namespace Frame3ddn
                 for (int j = 0; j < nE; j++)
                 {
                     //U[i, j, 0] will store node index, but not all of them will be assigned a value.
-                    //For those not assigned, it's behaving as if there is value for node index 0.
+                    //For those not assigned, they are the same value for node index 0.
                     //This will cause some trouble later, so have to be initialized with another value.
                     //The problem is caused by converting from 1 based array in the C code to 0 based array in C# here.
                     U[i, j, 0] = -1;
@@ -104,8 +105,14 @@ namespace Frame3ddn
 
             double[] F = new double[DoF];
             double[] dF = new double[DoF];
+            double[] D = new double[DoF];
+            double[] dD = new double[DoF];
+            double[] R = new double[DoF];
+            double[] dR = new double[DoF];
+            double[,] Q = new double[nE, 12];
+            double[,] K = new double[DoF, DoF];
 
-            ////These countings are not used so far
+            ////These are not used
             int[] nT = new int[nL];
             int[] nP = new int[nL];
             int[] nD = new int[nL];
@@ -114,27 +121,13 @@ namespace Frame3ddn
             int iter = 0;
             double tol = 1.0e-9;
             float[,,] P = new float[nL,10*nE,5];
+            double[,] Dp = new double[nL, DoF];
             ////
-            
-            int writeMatrix = 0;//0 is default
-
-
 
             IReadOnlyList<LoadCase> loadCases = input.LoadCases;
 
             Frame3ddIO.AssembleLoads(nN, nE, nL, DoF, xyz, L, Le, N1, N2, Ax, Asy, Asz, Iy, Iz, E, G, p, d, gX, gY, gZ, shear, nF, nU, nW, FMech, eqFMech,
                 U, W, loadCases);
-            
-            double[] D = new double[DoF];
-            double[] dD = new double[DoF];
-            double[] R = new double[DoF];
-            double[] dR = new double[DoF];
-            double[,] Q = new double[nE,12];
-            double[,] K = new double[DoF,DoF];
-
-            //Empty values. Only used to prevent error
-            double[,] Dp = new double[nL,DoF];
-
 
             //ReadMassData()--Not implemented
             //ReadCondensationData()--Not implemented
@@ -169,7 +162,9 @@ namespace Frame3ddn
                 }
 
                 double[] tempLoadMech = Common.GetRow(FMech, lc);
-                Frame3dd.SolveSystem(K, dD, tempLoadMech, dR, DoF, q, r, ok, rmsResid);//a
+                var solveSystemResult = Frame3dd.SolveSystem(K, dD, tempLoadMech, dR, DoF, q, r, ok, rmsResid);
+                ok = solveSystemResult.ok;
+                rmsResid = solveSystemResult.rmsResid;
                 for (int i = 0; i < DoF; i++)
                 {
                     FMech[lc, i] = tempLoadMech[i];
@@ -191,14 +186,13 @@ namespace Frame3ddn
                     if (!Common.isDoubleZero(r[i]))
                         R[i] += dR[i];
 
-
                 /*  combine {F} = {F_t} + {F_m} */
                 for (int i = 0; i < DoF; i++)
                     F[i] = FTemp[lc, i] + FMech[lc, i];
 
-
                 double[,] tempTArray = Common.GetArray(eqFTemp, lc);
                 double[,] tempMArray = Common.GetArray(eqFMech, lc);
+
                 Frame3dd.ElementEndForces(Q, nE, xyz, L, Le, N1, N2,
                     Ax, Asy, Asz, Jx, Iy, Iz, E, G, p,
                     tempTArray, tempMArray, D, shear, geom,
@@ -225,6 +219,7 @@ namespace Frame3ddn
                 /*   strain limit _and_ buckling failure ... */
                 //if (axial_strain_warning > 0 && ExitCode == 181) ExitCode = 183;
                 //if (geom) compute_reaction_forces(R, F, K, D, DoF, r);
+
                 if (writeMatrix != 0)/* write static stiffness matrix */
                 {
                     //save_ut_dmatrix("Ks", K, DoF, "w");//Not implemented
@@ -263,20 +258,12 @@ namespace Frame3ddn
                         staticResults.reactionOutputs, internalForce));
 
                 //static_mesh ()
+                //...
             }
 
             Output output = new Output(loadCaseOutputs);
             return output;
         }
-        
-        //Dealing with dynamic data
-        //private void ReadMassData()
-        //{
-        //    int i, j, jnt, m, b, nA;
-        //    int full_len = 0, len = 0;
-        //    double totalMass = 0.0;
-        //    double structMass = 0.0;
-        //}
 
         // ref main.c:265
         static int DoF(Input input) => input.Nodes.Count * 6;

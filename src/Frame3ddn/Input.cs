@@ -287,6 +287,10 @@ namespace Frame3ddn
 
             bool includeShearDeformation = int.Parse(noComentInput[currentLine++]) != 0;
             bool includeGeometricStiffness = int.Parse(noComentInput[currentLine++]) != 0;
+            if (includeGeometricStiffness)
+            {
+                throw new Exception("Geometric stiffness is not supported.");
+            }
             float exaggerateMeshDeformations = float.Parse(noComentInput[currentLine++]);
             float zoomScale = float.Parse(noComentInput[currentLine++]);
             float xAxisIncrementForInternalForces = float.Parse(noComentInput[currentLine++]);
@@ -296,6 +300,10 @@ namespace Frame3ddn
             {
                 string loadCaseGravityString = noComentInput[currentLine++];
                 int loadNodeNum = int.Parse(noComentInput[currentLine++]);
+                if (loadNodeNum > 0)
+                {
+                    throw new Exception("Node load is not supported.");
+                }
                 List<NodeLoad> nodeLoads = new List<NodeLoad>();
                 for (int j = currentLine; currentLine < j + loadNodeNum; currentLine++)
                 {
@@ -320,16 +328,28 @@ namespace Frame3ddn
                 }
 
                 int internalConcentratedLoadNum = int.Parse(noComentInput[currentLine++]);
+                if (internalConcentratedLoadNum > 0)
+                {
+                    throw new Exception("Internal concentrated load is not supported.");
+                }
                 for (int j = currentLine; currentLine < j + internalConcentratedLoadNum; currentLine++)
                 {
                 }
 
                 int temperatureLoadNum = int.Parse(noComentInput[currentLine++]);
+                if (temperatureLoadNum > 0)
+                {
+                    throw new Exception("Temperature load is not supported.");
+                }
                 for (int j = currentLine; currentLine < j + temperatureLoadNum; currentLine++)
                 {
                 }
 
                 int prescribedDisplacementNum = int.Parse(noComentInput[currentLine++]);
+                if (prescribedDisplacementNum > 0)
+                {
+                    throw new Exception("Prescribed displacement is not supported.");
+                }
                 for (int j = currentLine; currentLine < j + prescribedDisplacementNum; currentLine++)
                 {
                 }
@@ -337,6 +357,46 @@ namespace Frame3ddn
                 LoadCase loadCase = LoadCase.Parse(loadCaseGravityString, nodeLoads, uniformLoads, trapLoads);
                 loadCases.Add(loadCase);
             }
+
+            try
+            {
+                if (int.Parse(noComentInput[currentLine]) > 0)
+                {
+                    throw new Exception("Dynamic analysis data is not supported.");
+                }
+
+                currentLine += 6;
+                if (int.Parse(noComentInput[currentLine++]) > 0)
+                {
+                    throw new Exception("Extra node inertia data is not supported.");
+                }
+
+                if (int.Parse(noComentInput[currentLine++]) > 0)
+                {
+                    throw new Exception("Element with extra mass is not supported.");
+                }
+
+                if (int.Parse(noComentInput[currentLine]) > 0)
+                {
+                    throw new Exception("Mode shape animation data is not supported.");
+                }
+
+                currentLine += 3;
+                if (int.Parse(noComentInput[currentLine]) > 0)
+                {
+                    throw new Exception("Condensed node is not supported.");
+                }
+            }
+            catch (ArgumentOutOfRangeException)
+            {
+                //Incomplete data will be ignored
+            }
+            catch (Exception e)
+            {
+                Console.WriteLine("A");
+                throw e;
+            }
+
             return new Input(title, nodes, frameElements, reactionInputs, loadCases, includeShearDeformation, includeGeometricStiffness,
                 exaggerateMeshDeformations, zoomScale, xAxisIncrementForInternalForces);
         }

@@ -67,28 +67,6 @@ namespace Frame3ddn
                                          ((t[5] * t[6] - t[3] * t[8]) * gX[lc] +
                                           (t[5] * t[7] - t[4] * t[8]) * gY[lc]);
                 }
-
-                ////
-                //for (int i = 0; i < nF[lc]; i++)
-                //{
-                //    NodeLoad nodeLoad = loadCases[lc].NodeLoads[i];
-                //    int j = nodeLoad.NodeIdx;
-                //    if (j < 0 || j > nN)
-                //        Console.WriteLine(
-                //            "\n  error in node load data: node number out of range ... Node : {0}\n   Perhaps you did not specify {1} node loads \n  or perhaps the Input Data file is missing expected data.\n",
-                //            j, nF[lc]);
-
-                //    FMech[lc, 6 * j + 0] = nodeLoad.Load.X;
-                //    FMech[lc, 6 * j + 1] = nodeLoad.Load.Y;
-                //    FMech[lc, 6 * j + 2] = nodeLoad.Load.Z;
-                //    FMech[lc, 6 * j + 3] = nodeLoad.Moment.X;
-                //    FMech[lc, 6 * j + 4] = nodeLoad.Moment.Y;
-                //    FMech[lc, 6 * j + 5] = nodeLoad.Moment.Z;
-
-                //    if (Common.isZeroVector(nodeLoad.Load) && Common.isZeroVector(nodeLoad.Load))
-                //        Console.WriteLine("\n   Warning: All node loads applied at node %d  are zero\n", j);
-                //}
-                ////
                 
                 for (int i = 0; i < nU[lc]; i++)
                 {
@@ -296,21 +274,20 @@ namespace Frame3ddn
                     eqFMech[lc, n, 10] += (Mx2 * t[1] + My2 * t[4] + Mz2 * t[7]);
                     eqFMech[lc, n, 11] += (Mx2 * t[2] + My2 * t[5] + Mz2 * t[8]);
                 }
-                ////
 
                 ////Jumped over interior loads, temp loads and prescribed displacements
-
-                ////NoV not confident they are correct, Fmech shouldn't be used.
+                
                 for (int n = 0; n < nE; n++)
                 {
                     n1 = N1[n]; n2 = N2[n];
                     for (int i = 0; i < 6; i++) FMech[lc, 6 * n1 + i] += eqFMech[lc, n, i];
                     for (int i = 6; i < 12; i++) FMech[lc, 6 * n2 - 6 + i] += eqFMech[lc, n, i];
-                }//
+                }
             }
         }
 
-        public static (List<NodeDisplacement> nodeDisplacements, List<FrameElementEndForce> frameElementEndForces, List<ReactionOutput> reactionOutputs) GetStaticResults(int nN, int nE, int nL, int lc, int DoF, List<int> J1, List<int> J2, double[] F,
+        public static (List<NodeDisplacement> nodeDisplacements, List<FrameElementEndForce> frameElementEndForces, List<ReactionOutput> reactionOutputs) 
+            GetStaticResults(int nN, int nE, int nL, int lc, int DoF, List<int> J1, List<int> J2, double[] F,
             double[] D, double[] R, float[] r, double[,] Q, double error, int ok, int axialSign)
         {
             double disp;
@@ -456,7 +433,6 @@ namespace Frame3ddn
             return (nodeDisplacements, frameElementEndForces, reactionOutputs);
         }
 
-
         public static List<PeakFrameElementInternalForce> GetInternalForces(int lc, int nl, string title, float dx, List<Vec3Float> xyz,
             double[,] Q, int nN, int nE, List<double> L, List<int> J1, List<int> J2, List<float> Ax, List<float> Asy, List<float> Asz,
             List<float> Jx, List<float> Iy, List<float> Iz, List<float> E, List<float> G, List<float> p,
@@ -477,10 +453,6 @@ namespace Frame3ddn
             double xp;      /* location of internal point loads	*/
 
             double dx_, dxnx;   /* distance along frame element		*/
-
-
-
-
 
             double maxNx, maxVy, maxVz,     /*  maximum internal forces	*/
                 maxTx, maxMy, maxMz,    /*  maximum internal moments	*/
@@ -522,9 +494,6 @@ namespace Frame3ddn
                 double[] Dy = new double[nx + 1];
                 double[] Dz = new double[nx + 1]; /* frame el. displ. in local x,y,z, dir's */
                 double[] Rx = new double[nx + 1]; /* twist rotation about the local x-axis */
-
-
-
 
                 for (i = 0; i < nx; i++) //i is used as index of 0 based arrays here. Remain unchanged.
                     x[i] = i * dx;
@@ -856,6 +825,7 @@ namespace Frame3ddn
                 newLine = string.Format("{0},{1},{2},{3},{4},{5},{6},{7}",
                     "Elmnt", ".", "Nx", "Vy", "Vz", "Txx", "Myy", "Mzz");
                 csv.AppendLine(newLine);
+                if (loadCaseOutput.PeakFrameElementInternalForces != null)
                 foreach (var peakFrameElementInternalForce in loadCaseOutput.PeakFrameElementInternalForces)
                 {
                     newLine = string.Format("{0},{1},{2},{3},{4},{5},{6},{7}",

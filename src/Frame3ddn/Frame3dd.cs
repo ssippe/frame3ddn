@@ -211,8 +211,6 @@ namespace Frame3ddn
             double[] D, bool shear, bool geom, double axialStrain)//return s
         {
             double d1, d2, d3, d4, d5, d6, d7, d8, d9, d10, d11, d12,
-                // x1, y1, z1, x2, y2, z2,	/* node coordinates	*/
-                //  Ls,			/* stretched length of element */
                 delta = 0.0,        /* stretch in the frame element */
                 Ksy, Ksz, Dsy, Dsz, /* shear deformation coeff's	*/
                 T = 0.0;        /* axial force for geometric stiffness */
