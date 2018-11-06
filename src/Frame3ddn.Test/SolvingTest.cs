@@ -12,9 +12,10 @@ namespace Frame3ddn.Test
         [Fact]
         public void GetInputFromFile()
         {
-            const string inputFileName = "f3exC(Modified)";
             string workspaceDir = Directory.GetParent(Directory.GetParent(Directory.GetParent(Directory.GetCurrentDirectory().ToString()).ToString()).ToString()).ToString();
-            StreamReader sr = new StreamReader(workspaceDir + "\\TestData\\Input\\" + inputFileName + ".csv");
+            string testDataPath = Directory.GetDirectories(workspaceDir, "TestData")[0];
+            string inputPath = Directory.GetDirectories(testDataPath, "Input")[0];
+            StreamReader sr = new StreamReader(Directory.GetFiles(inputPath, "B.csv")[0]);
             Input input = Input.Parse(sr);
             Assert.Equal(18, input.Nodes.Count);
             Assert.Equal(17, input.ReactionInputs[3].Number);
@@ -25,13 +26,15 @@ namespace Frame3ddn.Test
         [Fact]
         public void Run()
         {
-            const string fileName = "exC(Modified)";
             string workspaceDir = Directory.GetParent(Directory.GetParent(Directory.GetParent(Directory.GetCurrentDirectory().ToString()).ToString()).ToString()).ToString();
-            StreamReader sr = new StreamReader(workspaceDir + "\\TestData\\Input\\f3" + fileName + ".csv");
+            string testDataPath = Directory.GetDirectories(workspaceDir, "TestData")[0];
+            string inputPath = Directory.GetDirectories(testDataPath, "Input")[0];
+            string outputPath = Directory.GetDirectories(testDataPath, "Output")[0];
+            StreamReader sr = new StreamReader(Directory.GetFiles(inputPath, "B.csv")[0]);
             Input input = Input.Parse(sr);
             Solver solver = new Solver();
             Output output = solver.Solve(input);
-            Frame3ddIO.ExportOutput(output, workspaceDir + "\\TestData\\Output\\p4" + fileName + ".csv");
+            Frame3ddIO.ExportOutput(output, Directory.GetFiles(outputPath, "B.csv")[0]);
         }
 
         /// <summary>
@@ -41,13 +44,17 @@ namespace Frame3ddn.Test
         public void BatchCompare()
         {
             string workspaceDir = Directory.GetParent(Directory.GetParent(Directory.GetParent(Directory.GetCurrentDirectory().ToString()).ToString()).ToString()).ToString();
-            workspaceDir = workspaceDir + "\\TestData";
-            DirectoryInfo d = new DirectoryInfo(workspaceDir + "\\Input");
-            FileInfo[] Files = d.GetFiles("*.csv"); 
+            string testDataPath = Directory.GetDirectories(workspaceDir, "TestData")[0];
+            string inputPath = Directory.GetDirectories(testDataPath, "Input")[0];
+            string outputPath = Directory.GetDirectories(testDataPath, "Output")[0];
+            string outputFromCProgramPath = Directory.GetDirectories(testDataPath, "OutputFromCProgram")[0];
+
+            DirectoryInfo inputDirectoryInfo = new DirectoryInfo(inputPath);
+            FileInfo[] Files = inputDirectoryInfo.GetFiles("*.csv"); 
             List<string> fileNameList = new List<string>();
             foreach (FileInfo file in Files)
             {
-                string filename = file.Name.Substring(2, file.Name.Length - 6);
+                string filename = file.Name.Substring(0, file.Name.Length - 4);
                 fileNameList.Add(filename);
             }
 
@@ -55,8 +62,8 @@ namespace Frame3ddn.Test
             {
                 string fileName = fileNameList[i];
                 Compare(
-                    workspaceDir + "\\Input\\" + "f3" + fileName + ".csv",
-                    workspaceDir + "\\OutputFromCProgram\\" + "p4" + fileName + ".txt"
+                    Directory.GetFiles(inputPath, fileName + ".csv")[0],
+                    Directory.GetFiles(outputFromCProgramPath, fileName +".txt")[0]
                 );
                 System.Diagnostics.Debug.WriteLine("finished comparing file: " + i + " " + fileName);
             }
