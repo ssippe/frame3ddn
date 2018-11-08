@@ -2,6 +2,19 @@
 
   <PropertyGroup>
     <TargetFramework>netstandard2.0</TargetFramework>
+    <Company>Steelx</Company>
+    <Authors>Steelx</Authors>
+    <Description>A library for static structural analysis of 2D and 3D frames and trusses. This is an incomplete C# version of Frame3DD (sourced from http://frame3dd.sourceforge.net/).</Description>
+    <PackageProjectUrl>https://github.com/ssippe/frame3ddn</PackageProjectUrl>
+    <RepositoryUrl>https://github.com/ssippe/frame3ddn</RepositoryUrl>
+    <PackageLicenseUrl>https://github.com/ssippe/frame3ddn/blob/master/LICENSE</PackageLicenseUrl>
+    <RepositoryType>public</RepositoryType>
+    <PackageTags>frame3dd, structual analysis</PackageTags>
+    <Copyright>copyright © Steelx 2018</Copyright>
+    <PackageId>Frame3ddn</PackageId>
+    <Version>1.0.2</Version>
+    <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
+    <PackageReleaseNotes>Added load case index in output.</PackageReleaseNotes>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">

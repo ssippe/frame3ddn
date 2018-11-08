@@ -5,13 +5,15 @@ namespace Frame3ddn
 {
     public class NodeDisplacement
     {
-        
 
+        public int LoadcaseIdx { get; }
         public int NodeIdx { get; }
         public Vec3 Displacement { get; }
         public Vec3 Rotation { get; }
-        public NodeDisplacement(int nodeIdx, Vec3 displacement, Vec3 rotation)
+
+        public NodeDisplacement(int loadcaseIdx, int nodeIdx, Vec3 displacement, Vec3 rotation)
         {
+            LoadcaseIdx = loadcaseIdx;
             NodeIdx = nodeIdx;
             Displacement = displacement;
             Rotation = rotation;
@@ -20,7 +22,7 @@ namespace Frame3ddn
 
     public class FrameElementEndForce
     {
-
+        public int LoadcaseIdx { get; }
         public int ElementIdx { get; }
         public int NodeIdx { get; }
         public double Nx { get; }
@@ -31,29 +33,31 @@ namespace Frame3ddn
         public double Myy { get; }
         public double Mzz { get; }
 
-        public FrameElementEndForce(int elementIdx, int nodeIdx, double nx, string nxType, double vy, double vz, double txx, double myy,
-            double mzz)
+        public FrameElementEndForce(int loadcaseIdx, int elementIdx, int nodeIdx, double nx, string nxType, double vy, double vz, double txx, double myy, double mzz)
         {
+            LoadcaseIdx = loadcaseIdx;
             ElementIdx = elementIdx;
             NodeIdx = nodeIdx;
             Nx = nx;
             NxType = nxType;
-            Vz = vz;
             Vy = vy;
+            Vz = vz;
             Txx = txx;
             Myy = myy;
             Mzz = mzz;
         }
-
     }
 
     public class ReactionOutput
     {
+        public int LoadcaseIdx { get; }
         public int NodeIdx { get; }
         public Vec3 F { get; }
         public Vec3 M { get; }
-        public ReactionOutput(int nodeIdx, Vec3 f, Vec3 m)
+
+        public ReactionOutput(int loadcaseIdx, int nodeIdx, Vec3 f, Vec3 m)
         {
+            LoadcaseIdx = loadcaseIdx;
             NodeIdx = nodeIdx;
             F = f;
             M = m;
@@ -62,7 +66,7 @@ namespace Frame3ddn
 
     public class PeakFrameElementInternalForce
     {
-
+        public int LoadcaseIdx { get; }
         public int ElementIdx { get; }
         public bool IsMin { get; }
         public double Nx { get; }
@@ -72,19 +76,18 @@ namespace Frame3ddn
         public double Myy { get; }
         public double Mzz { get; }
 
-        public PeakFrameElementInternalForce(int elementIdx, bool isMin, double nx, double vy, double vz, double txx, double myy,
-            double mzz)
+        public PeakFrameElementInternalForce(int loadcaseIdx, int elementIdx, bool isMin, double nx, double vy, double vz, double txx, double myy, double mzz)
         {
+            LoadcaseIdx = loadcaseIdx;
             ElementIdx = elementIdx;
             IsMin = isMin;
             Nx = nx;
-            Vz = vz;
             Vy = vy;
+            Vz = vz;
             Txx = txx;
             Myy = myy;
             Mzz = mzz;
         }
-
     }
 
     public class LoadCaseOutput

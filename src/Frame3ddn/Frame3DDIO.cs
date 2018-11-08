@@ -314,7 +314,7 @@ namespace Frame3ddn
                             tempSingResult[i] = D[6 * j + i];
                         }
                     }
-                    NodeDisplacement nodeDisplacement = new NodeDisplacement(j,
+                    NodeDisplacement nodeDisplacement = new NodeDisplacement(lc, j,
                         new Vec3(tempSingResult[0], tempSingResult[1], tempSingResult[2]),
                         new Vec3(tempSingResult[3], tempSingResult[4], tempSingResult[5]));
                     nodeDisplacements.Add(nodeDisplacement);
@@ -365,7 +365,7 @@ namespace Frame3ddn
                     }
                 }
                 frameElementEndForces.Add(
-                    new FrameElementEndForce(n, J1[n], nx, nxType, temp[0], temp[1], temp[2], temp[3], temp[4]));
+                    new FrameElementEndForce(lc, n, J1[n], nx, nxType, temp[0], temp[1], temp[2], temp[3], temp[4]));
 
                 //Do not copy above code to the following.
                 if (Math.Abs(Q[n, 6]) < 0.0001)
@@ -404,7 +404,7 @@ namespace Frame3ddn
                     }
                 }
                 frameElementEndForces.Add(
-                    new FrameElementEndForce(n, J2[n], nx, nxType, temp[0], temp[1], temp[2], temp[3], temp[4]));
+                    new FrameElementEndForce(lc, n, J2[n], nx, nxType, temp[0], temp[1], temp[2], temp[3], temp[4]));
             }
 
             List<ReactionOutput> reactionOutputs = new List<ReactionOutput>();
@@ -426,7 +426,7 @@ namespace Frame3ddn
                             temp[i] = 0.0;
                         }
                     }
-                    reactionOutputs.Add(new ReactionOutput(j, new Vec3(temp[0], temp[1], temp[2]), new Vec3(temp[3], temp[4], temp[5])));
+                    reactionOutputs.Add(new ReactionOutput(lc, j, new Vec3(temp[0], temp[1], temp[2]), new Vec3(temp[3], temp[4], temp[5])));
                 }
             }
 
@@ -765,8 +765,8 @@ namespace Frame3ddn
                     maxSz = (Sz[i] > maxSz) ? Sz[i] : maxSz;
                     minSz = (Sz[i] < minSz) ? Sz[i] : minSz;
                 }
-                peakFrameElementInternalForces.Add(new PeakFrameElementInternalForce(m, false, maxNx, maxVy, maxVz, maxTx, maxMy, maxMz));
-                peakFrameElementInternalForces.Add(new PeakFrameElementInternalForce(m, true, minNx, minVy, minVz, minTx, minMy, minMz));
+                peakFrameElementInternalForces.Add(new PeakFrameElementInternalForce(lc, m, false, maxNx, maxVy, maxVz, maxTx, maxMy, maxMz));
+                peakFrameElementInternalForces.Add(new PeakFrameElementInternalForce(lc, m, true, minNx, minVy, minVz, minTx, minMy, minMz));
             }
 
             return peakFrameElementInternalForces;
@@ -835,7 +835,7 @@ namespace Frame3ddn
                     csv.AppendLine(newLine);
                 }
                 File.AppendAllText(outputPath, csv.ToString());
-
+                
             }
         }
     }
