@@ -1,7 +1,7 @@
-# !!DO NOT USE!!
-
 # frame3ddn
-very incomplete and experimental c# implementation of frame3dd. 
+[![NuGet version (Frame3ddn)](https://img.shields.io/nuget/v/Frame3ddn.svg?style=flat-square)](https://www.nuget.org/packages/Frame3ddn/)
+
+Incomplete c# implementation of frame3dd. 
 
 
 * http://frame3dd.sourceforge.net/
@@ -30,6 +30,7 @@ very incomplete and experimental c# implementation of frame3dd.
   - [ ] Mode shape animation
   - [ ] Matrix condensation
   - [ ] Plotting results.
-
+ 
+ 
 ### Status
 [![Build Status](https://travis-ci.org/ssippe/frame3ddn.png)](https://travis-ci.org/ssippe/frame3ddn)
