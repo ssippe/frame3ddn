@@ -9,6 +9,7 @@ namespace Frame3ddn
 {
     public class Solver
     {
+
         public Output Solve(Input input)
         {
             //Fixed values
@@ -131,6 +132,11 @@ namespace Frame3ddn
 
             //ReadMassData()--Not implemented
             //ReadCondensationData()--Not implemented
+
+            string outputText = Frame3ddIO.InputDataToString(title, nN, nE, nL, nD, nR, nF, nU, nW, nP, nT,
+                xyz, rj, N1, N2, Ax, Asy, Asz, Jx, Iy, Iz, E, G, p,
+                d, gX, gY, gZ,
+                FMech, Dp, r, U, W, P, shear, geom);
 
             ////Start anlyz
             /* begin load case analysis loop */
@@ -261,9 +267,14 @@ namespace Frame3ddn
                 //...
             }
 
-            Output output = new Output(loadCaseOutputs);
+            outputText += Frame3ddIO.OutputDataToString(loadCaseOutputs);
+
+            Output output = new Output(outputText, loadCaseOutputs);
             return output;
         }
+
+        
+
 
         // ref main.c:265
         static int DoF(Input input) => input.Nodes.Count * 6;

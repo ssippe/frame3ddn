@@ -110,9 +110,11 @@ namespace Frame3ddn
 
     public class Output
     {
+        public string TextOutput { get; set; }
         public IReadOnlyList<LoadCaseOutput> LoadCaseOutputs { get; }
-        public Output(IReadOnlyList<LoadCaseOutput> loadCaseOutputs)
+        public Output(string textOutput, IReadOnlyList<LoadCaseOutput> loadCaseOutputs)
         {
+            TextOutput = textOutput;
             LoadCaseOutputs = loadCaseOutputs;
         }
     }
