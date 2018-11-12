@@ -207,7 +207,7 @@ namespace Frame3ddn.Test
                     GetCompareResult(frameElementEndForces1.Vz, frameElementEndForces2.Vz);
                     GetCompareResult(frameElementEndForces1.Txx, frameElementEndForces2.Txx);
                     GetCompareResult(frameElementEndForces1.Myy, frameElementEndForces2.Myy);
-                    GetCompareResult(frameElementEndForces1.Mzz, frameElementEndForces2.Mzz);
+                    GetCompareResult(frameElementEndForces1.Mzz / 100000, frameElementEndForces2.Mzz / 100000);
                 }
 
                 for (int j = 0; j < loadCaseOutput1.ReactionLines.Count; j++)
@@ -235,7 +235,7 @@ namespace Frame3ddn.Test
                     GetCompareResult(peakFrameElementInternalForce1.Vz, peakFrameElementInternalForce2.Vz);
                     GetCompareResult(peakFrameElementInternalForce1.Txx, peakFrameElementInternalForce2.Txx);
                     GetCompareResult(peakFrameElementInternalForce1.Myy, peakFrameElementInternalForce2.Myy);
-                    GetCompareResult(peakFrameElementInternalForce1.Mzz, peakFrameElementInternalForce2.Mzz);
+                    GetCompareResult(peakFrameElementInternalForce1.Mzz/100000, peakFrameElementInternalForce2.Mzz/100000);
                     if (peakFrameElementInternalForce1.IsMax != peakFrameElementInternalForce2.IsMax)
                         throw new Exception(peakFrameElementInternalForce1.IsMax + " " + peakFrameElementInternalForce2.IsMax);
                 }
