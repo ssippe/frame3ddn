@@ -34,7 +34,7 @@ namespace Frame3ddn.Test
             Input input = Input.Parse(sr);
             Solver solver = new Solver();
             Output output = solver.Solve(input);
-            File.WriteAllText(Directory.GetFiles(outputPath, "B.csv")[0], output.TextOutput);
+            File.WriteAllText(Directory.GetFiles(outputPath, "B.txt")[0], output.TextOutput);
         }
 
         /// <summary>
