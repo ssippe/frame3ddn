@@ -143,6 +143,105 @@ namespace Frame3ddn.Test
             }
         }
 
+        [Fact]
+        public void BatchCompareTwoFiles()
+        {
+            string workspaceDir = Directory.GetParent(Directory.GetParent(Directory.GetParent(Directory.GetCurrentDirectory().ToString()).ToString()).ToString()).ToString();
+            string testDataPath = Directory.GetDirectories(workspaceDir, "TestData")[0];
+            string ComparingOutputFiles = Directory.GetDirectories(testDataPath, "ComparingOutputFiles")[0];
+            string outputAPath = Directory.GetDirectories(ComparingOutputFiles, "A")[0];
+            string outputBPath = Directory.GetDirectories(ComparingOutputFiles, "B")[0];
+
+            DirectoryInfo inputDirectoryInfo = new DirectoryInfo(outputAPath);
+            FileInfo[] Files = inputDirectoryInfo.GetFiles("*.txt");
+            List<string> fileNameList = new List<string>();
+            foreach (FileInfo file in Files)
+            {
+                string filename = file.Name;
+                fileNameList.Add(filename);
+            }
+
+            for (int i = 0; i < fileNameList.Count; i++)
+            {
+                string fileName = fileNameList[i];
+                CompareTwoFiles(
+                    Directory.GetFiles(outputAPath, fileName)[0],
+                    Directory.GetFiles(outputBPath, fileName)[0]
+                );
+                System.Diagnostics.Debug.WriteLine("finished comparing file: " + i + " " + fileName);
+            }
+        }
+
+        private void CompareTwoFiles(string outputFilePath1, string outputFilePath2)
+        {
+            string file1 = File.ReadAllText(outputFilePath1);
+            string file2 = File.ReadAllText(outputFilePath2);
+            var result1 = ParseLines(file1);
+            var result2 = ParseLines(file2);
+
+            for (int i = 0; i < result1.Count; i++)
+            {
+                OutputLine loadCaseOutput1 = result1[i];
+                OutputLine loadCaseOutput2 = result2[i];
+                for (int j = 0; j < loadCaseOutput1.NodeDeflectionLines.Count; j++)
+                {
+                    NodeDeflectionLine nodeDisplacement1 = loadCaseOutput1.NodeDeflectionLines[j];
+                    NodeDeflectionLine nodeDisplacement2 = loadCaseOutput2.NodeDeflectionLines[j];
+                    GetCompareResult(nodeDisplacement1.NodeIdx, nodeDisplacement2.NodeIdx);
+                    GetCompareResult(nodeDisplacement1.DisplacementX, nodeDisplacement2.DisplacementX);
+                    GetCompareResult(nodeDisplacement1.DisplacementY, nodeDisplacement2.DisplacementY);
+                    GetCompareResult(nodeDisplacement1.Fz, nodeDisplacement2.Fz);
+                    GetCompareResult(nodeDisplacement1.Mxx, nodeDisplacement2.Mxx);
+                    GetCompareResult(nodeDisplacement1.Myy, nodeDisplacement2.Myy);
+                    GetCompareResult(nodeDisplacement1.Mzz, nodeDisplacement2.Mzz);
+                }
+
+                for (int j = 0; j < loadCaseOutput1.FrameElementEndForcesLines.Count; j++)
+                {
+                    FrameElementEndForcesLine frameElementEndForces1 = loadCaseOutput1.FrameElementEndForcesLines[j];
+                    FrameElementEndForcesLine frameElementEndForces2 = loadCaseOutput2.FrameElementEndForcesLines[j];
+                    GetCompareResult(frameElementEndForces1.Elmnt, frameElementEndForces2.Elmnt);
+                    GetCompareResult(frameElementEndForces1.Node, frameElementEndForces2.Node);
+                    GetCompareResult(frameElementEndForces1.Nx, frameElementEndForces2.Nx);
+                    GetCompareResult(frameElementEndForces1.Vy, frameElementEndForces2.Vy);
+                    GetCompareResult(frameElementEndForces1.Vz, frameElementEndForces2.Vz);
+                    GetCompareResult(frameElementEndForces1.Txx, frameElementEndForces2.Txx);
+                    GetCompareResult(frameElementEndForces1.Myy, frameElementEndForces2.Myy);
+                    GetCompareResult(frameElementEndForces1.Mzz, frameElementEndForces2.Mzz);
+                }
+
+                for (int j = 0; j < loadCaseOutput1.ReactionLines.Count; j++)
+                {
+                    ReactionLine reactionOutput1 = loadCaseOutput1.ReactionLines[j];
+                    ReactionLine reactionOutput2 = loadCaseOutput2.ReactionLines[j];
+                    GetCompareResult(reactionOutput1.NodeIndex, reactionOutput2.NodeIndex);
+                    GetCompareResult(reactionOutput1.Mxx, reactionOutput2.Mxx);
+                    GetCompareResult(reactionOutput1.Myy, reactionOutput2.Myy);
+                    GetCompareResult(reactionOutput1.Mzz, reactionOutput2.Mzz);
+                    GetCompareResult(reactionOutput1.Fx, reactionOutput2.Fx);
+                    GetCompareResult(reactionOutput1.Fy, reactionOutput2.Fy);
+                    GetCompareResult(reactionOutput1.Fz, reactionOutput2.Fz);
+                }
+
+                for (int j = 0; j < loadCaseOutput1.PeakFrameElementInternalForceLines.Count; j++)
+                {
+                    PeakFrameElementInternalForceLine peakFrameElementInternalForce1 =
+                        loadCaseOutput1.PeakFrameElementInternalForceLines[j];
+                    PeakFrameElementInternalForceLine peakFrameElementInternalForce2 =
+                        loadCaseOutput2.PeakFrameElementInternalForceLines[j];
+                    GetCompareResult(peakFrameElementInternalForce1.MemberIndex, peakFrameElementInternalForce2.MemberIndex);
+                    GetCompareResult(peakFrameElementInternalForce1.Nx, peakFrameElementInternalForce2.Nx);
+                    GetCompareResult(peakFrameElementInternalForce1.Vy, peakFrameElementInternalForce2.Vy);
+                    GetCompareResult(peakFrameElementInternalForce1.Vz, peakFrameElementInternalForce2.Vz);
+                    GetCompareResult(peakFrameElementInternalForce1.Txx, peakFrameElementInternalForce2.Txx);
+                    GetCompareResult(peakFrameElementInternalForce1.Myy, peakFrameElementInternalForce2.Myy);
+                    GetCompareResult(peakFrameElementInternalForce1.Mzz, peakFrameElementInternalForce2.Mzz);
+                    if (peakFrameElementInternalForce1.IsMax != peakFrameElementInternalForce2.IsMax)
+                        throw new Exception(peakFrameElementInternalForce1.IsMax + " " + peakFrameElementInternalForce2.IsMax);
+                }
+            }
+        }
+
         private void GetCompareResult(double num1, double num2)
         {
             if (!CompareDouble(num1, num2))
