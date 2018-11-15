@@ -26,15 +26,16 @@ namespace Frame3ddn.Test
         [Fact]
         public void Run()
         {
+            string fileName = "NTI";
             string workspaceDir = Directory.GetParent(Directory.GetParent(Directory.GetParent(Directory.GetCurrentDirectory().ToString()).ToString()).ToString()).ToString();
             string testDataPath = Directory.GetDirectories(workspaceDir, "TestData")[0];
             string inputPath = Directory.GetDirectories(testDataPath, "Input")[0];
             string outputPath = Directory.GetDirectories(testDataPath, "Output")[0];
-            StreamReader sr = new StreamReader(Directory.GetFiles(inputPath, "NT.csv")[0]);
+            StreamReader sr = new StreamReader(Directory.GetFiles(inputPath, fileName + ".csv")[0]);
             Input input = Input.Parse(sr);
             Solver solver = new Solver();
             Output output = solver.Solve(input);
-            File.WriteAllText(Directory.GetFiles(outputPath, "NT.txt")[0], output.TextOutput);
+            File.WriteAllText(Directory.GetFiles(outputPath, fileName + ".txt")[0], output.TextOutput);
         }
 
         /// <summary>
