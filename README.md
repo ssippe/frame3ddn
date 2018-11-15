@@ -12,7 +12,7 @@ Incomplete c# implementation of frame3dd.
   - [X] CSV
   - [ ] 3DD
 - Static Load case:
-  - [ ] Node loads
+  - [X] Node loads
   - [X] Uniformly-distributed element loads
   - [X] Trapezoidally-distributed element loads
   - [ ] Concentrated interior point loads
