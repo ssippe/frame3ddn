@@ -300,10 +300,6 @@ namespace Frame3ddn
             {
                 string loadCaseGravityString = noComentInput[currentLine++];
                 int loadNodeNum = int.Parse(noComentInput[currentLine++]);
-                if (loadNodeNum > 0)
-                {
-                    throw new Exception("Node load is not supported.");
-                }
                 List<NodeLoad> nodeLoads = new List<NodeLoad>();
                 for (int j = currentLine; currentLine < j + loadNodeNum; currentLine++)
                 {

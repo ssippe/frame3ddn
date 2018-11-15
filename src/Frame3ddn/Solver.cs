@@ -71,7 +71,7 @@ namespace Frame3ddn
             List<float> G = input.FrameElements.Select(f => f.G).ToList();
             List<float> p = input.FrameElements.Select(f => f.Roll).ToList(); 
             List<float> d = input.FrameElements.Select(f => f.Density).ToList();
-            int nL = input.LoadCases.Count; 
+            int nL = input.LoadCases.Count;
             List<float> gX = input.LoadCases.Select(l => l.Gravity.X).ToList(); 
             List<float> gY = input.LoadCases.Select(l => l.Gravity.Y).ToList(); 
             List<float> gZ = input.LoadCases.Select(l => l.Gravity.Z).ToList(); 

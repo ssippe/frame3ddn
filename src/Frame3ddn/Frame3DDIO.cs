@@ -69,6 +69,17 @@ namespace Frame3ddn
                                          ((t[5] * t[6] - t[3] * t[8]) * gX[lc] +
                                           (t[5] * t[7] - t[4] * t[8]) * gY[lc]);
                 }
+
+                for (int i = 0; i < nF[lc]; i++)
+                {
+                    NodeLoad nodeLoad = loadCases[lc].NodeLoads[i];
+                    FMech[lc, nodeLoad.NodeIdx * 6 + 0] = nodeLoad.Load.X;
+                    FMech[lc, nodeLoad.NodeIdx * 6 + 1] = nodeLoad.Load.Y;
+                    FMech[lc, nodeLoad.NodeIdx * 6 + 2] = nodeLoad.Load.Z;
+                    FMech[lc, nodeLoad.NodeIdx * 6 + 3] = nodeLoad.Moment.X;
+                    FMech[lc, nodeLoad.NodeIdx * 6 + 4] = nodeLoad.Moment.Y;
+                    FMech[lc, nodeLoad.NodeIdx * 6 + 5] = nodeLoad.Moment.Z;
+                }
                 
                 for (int i = 0; i < nU[lc]; i++)
                 {
