@@ -24,6 +24,7 @@ Incomplete c# implementation of frame3dd.
   - [X] Reactions (global)
   - [X] Peak frame element internal forces (local)
 - Others
+  - [ ] Geometric stiffness
   - [ ] Dynamic modal analysis
   - [ ] Extra node inertia
   - [ ] Extra frame element mass
@@ -36,6 +37,8 @@ Incomplete c# implementation of frame3dd.
  * Create your own input or get it from a file
     - Input input = new Input(title, nodes, frameElements, reactionInputs, loadCases, false, false, 10, 1, 100);
     - StreamReader sr = new StreamReader(//Your File or file address); Input input = Input.Parse(sr);
+      
+      (You can find examples in frame3ddn/src/Frame3ddn.Test/TestData or frame3dd website)
  * Solver solver = new Solver();
  * Output output = solver.Solve(input);
  * Directly use the result from output.LoadCaseOutputs in your code or get its text output from output.TextOutput.
