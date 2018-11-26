@@ -44,4 +44,10 @@ Incomplete c# implementation of frame3dd.
  * Output output = solver.Solve(input);
  * Directly use the result from output.LoadCaseOutputs in your code or get its text output from output.TextOutput.
  
+ # Steps to publish
+ * Update package version and release note in project property.
+ * Change configuration from debug to release, then right click on the project and pack.
+ * Run the following command line from the folder that contains Frame3ddn.[version].nupkg
+   >`nuget push Frame3ddn.[version].nupkg [API key] -Source https://api.nuget.org/v3/index.json`
+ * It will take around 30 mins. Login https://www.nuget.org/ to check status in Manage Packages.
 
