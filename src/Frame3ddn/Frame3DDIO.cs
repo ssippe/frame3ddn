@@ -86,8 +86,7 @@ namespace Frame3ddn
                     UniformLoad uniformLoad = loadCases[lc].UniformLoads[i];
                     int n = uniformLoad.ElementIdx;
                     if (n < 0 || n > nE)
-                        Console.WriteLine("\n  error in uniform distributed loads: element number %d is out of range\n",
-                            n);
+                        Console.WriteLine($"  error in uniform distributed loads: element number {n} is out of range. LoadCase={lc}");
 
                     U[lc, i, 0] = (float)n;
                     U[lc, i, 1] = uniformLoad.Load.X;
@@ -95,8 +94,7 @@ namespace Frame3ddn
                     U[lc, i, 3] = uniformLoad.Load.Z;
 
                     if (Common.isZeroVector(uniformLoad.Load))
-                        Console.WriteLine("\n   Warning: All distributed loads applied to frame element %d  are zero\n",
-                            n);
+                        Console.WriteLine($"   Warning: All distributed loads applied to frame element {n}  are zero. LoadCase={lc}");
 
                     Nx1 = Nx2 = U[lc, i, 1] * Le[n] / 2.0;
                     Vy1 = Vy2 = U[lc, i, 2] * Le[n] / 2.0;
@@ -128,7 +126,7 @@ namespace Frame3ddn
 
                 /* trapezoidally distributed loads ----------------------------- */
                 if (nW[lc] < 0 || nW[lc] > 10 * nE)
-                    Console.WriteLine("\n  error: valid ranges for nW is 0 ... %d \n", 10 * nE);
+                    Console.WriteLine($"  error: valid ranges for nW is 0 ... {10 * nE}");
 
                 for (int i = 0; i < nW[lc]; i++)
                 {
@@ -136,7 +134,7 @@ namespace Frame3ddn
                     int n = trapLoad.ElementIdx;
                     if (n < 0 || n > nE)
                         Console.WriteLine(
-                            "\n  error in trapezoidally-distributed loads: element number %d is out of range\n", n);
+                            $"  error in trapezoidally-distributed loads: element number %d is out of range\n", n);
                     W[lc, i, 0] = (float)n;
                     W[lc, i, 1] = trapLoad.LocationStart.X;
                     W[lc, i, 2] = trapLoad.LocationEnd.X;
@@ -159,44 +157,45 @@ namespace Frame3ddn
                          W[lc, i, 8] == 0 && W[lc, i, 9] == 0 &&
                          W[lc, i, 12] == 0 && W[lc, i, 13] == 0)
                     {
-                        Console.WriteLine("\n   Warning: All trapezoidal loads applied to frame element %d  are zero\n", n);
-                        Console.WriteLine("     load case: %d , element %d , load %d\n ", lc, n, i);
+                        Console.WriteLine($"   Warning: All trapezoidal loads applied to frame element {n}  are zero");
+                        Console.WriteLine($"     load case: {lc} , element {n} , load {i}");
                     }
 
+                    var loadCaseElementLoadText = $"load case: {lc} , element {n} , load {i}";
+                    var errorPrefix = $"   error in x-axis trapezoidal loads, " + loadCaseElementLoadText + "\n";
+
                     if (W[lc, i, 1] < 0)
-                        Console.WriteLine("\n   error in x-axis trapezoidal loads, load case: %d , element %d , load %d\n  starting location = %f < 0\n",
-                        lc, n, i, W[lc, i, 1]);
+                        throw new Exception(errorPrefix + $"  starting location = {W[lc, i, 1]} < 0");
 
                     if (W[lc, i, 1] > W[lc, i, 2])
-                        Console.WriteLine("\n   error in x-axis trapezoidal loads, load case: %d , element %d , load %d\n  starting location = %f > ending location = %f \n",
-                        lc, n, i, W[lc, i, 1], W[lc, i, 2]);
+                        throw new Exception(errorPrefix +
+                                            $"   starting location = {W[lc, i, 1]} > ending location = {W[lc, i, 2]} ");
 
                     if (W[lc, i, 2] > Ln)
-                        Console.WriteLine("\n   error in x-axis trapezoidal loads, load case: %d , element %d , load %d\n ending location = %f > L (%f) \n",
-                        lc, n, i, W[lc, i, 2], Ln);
+                        throw new Exception(errorPrefix +$"ending location = {W[lc, i, 2]} > L ({Ln}) ");
 
+                    errorPrefix = $"   error in y-axis trapezoidal loads, " + loadCaseElementLoadText + "\n";
                     if (W[lc, i, 5] < 0)
-                        Console.WriteLine("\n   error in y-axis trapezoidal loads, load case: %d , element %d , load %d\n starting location = %f < 0\n",
-                        lc, n, i, W[lc, i, 5]);
+                        throw new Exception(errorPrefix+$" starting location = {W[lc, i, 5]} < 0");
 
-                    if (W[lc, i, 5] > W[lc, i, 7])
-                        Console.WriteLine("\n   error in y-axis trapezoidal loads, load case: %d , element %d , load %d\n starting location = %f > ending location = %f \n",
-                        lc, n, i, W[lc, i, 5], W[lc, i, 6]);
+                    if (W[lc, i, 5] > W[lc, i, 6])
+                        throw new Exception(errorPrefix +
+                                            $"starting location = {W[lc, i, 5]} > ending location = {W[lc, i, 6]} ");
 
                     if (W[lc, i, 6] > Ln)
-                        Console.WriteLine("\n   error in y-axis trapezoidal loads, load case: %d , element %d , load %d\n ending location = %f > L (%f) \n",
-                        lc, n, i, W[lc, i, 6], Ln);
+                        throw new Exception(errorPrefix+$"ending location = {W[lc, i, 6]} > L ({Ln})");
 
+
+                    errorPrefix = $"   error in z-axis trapezoidal loads, " + loadCaseElementLoadText + "\n";
                     if (W[lc, i, 9] < 0)
-                        Console.WriteLine("\n   error in z-axis trapezoidal loads, load case: %d , element %d , load %d\n starting location = %f < 0\n",
-                        lc, n, i, W[lc, i, 9]);
+                        throw new Exception(errorPrefix + $" starting location = {W[lc, i, 9]} < 0");
 
                     if (W[lc, i, 9] > W[lc, i, 10])
-                        Console.WriteLine("\n   error in z-axis trapezoidal loads, load case: %d , element %d , load %d\n starting location = %f > ending location = %f \n",
-                        lc, n, i, W[lc, i, 9], W[lc, i, 10]);
+                        throw new Exception(errorPrefix +
+                                            $"starting location = {W[lc, i, 9]} > ending location ={W[lc, i, 10]}");
 
                     if (W[lc, i, 10] > Ln)
-                        Console.WriteLine("\n   error in z-axis trapezoidal loads, load case: %d , element %d , load %d\n ending location = %f > L (%f) \n", lc, n, i, W[lc, i, 10], Ln);
+                        throw new Exception(errorPrefix + $"ending location = {W[lc, i, 10]} > L ({Ln})");
 
                     if (shear)
                     {

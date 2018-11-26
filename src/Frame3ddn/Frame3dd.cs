@@ -69,11 +69,11 @@ namespace Frame3ddn
                             )
                         )
                         {
-                            Console.WriteLine("elastic_K: element stiffness matrix not symetric ...\n");
-                            Console.WriteLine(" ... k[%d][%d] = %15.6e \n", i, j, k[i, j]);
-                            Console.WriteLine(" ... k[%d][%d] = %15.6e   ", j, i, k[j, i]);
-                            Console.WriteLine(" ... relative error = %e \n", Math.Abs(k[i, j] / k[j, i] - 1.0));
-                            Console.WriteLine(" ... element matrix saved in file 'kt'\n");
+                            Console.WriteLine($"elastic_K: element stiffness matrix not symetric ...");
+                            Console.WriteLine($" ... k[{i}][{j}] = {k[i, j]} ");
+                            Console.WriteLine($" ... k[{j}][{i}] = {k[j, i]}   ");
+                            Console.WriteLine($" ... relative error = {Math.Abs(k[i, j] / k[j, i] - 1.0)} ");
+                            Console.WriteLine($" ... element matrix saved in file 'kt'");
                         }
 
                         k[i, j] = k[j, i] = 0.5 * (k[i, j] + k[j, i]);
