@@ -1,5 +1,6 @@
 # frame3ddn
 [![NuGet version (Frame3ddn)](https://img.shields.io/nuget/v/Frame3ddn.svg?style=flat-square)](https://www.nuget.org/packages/Frame3ddn/)
+[![Build Status](https://travis-ci.org/ssippe/frame3ddn.png)](https://travis-ci.org/ssippe/frame3ddn)
 
 Incomplete c# implementation of frame3dd. 
 
@@ -43,5 +44,4 @@ Incomplete c# implementation of frame3dd.
  * Output output = solver.Solve(input);
  * Directly use the result from output.LoadCaseOutputs in your code or get its text output from output.TextOutput.
  
-### Status
-[![Build Status](https://travis-ci.org/ssippe/frame3ddn.png)](https://travis-ci.org/ssippe/frame3ddn)
+
