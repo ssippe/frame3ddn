@@ -12,9 +12,9 @@
     <PackageTags>frame3dd, structual analysis</PackageTags>
     <Copyright>copyright © Steelx 2018</Copyright>
     <PackageId>Frame3ddn</PackageId>
-    <Version>1.0.5</Version>
+    <Version>1.0.6</Version>
     <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
-    <PackageReleaseNotes>Added support for node loads.</PackageReleaseNotes>
+    <PackageReleaseNotes>Changed errors to throw exceptions. Fixed some warning output. Fixed false positive "error in y-axis trapezoidal loads" error.</PackageReleaseNotes>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
