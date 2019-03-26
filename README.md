@@ -46,6 +46,7 @@ Incomplete c# implementation of frame3dd.
  
  # Steps to publish
  * Update package version and release note in project property.
+ * commit and tag in git with the version name
  * Change configuration from debug to release, then right click on the project and pack.
  * Run the following command line from the folder that contains Frame3ddn.[version].nupkg
    >`nuget push Frame3ddn.[version].nupkg [API key] -Source https://api.nuget.org/v3/index.json`
