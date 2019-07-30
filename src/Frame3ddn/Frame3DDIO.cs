@@ -86,15 +86,15 @@ namespace Frame3ddn
                     UniformLoad uniformLoad = loadCases[lc].UniformLoads[i];
                     int n = uniformLoad.ElementIdx;
                     if (n < 0 || n > nE)
-                        Console.WriteLine($"  error in uniform distributed loads: element number {n} is out of range. LoadCase={lc}");
+                        throw new Exception($"  error in uniform distributed loads: element number {n} is out of range. LoadCase={lc}");
 
                     U[lc, i, 0] = (float)n;
                     U[lc, i, 1] = uniformLoad.Load.X;
                     U[lc, i, 2] = uniformLoad.Load.Y;
                     U[lc, i, 3] = uniformLoad.Load.Z;
 
-                    if (Common.isZeroVector(uniformLoad.Load))
-                        Console.WriteLine($"   Warning: All distributed loads applied to frame element {n}  are zero. LoadCase={lc}");
+                    //if (Common.isZeroVector(uniformLoad.Load))
+                        //Console.WriteLine($"   Warning: All distributed loads applied to frame element {n}  are zero. LoadCase={lc}");
 
                     Nx1 = Nx2 = U[lc, i, 1] * Le[n] / 2.0;
                     Vy1 = Vy2 = U[lc, i, 2] * Le[n] / 2.0;
