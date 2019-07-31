@@ -171,7 +171,7 @@ namespace Frame3ddn
                         throw new Exception(errorPrefix +
                                             $"   starting location = {W[lc, i, 1]} > ending location = {W[lc, i, 2]} ");
 
-                    if (W[lc, i, 2] > Ln)
+                    if (W[lc, i, 2].ToDoubleExt() > Ln)
                         throw new Exception(errorPrefix +$"ending location = {W[lc, i, 2]} > L ({Ln}) ");
 
                     errorPrefix = $"   error in y-axis trapezoidal loads, " + loadCaseElementLoadText + "\n";
@@ -182,7 +182,7 @@ namespace Frame3ddn
                         throw new Exception(errorPrefix +
                                             $"starting location = {W[lc, i, 5]} > ending location = {W[lc, i, 6]} ");
 
-                    if (W[lc, i, 6] > Ln)
+                    if (W[lc, i, 6].ToDoubleExt() > Ln)
                         throw new Exception(errorPrefix+$"ending location = {W[lc, i, 6]} > L ({Ln})");
 
 
@@ -194,7 +194,7 @@ namespace Frame3ddn
                         throw new Exception(errorPrefix +
                                             $"starting location = {W[lc, i, 9]} > ending location ={W[lc, i, 10]}");
 
-                    if (W[lc, i, 10] > Ln)
+                    if (W[lc, i, 10].ToDoubleExt() > Ln)
                         throw new Exception(errorPrefix + $"ending location = {W[lc, i, 10]} > L ({Ln})");
 
                     if (shear)

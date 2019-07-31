@@ -12,11 +12,11 @@
     <PackageTags>frame3dd, structual analysis</PackageTags>
     <Copyright>copyright © Steelx 2018</Copyright>
     <PackageId>Frame3ddn</PackageId>
-    <Version>1.0.7</Version>
+    <Version>1.0.8</Version>
     <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
-    <PackageReleaseNotes>Changed errors to throw exceptions. Fixed some warning output. #2</PackageReleaseNotes>
-    <AssemblyVersion>1.0.7.0</AssemblyVersion>
-    <FileVersion>1.0.7.0</FileVersion>
+    <PackageReleaseNotes>Fixed false positive error due to float rounding</PackageReleaseNotes>
+    <AssemblyVersion>1.0.8.0</AssemblyVersion>
+    <FileVersion>1.0.8.0</FileVersion>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">

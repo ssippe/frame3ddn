@@ -88,5 +88,14 @@ namespace Frame3ddn
             }
             return num.ToString("N" + c1).Replace(",", "").PadLeft(c0);
         }
+
+        /// <summary>
+        /// to double without adding to the number
+        /// </summary>
+        /// <example>
+        /// (double)26974.05F==26974.05078125
+        /// 26974.05F.ToDoubleExt()==26974.05
+        /// </example>
+        public static double ToDoubleExt(this float f) => (double) (decimal) f;
     }
 }
