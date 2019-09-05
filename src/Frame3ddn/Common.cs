@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Globalization;
 using System.Runtime.CompilerServices;
+using Frame3ddn.Model;
 
 namespace Frame3ddn
 {
@@ -8,14 +9,14 @@ namespace Frame3ddn
     {
         public const int Zvert = 1;
 
-        public static bool isZeroVector(Vec3Float vec3)
+        public static bool IsZeroVector(Vec3Float vec3)
         {
-            if (isDoubleZero(vec3.X) && isDoubleZero(vec3.Y) && isDoubleZero(vec3.Z))
+            if (IsDoubleZero(vec3.X) && IsDoubleZero(vec3.Y) && IsDoubleZero(vec3.Z))
                 return true;
             return false;
         }
 
-        public static bool isDoubleZero(double num)
+        public static bool IsDoubleZero(double num)
         {
             if (Math.Round(num, 1) != 0.0)
                 return false;

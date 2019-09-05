@@ -1,67 +1,62 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Text;
 
-namespace Frame3ddn.Test
+namespace Frame3ddn.Model
 {
-    public class PeakFrameElementInternalForceLine
+    public class PeakFrameElementInternalForce
     {
         /// <summary>
         /// Combination load case, 0 based index (vs frame3dd who uses 1 based in their files)
         /// </summary>
-        public readonly int LoadCaseIdx;
+        public int LoadcaseIdx { get; }
         /// <summary>
         /// 0 based index (vs frame3dd who uses 1 based in their files)
         /// </summary>
-        public readonly int MemberIndex;
-        public readonly bool IsMax;
+        public int ElementIdx { get; }
+        /// <summary>
+        /// true=>minimum, false=>maximum, null=>value at XOffset
+        /// </summary>
+        public bool? IsMin { get; }
         /// <summary>
         /// Newtons (N) Force along the primiary axis of the member. +ve tension, -ve compression
         /// </summary>
-        public readonly double Nx;
+        public double Nx { get; }
         /// <summary>
         /// Newtons (N)
         /// </summary>
-        public readonly double Vy;
+        public double Vy { get; }
         /// <summary>
         /// Newtons (N)
         /// </summary>
-        public readonly double Vz;
+        public double Vz { get; }
         /// <summary>
         /// Newton.Metres (Nm)
         /// </summary>
-        public readonly double Txx;
+        public double Txx { get; }
         /// <summary>
         /// Newton.Metres (Nm)
         /// </summary>
-        public readonly double Myy;
+        public double Myy { get; }
         /// <summary>
         /// Newton.Metres (Nm)
         /// </summary>
-        public readonly double Mzz;
+        public double Mzz { get; }
+        public double? XOffset { get; }
 
-        public PeakFrameElementInternalForceLine(int loadCaseIdx,
-            int memberIndex,
-            bool isMax,
-            double nx,
-            double vy,
-            double vz,
-            double txx,
-            double myy,
-            double mzz)
+        public PeakFrameElementInternalForce(int loadcaseIdx, int elementIdx, bool? isMin, double nx, double vy, double vz, double txx, double myy, double mzz, double? xOffset)
         {
-            LoadCaseIdx = loadCaseIdx;
-            MemberIndex = memberIndex;
-            IsMax = isMax;
+            LoadcaseIdx = loadcaseIdx;
+            ElementIdx = elementIdx;
+            IsMin = isMin;
             Nx = nx;
             Vy = vy;
             Vz = vz;
             Txx = txx;
             Myy = myy;
             Mzz = mzz;
+            XOffset = xOffset;
         }
 
-        public static PeakFrameElementInternalForceLine FromLine(string line, int loadCaseIdx)
+        public static PeakFrameElementInternalForce FromLine(string line, int loadCaseIdx)
         {
 
 #if false
@@ -88,7 +83,7 @@ EXAMPLE LINES
             var txx = double.Parse(splits[col++]); //Nmm -> Nm
             var myy = double.Parse(splits[col++]); //Nmm -> Nm
             var mzz = double.Parse(splits[col++]); //Nmm -> Nm
-            return new PeakFrameElementInternalForceLine(loadCaseIdx, memberIdx, isMax, nx, vy, vz, txx, myy, mzz);
+            return new PeakFrameElementInternalForce(loadCaseIdx, memberIdx, !isMax, nx, vy, vz, txx, myy, mzz, null);
         }
     }
 }

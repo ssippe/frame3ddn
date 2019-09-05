@@ -5,7 +5,7 @@ Frame3DD is distributed in the hope that it will be useful but with no warranty.
 For details see the GNU Public Licence: http://www.fsf.org/copyleft/gpl.html
 ________________________________________________________________________________
 ExampleI:atriangulartower(kip in)
-Thursday, 15 November 2018 2:56:38 PM
+Thursday, 5 September 2019 3:43:42 PM
 ________________________________________________________________________________
 In 2D problems the Y-axis is vertical.  In 3D problems the Z-axis is vertical.
 ________________________________________________________________________________

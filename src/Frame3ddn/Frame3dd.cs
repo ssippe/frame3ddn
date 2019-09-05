@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Text;
+using Frame3ddn.Model;
 
 namespace Frame3ddn
 {
@@ -149,28 +150,28 @@ namespace Frame3ddn
             for (i = 0; i < DoF; i++)
             {
                 errF = 0.0;
-                if (!Common.isDoubleZero(q[i]))
+                if (!Common.IsDoubleZero(q[i]))
                 {
                     errF = F[i];
                     for (j = 0; j < DoF; j++)
                     {
-                        if (!Common.isDoubleZero(q[j]))
+                        if (!Common.IsDoubleZero(q[j]))
                         {   // K_qq in upper triangle only
                             if (i <= j) errF -= K[i, j] * D[j];
                             else errF -= K[j, i] * D[j];
                         }
                     }
                     for (j = 0; j < DoF; j++)
-                        if (!Common.isDoubleZero(r[j])) errF -= K[i, j] * D[j];
+                        if (!Common.IsDoubleZero(r[j])) errF -= K[i, j] * D[j];
                 }
                 dF[i] = errF;
             }
 
             for (i = 0; i < DoF; i++)
-                if (!Common.isDoubleZero(q[i]))
+                if (!Common.IsDoubleZero(q[i]))
                     ss_dF += (dF[i] * dF[i]);
             for (i = 0; i < DoF; i++)
-                if (!Common.isDoubleZero(q[i]))
+                if (!Common.IsDoubleZero(q[i]))
                     ss_F += (F[i] * F[i]);
 
             return (Math.Sqrt(ss_dF) / Math.Sqrt(ss_F));	// convergence criterion
@@ -377,12 +378,12 @@ namespace Frame3ddn
             //  {dx_r} is left unchanged at 0.0;
             for (i = 0; i < n; i++)
             {
-                if (!Common.isDoubleZero(q[i]))
+                if (!Common.IsDoubleZero(q[i]))
                 {
                     sdp = b[i];
                     for (j = 0; j < n; j++)
                     {
-                        if (!Common.isDoubleZero(q[j]))
+                        if (!Common.IsDoubleZero(q[j]))
                         {   // A_qq in upper triangle only
                             if (i <= j)
                             {
@@ -392,7 +393,7 @@ namespace Frame3ddn
                         }
                     }
                     for (j = 0; j < n; j++)
-                        if (!Common.isDoubleZero(r[j]))
+                        if (!Common.IsDoubleZero(r[j]))
                             sdp -= A[i, j] * x[j];
                     dx[i] = sdp;
                 } // else dx[i] = 0.0; // x[i];
@@ -402,7 +403,7 @@ namespace Frame3ddn
             LdlDcmpPm(A, n, d, dx, dx, dc, q, r, 0, 1);
 
             for (i = 0; i < n; i++)
-                if (!Common.isDoubleZero(q[i]))
+                if (!Common.IsDoubleZero(q[i]))
                     rms_resid_new += dx[i] * dx[i];
 
             rms_resid_new = Math.Sqrt(rms_resid_new / (double)n);
@@ -412,9 +413,9 @@ namespace Frame3ddn
             { /*  enough improvement    */
                 for (i = 0; i < n; i++)
                 {   /*  update the solution 2014-05-14   */
-                    if (!Common.isDoubleZero(q[i]))
+                    if (!Common.IsDoubleZero(q[i]))
                         x[i] += dx[i];
-                    if (!Common.isDoubleZero(r[i]))
+                    if (!Common.IsDoubleZero(r[i]))
                         c[i] += dc[i];
                 }
                 rmsResid = rms_resid_new; /* return the new residual   */
@@ -434,35 +435,35 @@ namespace Frame3ddn
                 {
                     d[j] = 0.0;
 
-                    if (!Common.isDoubleZero(q[j]))
+                    if (!Common.IsDoubleZero(q[j]))
                     { /* reduce column j, except where q[i]==0	*/
 
                         for (m = 0, i = 0; i < j; i++)  /* scan the sky-line	*/
-                            if (Common.isDoubleZero(A[i, j]))
+                            if (Common.IsDoubleZero(A[i, j]))
                                 ++m;
                             else
                                 break;
 
                         for (i = m; i < j; i++)
                         {
-                            if (!Common.isDoubleZero(q[i]))
+                            if (!Common.IsDoubleZero(q[i]))
                             {
                                 A[j, i] = A[i, j];
                                 for (k = m; k < i; k++)
-                                    if (!Common.isDoubleZero(q[k]))
+                                    if (!Common.IsDoubleZero(q[k]))
                                         A[j, i] -= A[j, k] * A[i, k];
                             }
                         }
 
                         d[j] = A[j, j];
                         for (i = m; i < j; i++)
-                            if (!Common.isDoubleZero(q[i]))
+                            if (!Common.IsDoubleZero(q[i]))
                                 d[j] -= A[j, i] * A[j, i] / d[i];
                         for (i = m; i < j; i++)
-                            if (!Common.isDoubleZero(q[i]))
+                            if (!Common.IsDoubleZero(q[i]))
                                 A[j, i] /= d[i];
 
-                        if (Common.isDoubleZero(d[j]))
+                        if (Common.IsDoubleZero(d[j]))
                         {
                             Console.WriteLine(" ldl_dcmp_pm(): zero found on diagonal ...\n");
                             Console.WriteLine(" d[%d] = %11.4e\n", j, d[j]);
@@ -478,39 +479,39 @@ namespace Frame3ddn
             {
                 for (i = 0; i < n; i++)
                 {
-                    if (!Common.isDoubleZero(q[i]))
+                    if (!Common.IsDoubleZero(q[i]))
                     {
                         x[i] = b[i];
                         for (j = 0; j < n; j++)
-                            if (!Common.isDoubleZero(r[j]))
+                            if (!Common.IsDoubleZero(r[j]))
                                 x[i] -= A[i, j] * x[j];
                     }
                 }
 
                 /* {x} is run through the same forward reduction as was [A] */
                 for (i = 0; i < n; i++)
-                    if (!Common.isDoubleZero(q[i]))
+                    if (!Common.IsDoubleZero(q[i]))
                         for (j = 0; j < i; j++)
-                            if (!Common.isDoubleZero(q[j]))
+                            if (!Common.IsDoubleZero(q[j]))
                                 x[i] -= A[i, j] * x[j];
 
                 for (i = 0; i < n; i++)
-                    if (!Common.isDoubleZero(q[i]))
+                    if (!Common.IsDoubleZero(q[i]))
                         x[i] /= d[i];
 
                 /* now back substitution is conducted on {x};  [A] is preserved */
 
                 for (i = n - 1; i > 0; i--)
-                    if (!Common.isDoubleZero(q[i]))
+                    if (!Common.IsDoubleZero(q[i]))
                         for (j = 0; j < i; j++)
-                            if (!Common.isDoubleZero(q[j]))
+                            if (!Common.IsDoubleZero(q[j]))
                                 x[j] -= A[i, j] * x[i];
 
                 /* finally, evaluate c_r	*/
                 for (i = 0; i < n; i++)
                 {
                     c[i] = 0.0;
-                    if (!Common.isDoubleZero(r[i]))
+                    if (!Common.IsDoubleZero(r[i]))
                     {
                         c[i] = -b[i]; // changed from 0.0 to -b[i]; 2014-05-14
                         for (j = 0; j < n; j++)

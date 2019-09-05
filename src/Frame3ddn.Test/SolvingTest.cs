@@ -1,8 +1,11 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
+using System.Security.Cryptography;
 using System.Text;
 using System.Text.RegularExpressions;
+using Frame3ddn.Model;
 using Xunit;
 
 namespace Frame3ddn.Test
@@ -16,7 +19,7 @@ namespace Frame3ddn.Test
             string testDataPath = Directory.GetDirectories(workspaceDir, "TestData")[0];
             string inputPath = Directory.GetDirectories(testDataPath, "Input")[0];
             StreamReader sr = new StreamReader(Directory.GetFiles(inputPath, "B.csv")[0]);
-            Input input = Input.Parse(sr);
+            Model.Input input = Input.Parse(sr);
             Assert.Equal(18, input.Nodes.Count);
             Assert.Equal(17, input.ReactionInputs[3].Number);
             Assert.Equal(10, input.FrameElements[3].Ax);
@@ -75,72 +78,17 @@ namespace Frame3ddn.Test
             StreamReader sr = new StreamReader(inputFilePath);
             Input input = Input.Parse(sr);
             Solver solver = new Solver();
-            Output output = solver.Solve(input);
+            Output outputCalculated = solver.Solve(input);
 
             string file = File.ReadAllText(outputFilePath);
             var result = ParseLines(file);
 
-            for (int i = 0; i < output.LoadCaseOutputs.Count; i++)
+            for (int i = 0; i < outputCalculated.LoadCaseOutputs.Count; i++)
             {
-                LoadCaseOutput loadCaseOutput = output.LoadCaseOutputs[i];
-                OutputLine loadCaseOutputToCompare = result[i];
-                for (int j = 0; j < loadCaseOutput.NodeDisplacements.Count; j++)
-                {
-                    NodeDisplacement nodeDisplacement = loadCaseOutput.NodeDisplacements[j];
-                    NodeDeflectionLine nodeDisplacementToCompare = loadCaseOutputToCompare.NodeDeflectionLines[j];
-                    GetCompareResult(nodeDisplacement.NodeIdx, nodeDisplacementToCompare.NodeIdx);
-                    GetCompareResult(nodeDisplacement.Displacement.X, nodeDisplacementToCompare.DisplacementX);
-                    GetCompareResult(nodeDisplacement.Displacement.Y, nodeDisplacementToCompare.DisplacementY);
-                    GetCompareResult(nodeDisplacement.Displacement.Z, nodeDisplacementToCompare.Fz);
-                    GetCompareResult(nodeDisplacement.Rotation.X, nodeDisplacementToCompare.Mxx);
-                    GetCompareResult(nodeDisplacement.Rotation.Y, nodeDisplacementToCompare.Myy);
-                    GetCompareResult(nodeDisplacement.Rotation.Z, nodeDisplacementToCompare.Mzz);
-                }
-
-                for (int j = 0; j < loadCaseOutput.FrameElementEndForces.Count; j++)
-                {
-                    FrameElementEndForce frameElementEndForce = loadCaseOutput.FrameElementEndForces[j];
-                    FrameElementEndForcesLine frameElementEndForcesToCompare =
-                        loadCaseOutputToCompare.FrameElementEndForcesLines[j];
-                    GetCompareResult(frameElementEndForce.ElementIdx, frameElementEndForcesToCompare.Elmnt);
-                    GetCompareResult(frameElementEndForce.NodeIdx, frameElementEndForcesToCompare.Node);
-                    GetCompareResult(frameElementEndForce.Nx, frameElementEndForcesToCompare.Nx);
-                    GetCompareResult(frameElementEndForce.Vy, frameElementEndForcesToCompare.Vy);
-                    GetCompareResult(frameElementEndForce.Vz, frameElementEndForcesToCompare.Vz);
-                    GetCompareResult(frameElementEndForce.Txx, frameElementEndForcesToCompare.Txx);
-                    GetCompareResult(frameElementEndForce.Myy, frameElementEndForcesToCompare.Myy);
-                    GetCompareResult(frameElementEndForce.Mzz, frameElementEndForcesToCompare.Mzz);
-                }
-
-                for (int j = 0; j < loadCaseOutput.ReactionOutputs.Count; j++)
-                {
-                    ReactionOutput reactionOutput = loadCaseOutput.ReactionOutputs[j];
-                    ReactionLine reactionOutputToCompare = loadCaseOutputToCompare.ReactionLines[j];
-                    GetCompareResult(reactionOutput.NodeIdx, reactionOutputToCompare.NodeIndex);
-                    GetCompareResult(reactionOutput.M.X, reactionOutputToCompare.Mxx);
-                    GetCompareResult(reactionOutput.M.Y, reactionOutputToCompare.Myy);
-                    GetCompareResult(reactionOutput.M.Z, reactionOutputToCompare.Mzz);
-                    GetCompareResult(reactionOutput.F.X, reactionOutputToCompare.Fx);
-                    GetCompareResult(reactionOutput.F.Y, reactionOutputToCompare.Fy);
-                    GetCompareResult(reactionOutput.F.Z, reactionOutputToCompare.Fz);
-                }
-
-                for (int j = 0; j < loadCaseOutput.PeakFrameElementInternalForces.Count; j++)
-                {
-                    PeakFrameElementInternalForce peakFrameElementInternalForce =
-                        loadCaseOutput.PeakFrameElementInternalForces[j];
-                    PeakFrameElementInternalForceLine peakFrameElementInternalForceToCompare =
-                        loadCaseOutputToCompare.PeakFrameElementInternalForceLines[j];
-                    GetCompareResult(peakFrameElementInternalForce.ElementIdx, peakFrameElementInternalForceToCompare.MemberIndex);
-                    GetCompareResult(peakFrameElementInternalForce.Nx, peakFrameElementInternalForceToCompare.Nx);
-                    GetCompareResult(peakFrameElementInternalForce.Vy, peakFrameElementInternalForceToCompare.Vy);
-                    GetCompareResult(peakFrameElementInternalForce.Vz, peakFrameElementInternalForceToCompare.Vz);
-                    GetCompareResult(peakFrameElementInternalForce.Txx, peakFrameElementInternalForceToCompare.Txx);
-                    GetCompareResult(peakFrameElementInternalForce.Myy, peakFrameElementInternalForceToCompare.Myy);
-                    GetCompareResult(peakFrameElementInternalForce.Mzz, peakFrameElementInternalForceToCompare.Mzz);
-                    if (peakFrameElementInternalForce.IsMin == peakFrameElementInternalForceToCompare.IsMax)
-                        throw new Exception(peakFrameElementInternalForce.IsMin + " " + !peakFrameElementInternalForceToCompare.IsMax);
-                }
+                var loadCaseOutput = outputCalculated.LoadCaseOutputs[i];
+                var loadCaseOutputToCompare = result[i];
+                if (!IsEqual(loadCaseOutput, loadCaseOutputToCompare))
+                    throw new Exception("?");                
             }
         }
 
@@ -180,67 +128,115 @@ namespace Frame3ddn.Test
             var result1 = ParseLines(file1);
             var result2 = ParseLines(file2);
 
+            
             for (int i = 0; i < result1.Count; i++)
             {
-                OutputLine loadCaseOutput1 = result1[i];
-                OutputLine loadCaseOutput2 = result2[i];
-                for (int j = 0; j < loadCaseOutput1.NodeDeflectionLines.Count; j++)
-                {
-                    NodeDeflectionLine nodeDisplacement1 = loadCaseOutput1.NodeDeflectionLines[j];
-                    NodeDeflectionLine nodeDisplacement2 = loadCaseOutput2.NodeDeflectionLines[j];
-                    GetCompareResult(nodeDisplacement1.NodeIdx, nodeDisplacement2.NodeIdx);
-                    GetCompareResult(nodeDisplacement1.DisplacementX, nodeDisplacement2.DisplacementX);
-                    GetCompareResult(nodeDisplacement1.DisplacementY, nodeDisplacement2.DisplacementY);
-                    GetCompareResult(nodeDisplacement1.Fz, nodeDisplacement2.Fz);
-                    GetCompareResult(nodeDisplacement1.Mxx, nodeDisplacement2.Mxx);
-                    GetCompareResult(nodeDisplacement1.Myy, nodeDisplacement2.Myy);
-                    GetCompareResult(nodeDisplacement1.Mzz, nodeDisplacement2.Mzz);
-                }
-
-                for (int j = 0; j < loadCaseOutput1.FrameElementEndForcesLines.Count; j++)
-                {
-                    FrameElementEndForcesLine frameElementEndForces1 = loadCaseOutput1.FrameElementEndForcesLines[j];
-                    FrameElementEndForcesLine frameElementEndForces2 = loadCaseOutput2.FrameElementEndForcesLines[j];
-                    GetCompareResult(frameElementEndForces1.Elmnt, frameElementEndForces2.Elmnt);
-                    GetCompareResult(frameElementEndForces1.Node, frameElementEndForces2.Node);
-                    GetCompareResult(frameElementEndForces1.Nx, frameElementEndForces2.Nx);
-                    GetCompareResult(frameElementEndForces1.Vy, frameElementEndForces2.Vy);
-                    GetCompareResult(frameElementEndForces1.Vz, frameElementEndForces2.Vz);
-                    GetCompareResult(frameElementEndForces1.Txx, frameElementEndForces2.Txx);
-                    GetCompareResult(frameElementEndForces1.Myy, frameElementEndForces2.Myy);
-                    GetCompareResult(frameElementEndForces1.Mzz / 100000, frameElementEndForces2.Mzz / 100000);
-                }
-
-                for (int j = 0; j < loadCaseOutput1.ReactionLines.Count; j++)
-                {
-                    ReactionLine reactionOutput1 = loadCaseOutput1.ReactionLines[j];
-                    ReactionLine reactionOutput2 = loadCaseOutput2.ReactionLines[j];
-                    GetCompareResult(reactionOutput1.NodeIndex, reactionOutput2.NodeIndex);
-                    GetCompareResult(reactionOutput1.Mxx, reactionOutput2.Mxx);
-                    GetCompareResult(reactionOutput1.Myy, reactionOutput2.Myy);
-                    GetCompareResult(reactionOutput1.Mzz, reactionOutput2.Mzz);
-                    GetCompareResult(reactionOutput1.Fx, reactionOutput2.Fx);
-                    GetCompareResult(reactionOutput1.Fy, reactionOutput2.Fy);
-                    GetCompareResult(reactionOutput1.Fz, reactionOutput2.Fz);
-                }
-
-                for (int j = 0; j < loadCaseOutput1.PeakFrameElementInternalForceLines.Count; j++)
-                {
-                    PeakFrameElementInternalForceLine peakFrameElementInternalForce1 =
-                        loadCaseOutput1.PeakFrameElementInternalForceLines[j];
-                    PeakFrameElementInternalForceLine peakFrameElementInternalForce2 =
-                        loadCaseOutput2.PeakFrameElementInternalForceLines[j];
-                    GetCompareResult(peakFrameElementInternalForce1.MemberIndex, peakFrameElementInternalForce2.MemberIndex);
-                    GetCompareResult(peakFrameElementInternalForce1.Nx, peakFrameElementInternalForce2.Nx);
-                    GetCompareResult(peakFrameElementInternalForce1.Vy, peakFrameElementInternalForce2.Vy);
-                    GetCompareResult(peakFrameElementInternalForce1.Vz, peakFrameElementInternalForce2.Vz);
-                    GetCompareResult(peakFrameElementInternalForce1.Txx, peakFrameElementInternalForce2.Txx);
-                    GetCompareResult(peakFrameElementInternalForce1.Myy, peakFrameElementInternalForce2.Myy);
-                    GetCompareResult(peakFrameElementInternalForce1.Mzz/100000, peakFrameElementInternalForce2.Mzz/100000);
-                    if (peakFrameElementInternalForce1.IsMax != peakFrameElementInternalForce2.IsMax)
-                        throw new Exception(peakFrameElementInternalForce1.IsMax + " " + peakFrameElementInternalForce2.IsMax);
-                }
+                var loadCaseOutput1 = result1[i];
+                var loadCaseOutput2 = result2[i];
+                if (!IsEqual(loadCaseOutput1, loadCaseOutput2))
+                    throw new Exception("?");                
             }
+        }
+
+        static bool IsMinMaxForceEqual(IEnumerable<PeakFrameElementInternalForce> o1,
+            IEnumerable<PeakFrameElementInternalForce> o2)
+        {
+            var o1Filt = o1.Where(f => f.IsMin.HasValue).ToList();
+            var o2Filt = o2.Where(f => f.IsMin.HasValue).ToList();
+            if (o1Filt.Count != o2Filt.Count)
+                return false;
+            for (int i = 0; i < o1Filt.Count; i++)
+            {
+                if (!IsEqual(o1Filt[i], o2Filt[i]))
+                    return false;
+            }
+
+            return true;
+        }
+
+        static bool IsEqual(LoadCaseOutput o1, LoadCaseOutput o2)
+        {
+            if (o1.FrameElementEndForces.Count != o2.FrameElementEndForces.Count)
+                return false;
+            for (int i = 0; i < o1.FrameElementEndForces.Count; i++)
+            {
+                if (!IsEqual(o1.FrameElementEndForces[i], o2.FrameElementEndForces[i]))
+                    return false;                
+            }
+
+            if (!IsMinMaxForceEqual(o1.PeakFrameElementInternalForces, o2.PeakFrameElementInternalForces))
+                return false;            
+
+            if (o1.ReactionOutputs.Count != o2.ReactionOutputs.Count)
+                return false;
+            for (int i = 0; i < o1.ReactionOutputs.Count; i++)
+            {
+                if (!IsEqual(o1.ReactionOutputs[i], o2.ReactionOutputs[i]))
+                    return false;
+            }
+
+            if (o1.NodeDisplacements.Count != o2.NodeDisplacements.Count)
+                return false;
+            for (int i = 0; i < o1.NodeDisplacements.Count; i++)
+            {
+                if (!IsEqual(o1.NodeDisplacements[i], o2.NodeDisplacements[i]))
+                    return false;
+            }
+
+
+            return true;
+        }
+
+        static bool IsEqual(NodeDisplacement nodeDisplacement1, NodeDisplacement nodeDisplacement2)
+        {
+            return nodeDisplacement1.NodeIdx == nodeDisplacement2.NodeIdx &&
+                   CompareDouble(nodeDisplacement1.Displacement.X, nodeDisplacement2.Displacement.X) &&
+                   CompareDouble(nodeDisplacement1.Displacement.Y, nodeDisplacement2.Displacement.Y) &&
+                   CompareDouble(nodeDisplacement1.Displacement.Z, nodeDisplacement2.Displacement.Z) &&
+                   CompareDouble(nodeDisplacement1.Rotation.X, nodeDisplacement2.Rotation.X) &&
+                   CompareDouble(nodeDisplacement1.Rotation.Y, nodeDisplacement2.Rotation.Y) &&
+                   CompareDouble(nodeDisplacement1.Rotation.Z, nodeDisplacement2.Rotation.Z);
+        }
+
+        static bool IsEqual(ReactionOutput o1, ReactionOutput o2)
+        {
+            return CompareDouble(o1.NodeIdx, o2.NodeIdx) &&
+                   CompareDouble(o1.LoadcaseIdx, o2.LoadcaseIdx) &&
+                   IsEqual(o1.F, o2.F) &&
+                   IsEqual(o1.M, o2.M);
+            
+        }
+
+        static bool IsEqual(Vec3 o1, Vec3 o2)
+        {
+            return CompareDouble(o1.X, o2.X) &&
+                   CompareDouble(o1.Y, o2.Y) &&
+                   CompareDouble(o1.Z, o2.Z);
+        }
+
+        static bool IsEqual(FrameElementEndForce o1, FrameElementEndForce o2)
+        {
+            return
+                CompareDouble(o1.ElementIdx, o2.ElementIdx) &&
+                CompareDouble(o1.NodeIdx, o2.NodeIdx) &&
+                CompareDouble(o1.Nx, o2.Nx) &&
+                CompareDouble(o1.Vy, o2.Vy) &&
+                CompareDouble(o1.Vz, o2.Vz) &&
+                CompareDouble(o1.Txx, o2.Txx) &&
+                CompareDouble(o1.Myy, o2.Myy) &&
+                CompareDouble(o1.Mzz / 100000, o2.Mzz / 100000);
+        }
+
+        static bool IsEqual(PeakFrameElementInternalForce o1, PeakFrameElementInternalForce o2)
+        {
+            return CompareDouble(o1.ElementIdx, o2.ElementIdx) &&
+                   CompareDouble(o1.Nx, o2.Nx) &&
+                   CompareDouble(o1.Vy, o2.Vy) &&
+                   CompareDouble(o1.Vz, o2.Vz) &&
+                   CompareDouble(o1.Txx, o2.Txx) &&
+                   CompareDouble(o1.Myy, o2.Myy) &&
+                   CompareDouble(o1.Mzz / 100000, o2.Mzz / 100000) &&
+                   o1.IsMin == o2.IsMin;
         }
 
         private void GetCompareResult(double num1, double num2)
@@ -249,7 +245,7 @@ namespace Frame3ddn.Test
                 throw new Exception(num1 + " " + num2);
         }
 
-        private bool CompareDouble(double num1, double num2)
+        static bool CompareDouble(double num1, double num2)
         {
             if (Math.Abs(num1 - num2) < Math.Abs(num1) * 0.01 || Math.Abs(num1 - num2) < 0.01)
                 return true;
@@ -269,18 +265,18 @@ namespace Frame3ddn.Test
             }
         }
 
-        private List<OutputLine> ParseLines(string frame3DDoutput)
+        private List<LoadCaseOutput> ParseLines(string frame3DDoutput)
         {
             
-            List<OutputLine> outputLines = new List<OutputLine>();
+            List<LoadCaseOutput> outputLines = new List<LoadCaseOutput>();
             var reader = new StringReader(frame3DDoutput);
             while (true)
             {
                 string currentLine = ReadUntil(reader, (s) => s.StartsWith("L O A D   C A S E"));
-                var forceLines = new List<PeakFrameElementInternalForceLine>();
-                var displacementLines = new List<NodeDeflectionLine>();
-                var reactionLines = new List<ReactionLine>();
-                var frameElementEndForceLines = new List<FrameElementEndForcesLine>();
+                var forceLines = new List<PeakFrameElementInternalForce>();
+                var displacementLines = new List<NodeDisplacement>();
+                var reactionLines = new List<ReactionOutput>();
+                var frameElementEndForceLines = new List<FrameElementEndForce>();
 
                 if (currentLine == null)
                     return outputLines;
@@ -295,7 +291,7 @@ namespace Frame3ddn.Test
                     break;
                 while (true)
                 {
-                    var resultLine = NodeDeflectionLine.FromLine(reader.ReadLine(), loadCaseIdx);
+                    var resultLine = NodeDisplacement.FromLine(reader.ReadLine(), loadCaseIdx);
                     if (resultLine == null)
                         break;
                     displacementLines.Add(resultLine);
@@ -307,7 +303,7 @@ namespace Frame3ddn.Test
                     break;
                 while (true)
                 {
-                    var resultLine = FrameElementEndForcesLine.FromLine(reader.ReadLine(), loadCaseIdx);
+                    var resultLine = FrameElementEndForce.FromLine(reader.ReadLine(), loadCaseIdx);
                     if (resultLine == null)
                         break;
                     frameElementEndForceLines.Add(resultLine);
@@ -319,7 +315,7 @@ namespace Frame3ddn.Test
                     break;
                 while (true)
                 {
-                    var resultLine = ReactionLine.FromLine(reader.ReadLine(), loadCaseIdx);
+                    var resultLine = ReactionOutput.FromLine(reader.ReadLine(), loadCaseIdx);
                     if (resultLine == null)
                         break;
                     reactionLines.Add(resultLine);
@@ -333,12 +329,14 @@ namespace Frame3ddn.Test
                     break;
                 while (true)
                 {
-                    var resultLine = PeakFrameElementInternalForceLine.FromLine(reader.ReadLine(), loadCaseIdx);
+                    var resultLine = PeakFrameElementInternalForce.FromLine(reader.ReadLine(), loadCaseIdx);
                     if (resultLine == null)
                         break;
                     forceLines.Add(resultLine);
                 }
-                outputLines.Add(new OutputLine(frameElementEndForceLines, displacementLines, reactionLines, forceLines));
+
+                outputLines.Add(new LoadCaseOutput(0, displacementLines, frameElementEndForceLines, reactionLines,
+                    forceLines));
             }
             return outputLines;
         }

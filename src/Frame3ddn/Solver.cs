@@ -4,6 +4,7 @@ using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Security.Cryptography.X509Certificates;
 using System.Text;
+using Frame3ddn.Model;
 
 namespace Frame3ddn
 {
@@ -163,7 +164,7 @@ namespace Frame3ddn
                     gX[lc] != 0 || gY[lc] != 0 || gZ[lc] != 0)
                 {
                     for (int i = 0; i < DoF; i++)
-                        if (!Common.isDoubleZero(r[i]))
+                        if (!Common.IsDoubleZero(r[i]))
                             dD[i] = Dp[lc, i];
                 }
 
@@ -178,7 +179,7 @@ namespace Frame3ddn
 
                 for (int i = 0; i < DoF; i++)
                 {
-                    if (!Common.isDoubleZero(q[i]))
+                    if (!Common.IsDoubleZero(q[i]))
                     {
                         D[i] += dD[i];
                     }
@@ -189,7 +190,7 @@ namespace Frame3ddn
                 }
 
                 for (int i = 0; i < DoF; i++)
-                    if (!Common.isDoubleZero(r[i]))
+                    if (!Common.IsDoubleZero(r[i]))
                         R[i] += dR[i];
 
                 /*  combine {F} = {F_t} + {F_m} */

@@ -1,7 +1,9 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Text;
+using Frame3ddn.Model;
 
 namespace Frame3ddn
 {
@@ -423,13 +425,13 @@ namespace Frame3ddn
             //Reactions
             for (j = 0; j < nN; j++)
             {
-                if (!Common.isDoubleZero(r[6 * j + 0]) || !Common.isDoubleZero(r[6 * j + 1]) || !Common.isDoubleZero(r[6 * j + 2]) ||
-                    !Common.isDoubleZero(r[6 * j + 3]) || !Common.isDoubleZero(r[6 * j + 4]) || !Common.isDoubleZero(r[6 * j + 5]))
+                if (!Common.IsDoubleZero(r[6 * j + 0]) || !Common.IsDoubleZero(r[6 * j + 1]) || !Common.IsDoubleZero(r[6 * j + 2]) ||
+                    !Common.IsDoubleZero(r[6 * j + 3]) || !Common.IsDoubleZero(r[6 * j + 4]) || !Common.IsDoubleZero(r[6 * j + 5]))
                 {
                     double[] temp = new double[6];
                     for (i = 0; i < 6; i++)
                     {
-                        if (!Common.isDoubleZero(r[6 * j + i]))
+                        if (!Common.IsDoubleZero(r[6 * j + i]))
                         {
                             temp[i] = R[6 * j + i];
                         }
@@ -476,20 +478,23 @@ namespace Frame3ddn
                 minDx, minDy, minDz,    /*  minimum element displacements */
                 minRx, minSy, minSz;    /*  minimum element rotations	*/
 
-            int n, m,       /* frame element number			*/
+            int n,        
                 cU = 0, cW = 0, cP = 0, /* counters for U, W, and P loads	*/
-                i, nx,      /* number of sections alont x axis	*/
+                i, nx,      /* number of sections along x axis	*/
                 n1, n2, i1, i2; /* starting and stopping node no's	*/
 
             if (dx == -1.0)
                 return null;	// skip calculation of internal forces and displ
 
             List<PeakFrameElementInternalForce> peakFrameElementInternalForces = new List<PeakFrameElementInternalForce>();
-            for (m = 0; m < nE; m++) //m is used as index of 1 based arrays, so decrease it by 1
+
+            // m = frame element number, 
+            // m is used as index of 1 based arrays, so decrease it by 1
+            for (var m = 0; m < nE; m++)
             {
                 n1 = J1[m];
                 n2 = J2[m];
-                nx = (int)Math.Floor(L[m] / dx);
+                nx = (int) Math.Floor(L[m] / dx);
                 if (nx < 1)
                     nx = 1;
 
@@ -520,7 +525,7 @@ namespace Frame3ddn
 
                 for (n = 0; n < nE && cU < nU; n++) //n is used as index of 1 based arrays, so decrease it by 1
                 {
-                    if ((int)U[n, 0] == m)
+                    if ((int) U[n, 0] == m)
                     {
                         wxg += U[n, 1];
                         wyg += U[n, 2];
@@ -533,7 +538,7 @@ namespace Frame3ddn
                 Vy[0] = -Q[m, 1]; // positive Vy in local y direction
                 Vz[0] = -Q[m, 2]; // positive Vz in local z direction
                 Tx[0] = -Q[m, 3]; // positive Tx r.h.r. about local x axis
-                My[0] = Q[m, 4]; // positive My -> positive x-z curvature
+                My[0] = +Q[m, 4]; // positive My -> positive x-z curvature
                 Mz[0] = -Q[m, 5]; // positive Mz -> positive x-y curvature
 
                 dx_ = dx;
@@ -552,11 +557,13 @@ namespace Frame3ddn
                         tx_ = tx;
                     }
 
-                    for (n = 0; n < 10 * nE && cW < nW; n++) //n is used as index of 1 based arrays here, so decrease it by 1
+                    for (n = 0;
+                        n < 10 * nE && cW < nW;
+                        n++) //n is used as index of 1 based arrays here, so decrease it by 1
                     {
-                        //here m is used as a value not a index, it should need to add 1 back,
-                        //but the W[n, 0] is actually storing 0 based node index, so finally, it should remain unchanged.
-                        if ((int)W[n, 0] == m)
+                        // here m is used as a value not a index, it should need to add 1 back,
+                        // but the W[n, 0] is actually storing 0 based node index, so finally, it should remain unchanged.
+                        if ((int) W[n, 0] == m)
                         {
                             if (i == nx)
                                 ++cW;
@@ -597,7 +604,7 @@ namespace Frame3ddn
 
                     for (n = 0; n < 10 * nE && cP < nP; n++)
                     {
-                        if ((int)P[n, 0] == m + 1)//here m is used as a value not a index, need to add 1 back
+                        if ((int) P[n, 0] == m + 1) //here m is used as a value not a index, need to add 1 back
                         {
                             if (i == nx)
                                 ++cP;
@@ -609,6 +616,7 @@ namespace Frame3ddn
                                 Vz[i] -= P[n, 3] * 0.5 * (1.0 - (xp - x[i]) / dx);
 
                             }
+
                             if (x[i] - dx <= xp && xp < x[i])
                             {
                                 Nx[i] -= P[n, 1] * 0.5 * (1.0 - (x[i] - dx - xp) / dx);
@@ -627,6 +635,7 @@ namespace Frame3ddn
                     Vz[i] -= (Vz[nx] - Q[m, 8]) * i / nx;
                     Tx[i] -= (Tx[nx] - Q[m, 9]) * i / nx;
                 }
+
                 // trapezoidal integration of shear force for bending momemnt
                 dx_ = dx;
                 for (i = 1; i <= nx; i++)
@@ -636,6 +645,7 @@ namespace Frame3ddn
                     Mz[i] = Mz[i - 1] - 0.5 * (Vy[i] + Vy[i - 1]) * dx_;
 
                 }
+
                 // linear correction of moments for bias in trapezoidal integration
                 for (i = 1; i <= nx; i++)
                 {
@@ -672,7 +682,7 @@ namespace Frame3ddn
                 Dz[0] = u3; // displacement in  local z dir  at node N1
                 Rx[0] = u4; // rotationin about local x axis at node N1
                 Sy[0] = u6; // slope in  local y  direction  at node N1
-                Sz[0] = -u5;    // slope in  local z  direction  at node N1
+                Sz[0] = -u5; // slope in  local z  direction  at node N1
 
                 // axial displacement along frame element "m"
                 dx_ = dx;
@@ -681,6 +691,7 @@ namespace Frame3ddn
                     if (i == nx) dx_ = dxnx;
                     Dx[i] = Dx[i - 1] + 0.5 * (Nx[i - 1] + Nx[i]) / (E[m] * Ax[m]) * dx_;
                 }
+
                 // linear correction of axial displacement for bias in trapezoidal integration
                 for (i = 1; i <= nx; i++)
                 {
@@ -694,6 +705,7 @@ namespace Frame3ddn
                     if (i == nx) dx_ = dxnx;
                     Rx[i] = Rx[i - 1] + 0.5 * (Tx[i - 1] + Tx[i]) / (G[m] * Jx[m]) * dx_;
                 }
+
                 // linear correction of torsional rot'n for bias in trapezoidal integration
                 for (i = 1; i <= nx; i++)
                 {
@@ -708,20 +720,24 @@ namespace Frame3ddn
                     Sy[i] = Sy[i - 1] + 0.5 * (Mz[i - 1] + Mz[i]) / (E[m] * Iz[m]) * dx_;
                     Sz[i] = Sz[i - 1] + 0.5 * (My[i - 1] + My[i]) / (E[m] * Iy[m]) * dx_;
                 }
+
                 // linear correction for bias in trapezoidal integration
                 for (i = 1; i <= nx; i++)
                 {
                     Sy[i] -= (Sy[nx] - u12) * i / nx;
                     Sz[i] -= (Sz[nx] + u11) * i / nx;
                 }
+
                 if (shear)
-                {       // add-in slope due to shear deformation
+                {
+                    // add-in slope due to shear deformation
                     for (i = 0; i <= nx; i++)
                     {
                         Sy[i] += Vy[i] / (G[m] * Asy[m]);
                         Sz[i] += Vz[i] / (G[m] * Asz[m]);
                     }
                 }
+
                 // displacement along frame element "m"
                 dx_ = dx;
                 for (i = 1; i <= nx; i++)
@@ -730,6 +746,7 @@ namespace Frame3ddn
                     Dy[i] = Dy[i - 1] + 0.5 * (Sy[i - 1] + Sy[i]) * dx_;
                     Dz[i] = Dz[i - 1] + 0.5 * (Sz[i - 1] + Sz[i]) * dx_;
                 }
+
                 // linear correction for bias in trapezoidal integration
                 for (i = 1; i <= nx; i++)
                 {
@@ -738,15 +755,25 @@ namespace Frame3ddn
                 }
 
                 // initialize the maximum and minimum element forces and displacements 
-                maxNx = minNx = Nx[0]; maxVy = minVy = Vy[0]; maxVz = minVz = Vz[0];    //  maximum internal forces
-                maxTx = minTx = Tx[0]; maxMy = minMy = My[0]; maxMz = minMz = Mz[0];    //  maximum internal moments
-                maxDx = minDx = Dx[0]; maxDy = minDy = Dy[0]; maxDz = minDz = Dz[0];    //  maximum element displacements
-                maxRx = minRx = Rx[0]; maxSy = minSy = Sy[0]; maxSz = minSz = Sz[0];    //  maximum element rotations
+                maxNx = minNx = Nx[0];
+                maxVy = minVy = Vy[0];
+                maxVz = minVz = Vz[0]; //  maximum internal forces
+                maxTx = minTx = Tx[0];
+                maxMy = minMy = My[0];
+                maxMz = minMz = Mz[0]; //  maximum internal moments
+                maxDx = minDx = Dx[0];
+                maxDy = minDy = Dy[0];
+                maxDz = minDz = Dz[0]; //  maximum element displacements
+                maxRx = minRx = Rx[0];
+                maxSy = minSy = Sy[0];
+                maxSz = minSz = Sz[0]; //  maximum element rotations
 
                 // find maximum and minimum internal element forces
                 for (i = 1; i <= nx; i++)
                 {
-                    maxNx = (Nx[i] > maxNx) ? Nx[i] : maxNx;//i can't be 0, but max and min are default to be value of index 0.
+                    maxNx = (Nx[i] > maxNx)
+                        ? Nx[i]
+                        : maxNx; //i can't be 0, but max and min are default to be value of index 0.
                     minNx = (Nx[i] < minNx) ? Nx[i] : minNx;
                     maxVy = (Vy[i] > maxVy) ? Vy[i] : maxVy;
                     minVy = (Vy[i] < minVy) ? Vy[i] : minVy;
@@ -776,9 +803,14 @@ namespace Frame3ddn
                     minSy = (Sy[i] < minSy) ? Sy[i] : minSy;
                     maxSz = (Sz[i] > maxSz) ? Sz[i] : maxSz;
                     minSz = (Sz[i] < minSz) ? Sz[i] : minSz;
+                    peakFrameElementInternalForces.Add(new PeakFrameElementInternalForce(lc, m, null, Dx[i], Dy[i],
+                        Vy[i], Tx[i], My[i], Mz[i], x[i]));
                 }
-                peakFrameElementInternalForces.Add(new PeakFrameElementInternalForce(lc, m, false, maxNx, maxVy, maxVz, maxTx, maxMy, maxMz));
-                peakFrameElementInternalForces.Add(new PeakFrameElementInternalForce(lc, m, true, minNx, minVy, minVz, minTx, minMy, minMz));
+
+                peakFrameElementInternalForces.Add(new PeakFrameElementInternalForce(lc, m, false, maxNx, maxVy, maxVz,
+                    maxTx, maxMy, maxMz, null));
+                peakFrameElementInternalForces.Add(new PeakFrameElementInternalForce(lc, m, true, minNx, minVy, minVz,
+                    minTx, minMy, minMz, null));
             }
 
             return peakFrameElementInternalForces;
@@ -838,10 +870,10 @@ namespace Frame3ddn
                     "Elmnt", ".", "Nx", "Vy", "Vz", "Txx", "Myy", "Mzz");
                 csv.AppendLine(newLine);
                 if (loadCaseOutput.PeakFrameElementInternalForces != null)
-                foreach (var peakFrameElementInternalForce in loadCaseOutput.PeakFrameElementInternalForces)
+                foreach (var peakFrameElementInternalForce in loadCaseOutput.PeakFrameElementInternalForces.Where(f=>f.IsMin.HasValue))
                 {
                     newLine = string.Format("{0},{1},{2},{3},{4},{5},{6},{7}",
-                        peakFrameElementInternalForce.ElementIdx + 1, peakFrameElementInternalForce.IsMin ? "min" : "max",
+                        peakFrameElementInternalForce.ElementIdx + 1, peakFrameElementInternalForce.IsMin.Value ? "min" : "max",
                         peakFrameElementInternalForce.Nx, peakFrameElementInternalForce.Vy, peakFrameElementInternalForce.Vz,
                         peakFrameElementInternalForce.Txx, peakFrameElementInternalForce.Myy, peakFrameElementInternalForce.Mzz);
                     csv.AppendLine(newLine);
@@ -933,8 +965,8 @@ namespace Frame3ddn
                     for (int j = 0; j < nN; j++)
                     {
                         int i = j * 6;
-                        if (!Common.isDoubleZero(Fm[lc, i + 0]) || !Common.isDoubleZero(Fm[lc, i + 1]) || !Common.isDoubleZero(Fm[lc, i + 2]) ||
-                            !Common.isDoubleZero(Fm[lc, i + 3]) || !Common.isDoubleZero(Fm[lc, i + 4]) || !Common.isDoubleZero(Fm[lc, i + 5]))
+                        if (!Common.IsDoubleZero(Fm[lc, i + 0]) || !Common.IsDoubleZero(Fm[lc, i + 1]) || !Common.IsDoubleZero(Fm[lc, i + 2]) ||
+                            !Common.IsDoubleZero(Fm[lc, i + 3]) || !Common.IsDoubleZero(Fm[lc, i + 4]) || !Common.IsDoubleZero(Fm[lc, i + 5]))
                         {
                             txt.AppendLine(
                                 $" {(j + 1).Format(5)} {Fm[lc, 6 * j + 0].Format(11.3)} {Fm[lc, 6 * j + 1].Format(11.3)}" +
@@ -1048,9 +1080,9 @@ namespace Frame3ddn
                 txt.AppendLine("P E A K   F R A M E   E L E M E N T   I N T E R N A L   F O R C E S(local)");
                 txt.AppendLine("  Elmnt   .         Nx          Vy         Vz        Txx        Myy        Mzz");
                 if (loadCaseOutput.PeakFrameElementInternalForces != null)
-                    foreach (var peakFrameElementInternalForce in loadCaseOutput.PeakFrameElementInternalForces)
+                    foreach (var peakFrameElementInternalForce in loadCaseOutput.PeakFrameElementInternalForces.Where(f=>f.IsMin.HasValue))
                     {
-                        string minMax = peakFrameElementInternalForce.IsMin ? "min" : "max";
+                        string minMax = peakFrameElementInternalForce.IsMin.Value ? "min" : "max";
                         txt.AppendLine($" {(peakFrameElementInternalForce.ElementIdx + 1).Format(5)}   {minMax} " +
                                        $" {peakFrameElementInternalForce.Nx.Format(10.3)}" +
                                        $" {peakFrameElementInternalForce.Vy.Format(10.3)}" +
