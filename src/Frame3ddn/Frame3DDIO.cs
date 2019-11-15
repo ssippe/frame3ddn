@@ -803,6 +803,11 @@ namespace Frame3ddn
                     minSy = (Sy[i] < minSy) ? Sy[i] : minSy;
                     maxSz = (Sz[i] > maxSz) ? Sz[i] : maxSz;
                     minSz = (Sz[i] < minSz) ? Sz[i] : minSz;
+                    
+                }
+
+                for (i = 0; i <= nx; i++)
+                {
                     peakFrameElementInternalForces.Add(new PeakFrameElementInternalForce(lc, m, null, Dx[i], Dy[i],
                         Vy[i], Tx[i], My[i], Mz[i], x[i]));
                 }
