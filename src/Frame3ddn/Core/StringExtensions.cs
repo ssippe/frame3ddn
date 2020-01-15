@@ -12,5 +12,18 @@ namespace Frame3ddn.Core
                 return null;
             return string.Join(separator, stringList);
         }
+
+        public static string TrimEndExt(this string target, string trim)
+        {
+            if (string.IsNullOrEmpty(trim))
+            {
+                return target;
+            }
+            while (target.EndsWith(trim))
+            {
+                target = target.Substring(0, target.Length - trim.Length);
+            }
+            return target;
+        }
     }
 }
