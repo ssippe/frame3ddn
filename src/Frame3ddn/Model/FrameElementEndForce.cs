@@ -4,15 +4,45 @@ namespace Frame3ddn.Model
 {
     public class FrameElementEndForce
     {
+        /// <summary>
+        /// Load Case Index base-0
+        /// </summary>
         public int LoadcaseIdx { get; }
+        /// <summary>
+        /// Element Index base-0
+        /// </summary>
         public int ElementIdx { get; }
+        /// <summary>
+        /// Node Index base-0
+        /// </summary>
         public int NodeIdx { get; }
+        /// <summary>
+        /// frame element axial force along the local x-axis [N]
+        /// </summary>
         public double Nx { get; }
+        /// <summary>
+        /// t = tension, c = compression
+        /// </summary>
         public string NxType { get; }
+        /// <summary>
+        /// Frame element shear force in the local y direction [N]
+        /// </summary>
         public double Vy { get; }
+        /// <summary>
+        /// Frame element shear force in the local z direction [N]
+        /// </summary>
         public double Vz { get; }
+        /// <summary>
+        /// Frame element torsion about the local x-axis [N.mm]
+        /// </summary>
         public double Txx { get; }
+        /// <summary>
+        /// Frame element bending moments about the local -y-axis [N.mm]
+        /// </summary>
         public double Myy { get; }
+        /// <summary>
+        /// Frame element bending moments about the local z-axis [N.mm]
+        /// </summary>
         public double Mzz { get; }
 
         public FrameElementEndForce(int loadcaseIdx, int elementIdx, int nodeIdx, double nx, string nxType, double vy, double vz, double txx, double myy, double mzz)

@@ -1,0 +1,3066 @@
+
+<!-- saved from url=(0078)http://svn.code.sourceforge.net/p/frame3dd/code/trunk/doc/Frame3DD-manual.html -->
+<html><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+
+<title>Frame3DD User Manual</title>
+
+<meta name="Description" content=" Free software for static and dynamic structural analysis of 3D moment-resisting frames with elastic and geometric stiffness. Written in ANSI C.  
+Source code includes:  frame analysis, LDL&#39; decomposition, LU decomposition, sub-space iteration, Stodola iteration, Sturm eigenvalue checking,
+Static Condensation, Dynamic Paz Condensation, Paz Condensation.
+Modal Condensation, Matlab interface.
+Matlab interface.
+Graphical output and mode shape animation via Gnuplot.">
+
+<meta name="Keywords" content="Frame3DD, Structural Dynamics, Structural Analysis, Frame Analysis, 3D Frames, 3D Trusses, Structural Analysis Software, Geometric Stiffness, Geometric Stiffness Matrix, Modal Analysis, Modal Analysis Software, Structural Dynamics, Structural Dynamics Software, LDL Decomposition, LDL Decomposition, LU Decomposition, Subspace Iteration, Gnuplot, Matlab, Octave, Henri Gavin, Duke">
+
+<style>
+h1 {font: bold x-large sans-serif}
+h2 {font: bold x-large sans-serif}
+h3 {font: bold large sans-serif}
+h4 {font: bold small sans-serif}
+li, td, p {font: normal small sans-serif}
+div.eq {font-style:italic; width:100%; text-align:center; margin-top: 6pt; margin-bottom: 6pt}
+div.note {width: 60em; border: solid 2pt gray; background-color: #FFFFEE; padding:10px; margin-top: 6pt; margin-bottom: 6pt; font: normal small sans-serif }
+pre {background-color: #FFF4C4}
+iframe {background-color: #000000; margin-top: 5px; margin-bottom: 5px, border:0}
+</style>
+
+</head><body>
+
+<img src="./Frame3DD User Manual_files/psoe.jpg" height="100" align="left" border="0">
+<font face="Arial, Helvetica, sans-serif" size="4">
+<nobr><b>User manual and reference for <a href="http://frame3dd.sourceforge.net/">Frame3DD: A Structural Frame Analysis Program</a></b>
+</nobr><br></font>
+<a href="http://cee.duke.edu/">
+Department of Civil and Environmental Engineering</a><br>
+<a href="http://pratt.duke.edu/">
+Edmund T. Pratt School of Engineering</a><br>
+<a href="http://www.duke.edu/">
+Duke University</a> - Box 90287,
+<a href="http://www.durham-nc.com/"> Durham</a>,
+<a href="http://www.visitnc.com/"> NC</a> 27708-0287<br>
+
+
+<i>
+<font face="Verdana, Arial, Helvetica, sans-serif" size="2">
+Henri P. Gavin, Ph.D., P.E., </font></i>
+
+<hr>
+<h1>Frame3DD version 0.20140514+ </h1>
+
+<!-- iframe src="version.html" width="250" height="30" style="border:solid 1pt grey"></iframe -->
+
+<!-- <h4>DESCRIPTION </h4> -->
+<p><b>Frame3DD</b>  is a program for the static and dynamic structural analysis of two- and three-dimensional frames and trusses with elastic and geometric stiffness.
+</p>
+
+<!-- 3D frames , 3D frames , 3D frames , 3D frames , 3D frames , 3D frames  -->
+
+<p><b>Frame3DD</b> is preferably executed from the
+<a href="http://en.wikipedia.org/wiki/Windows_command_line">command prompt</a> (Windows)
+or <a href="http://en.wikipedia.org/wiki/Unix_shell">shell</a> (Linux), <a href="http://www.macdevcenter.com/pub/a/mac/2001/12/14/terminal_one.html">terminal</a> (OS X),
+or <a href="http://en.wikipedia.org/wiki/Apple_X11">xterm</a> (Linux or OS X) as follows, with filenames changed as required:
+</p><pre>frame3dd inputfile.3dd outputfile.txt
+</pre>
+<p></p>
+
+<!-- 3D frames , 3D frames , 3D frames , 3D frames , 3D frames , 3D frames  -->
+
+<p><b>Frame3DD</b> reads a plain-text <b>Input Data file</b>, containing node coordinates, frame element geometry, material moduli, fixed nodes, prescribed displacements, load information, and optionally, mass information if a modal analysis is to be carried out.
+<!-- (The Input Data file is not a Matlab file.   Values are not input using Matlab matrix notation with square brackets.)-->
+</p>
+
+<!-- 3D frames , 3D frames , 3D frames , 3D frames , 3D frames , 3D frames  -->
+
+<p><b>Frame3DD</b> appends results to a plain-text <b>Output Data file</b>.
+Results from the most recent analysis
+are appended to the <b>end</b> of the Output Data file.
+Each section of the Output Data gives the date and time of the analysis,
+recapitulates the input information, gives node displacements in global coordinates, frame element end-forces in local coordinates, reactions in global coordinates, and natural frequencies and mode shapes in global coordinates.
+</p>
+
+<p><b>Frame3DD</b> writes a
+<a href="http://www.gnuplot.info/">gnuplot</a>
+script file used for viewing deformed frames and dynamic mode shapes.
+If the Output Data is written to a file called <b>MyResultsA.out</b>,
+the gnuplot script is written to a file called <b>MyResultsA.plt</b>.
+Graphical output may be viewed by starting gnuplot and typing:
+<b> load 'MyResultsA.plt'</b>.
+</p>
+
+<p><b>Frame3DD</b> can consider multiple static load cases in a single analysis.
+Separate output data files list the internal axial force, shear forces, torsion, and bending moments along each frame element for each static load case.
+</p>
+
+<p><b>Frame3DD</b> may optionally interface with Matlab and with spreadsheet programs.
+</p>
+
+<p><b>Frame3DD</b> is <b>free open-source software</b>; you may redistribute it and/or modify it under
+the terms of the GNU General Public License (GPL) as published by the
+<a href="http://www.fsf.org/">Free Software Foundation</a>.
+The software is distributed in the hope that it will be useful, but without any warranty; without even the implied warranty of merchantability or fitness for a particular purpose.  See <a href="http://svn.code.sourceforge.net/p/frame3dd/code/trunk/LICENSE.txt">LICENSE.txt</a> for details.
+<b>Frame3DD</b> is developed using the free-and-open
+<a href="http://www.vim.org/"><b>vim</b></a> text editor and the 
+<a href="http://gcc.gnu.org/"><b>gcc</b></a> compiler.
+</p>
+
+<p><b>Frame3DD</b> had a free <a href="http://www.sketchup.com/"><b>Sketchup</b></a> interface available 
+<a href="http://sketchucation.com/forums/viewtopic.php?t=46405">here</a>.
+
+</p><p>If you find <b>Frame3DD</b> to be useful please consider
+a donation to the vim charity, 
+<a href="http://iccf-holland.org/">iccf-holland</a>, which provides education 
+and health-care to needy children in Uganda.
+</p>
+
+<!--
+Free software for static and dynamic structural analysis of 2D
+and 3D frames and trusses with elastic and geometric stiffness.
+Computes the static deflections, reactions, internal element
+forces, natural frequencies, mode shapes and modal participation
+factors of two- and three- dimensional elastic structures using
+direct stiffness and mass assembly.  Written in  C.  Source code
+includes: frame analysis, LDL' decomposition, LU decomposition,
+Newton-Raphson iteration, sub-space iteration, Stodola iteration,
+Sturm eigenvalue check, and Static Condensation, Dynamic Guyan Reduction,
+Dynamic Condensation, Modal Condensation.
+Graphical output and mode shape animation
+via <a href="http://www.gnuplot.info/">gnuplot</a> version 4.6.
+<hr>
+<h4>SYNOPSIS </h4>
+       frame3dd  <Input Data file>  <Output Data file>
+<hr>
+-->
+
+<h2>Contents</h2>
+
+<ol>
+<li><a href="http://svn.code.sourceforge.net/p/frame3dd/code/trunk/doc/Frame3DD-manual.html#starting">Getting started</a>
+</li><li><a href="http://svn.code.sourceforge.net/p/frame3dd/code/trunk/doc/Frame3DD-manual.html#iodata">Input Data and Output Data</a>
+</li><li><a href="http://svn.code.sourceforge.net/p/frame3dd/code/trunk/doc/Frame3DD-manual.html#installrun">How to install and run Frame3DD</a>
+<ol>
+  <li><a href="http://svn.code.sourceforge.net/p/frame3dd/code/trunk/doc/Frame3DD-manual.html#runlinux">Linux</a>
+  </li><li><a href="http://svn.code.sourceforge.net/p/frame3dd/code/trunk/doc/Frame3DD-manual.html#runosx">Mac OS X</a>
+  </li><li><a href="http://svn.code.sourceforge.net/p/frame3dd/code/trunk/doc/Frame3DD-manual.html#runwindows">Windows</a>
+</li></ol>
+</li><li><a href="http://svn.code.sourceforge.net/p/frame3dd/code/trunk/doc/Frame3DD-manual.html#Matlab">Matlab Interface</a>
+</li><li><a href="http://svn.code.sourceforge.net/p/frame3dd/code/trunk/doc/Frame3DD-manual.html#CSV">Spreadsheet Interface</a>
+</li><li><a href="http://svn.code.sourceforge.net/p/frame3dd/code/trunk/doc/Frame3DD-manual.html#FrameEd">FrameEd</a>
+</li><li><a href="http://svn.code.sourceforge.net/p/frame3dd/code/trunk/doc/Frame3DD-manual.html#structuralmodeling">Structural Modeling</a>
+</li><li><a href="http://svn.code.sourceforge.net/p/frame3dd/code/trunk/doc/Frame3DD-manual.html#numerical">Numerical Details</a>
+</li><li><a href="http://svn.code.sourceforge.net/p/frame3dd/code/trunk/doc/Frame3DD-manual.html#InputData">Input Data Format</a>
+</li><li><a href="http://svn.code.sourceforge.net/p/frame3dd/code/trunk/doc/Frame3DD-manual.html#Variables">Variable Definitions</a>
+</li><li><a href="http://svn.code.sourceforge.net/p/frame3dd/code/trunk/doc/Frame3DD-manual.html#commandline">Command-line options</a>
+</li><li><a href="http://svn.code.sourceforge.net/p/frame3dd/code/trunk/doc/Frame3DD-manual.html#sourcecode">Source code</a>
+</li><li><a href="http://svn.code.sourceforge.net/p/frame3dd/code/trunk/doc/Frame3DD-manual.html#exitcodes">Exit code index</a>
+</li><li><a href="http://svn.code.sourceforge.net/p/frame3dd/code/trunk/doc/Frame3DD-manual.html#enhancements">Enhancements projected for future versions</a>
+</li><li><a href="http://svn.code.sourceforge.net/p/frame3dd/code/trunk/doc/Frame3DD-manual.html#acknowledgments">Acknowledgments</a>
+</li><li><a href="http://svn.code.sourceforge.net/p/frame3dd/code/trunk/doc/Frame3DD-manual.html#references">References</a>
+</li></ol>
+
+
+<a name="starting"><h2>1. Getting started</h2>
+</a><ol><a name="starting">
+<li>Read the User Manual and Reference (this file).
+</li></a><li><a name="starting">
+<!-- a href="https://sourceforge.net/projects/frame3dd/files/"-->
+<!-- a href="https://sourceforge.net/projects/frame3dd/files/latest/download?source=files" -->
+</a><a href="http://sourceforge.net/project/platformdownload.php?group_id=221386" --="">
+Download</a>
+Frame3DD and save the Frame3DD folder to your Desktop (more details below).
+</li><li>Optionally, obtain a copy of gnuplot for your operating system (more details below).
+</li><li>Open a terminal window, go to the Frame3DD directory, and run the program on one of the examples using a command like ...
+<pre>cd ~/Desktop/Frame3DD
+frame3dd  examples/exE.3dd  examples/exE.out
+</pre>
+</li><li>Open the Output Data file using a <a href="http://en.wikipedia.org/wiki/Vim_(text_editor)">good text editor</a> and view the Output Data.
+</li><li>Plot the structural configuration, the deformed structural shape, and mode-shapes, by starting <a href="http://www.gnuplot.info/">gnuplot</a>, and typing
+<pre>     gnuplot&gt;   cd 'Desktop/Frame3DD/examples'
+     gnuplot&gt;   load 'exE.plt'
+</pre>
+Observe a series of plots by hitting the Return (or Enter) key between plots.
+<br>
+If a dynamic analysis was performed, you will enjoy an animation of selected mode shapes.<br>
+Continue to hit the Return (or Enter) key until the last plot is displayed.
+</li></ol>
+
+<a name="iodata"><h2>2. Input Data and Output Data</h2>
+
+</a><p><a name="iodata">
+The <b>Input Data file</b> is a plain text file and must adhere to the format
+</a><a href="http://svn.code.sourceforge.net/p/frame3dd/code/trunk/doc/Frame3DD-manual.html#InputData">described below</a>.
+Several examples are given at <a href="http://frame3dd.sourceforge.net/">http://frame3dd.sourceforge.net/</a>. When writing your own Input Data files, note the following points:</p>
+
+<ul>
+<li>Comments may be placed anywhere in the file and are helpful in organizing the Input Data.
+<br>
+A comment begins with one of the following three characters <b># % ?</b> and continues to the end of the line.
+</li><li>All commas and semi-colons in the Input Data are ignored.
+</li><li>Floating point numbers must be entered as 1.234 1234 or 1.234e3.
+</li><li>Arithmetic expressions such as 1.234*10^3 or 6*sin(pi/2) are <b>not</b> allowed
+in the Input Data (unless the <a href="http://svn.code.sourceforge.net/p/frame3dd/code/trunk/doc/Frame3DD-manual.html#Matlab">Matlab interface</a> is used).
+</li></ul>
+
+
+<p>
+To write your own Input Data file, it may be helpful to start with an example that resembles the system you would like to analyze.  Carefully compare the graphical output of the example, the Input Data file, the Output Data file,
+and the <a href="http://svn.code.sourceforge.net/p/frame3dd/code/trunk/doc/Frame3DD-manual.html#InputData"><b>Input Data format</b></a>, with the <a href="http://svn.code.sourceforge.net/p/frame3dd/code/trunk/doc/Frame3DD-manual.html#Variables"><b>variable definitions</b></a> at the end of this page.
+</p>
+<p>
+You may edit Input Data files using a good text editor
+(<a href="http://www.vim.org/others.php">vim/evim/gvim</a>,
+ <a href="http://www.gnome.org/projects/gedit/">gedit</a>,
+ <a href="http://www.jedit.org/index.php">jEdit</a>,
+ <a href="http://www.nano-editor.org/">nano</a>,
+<!-- <a href="http://www.barebones.com/products/textwrangler/">TextWrangler (OS X)</a>, -->
+<!-- 
+ <a href="http://emacsformacosx.com/">Emacs for OS X</a>, 
+ <a href="http://code.google.com/p/macvim/">vim/evim/gvim for OS X</a>. 
+ <a href="http://www.apple.com/support/mac101/work/23/">TextEdit (OS X)</a>,
+-->
+ <a href="http://notepad-plus.sourceforge.net/uk/site.htm">NotePad++ (Windows)</a>,
+<!--
+ <a href="ftp://ftp.vim.org/pub/vim/pc/gvim72.exe">vim/evim/gvim (Windows)</a>, 
+ <a href="http://www.pcshareware.com/anotepad.htm">Notepad (Windows)</a>
+-->
+etc.),
+using the Matlab interface, or using spreadsheet programs
+(<a href="http://docs.google.com/">GoogleDocs</a>,
+ <a href="http://www.libreoffice.org/">LibreOffice</a>, 
+ <a href="http://projects.gnome.org/gnumeric/">Gnumeric</a>, or Excel).
+</p>
+<p>
+Details regarding the Matlab interface to Frame3DD are <a href="http://svn.code.sourceforge.net/p/frame3dd/code/trunk/doc/Frame3DD-manual.html#Matlab">here</a>.<br>
+Details regarding the spreadsheet interface to Frame3DD are <a href="http://svn.code.sourceforge.net/p/frame3dd/code/trunk/doc/Frame3DD-manual.html#CSV">here</a>.<br>
+</p>
+<p>
+It might take a few tries to get your Input Data just right.
+Frame3DD checks the Input Data for errors and, where possible,
+displays descriptive diagnostic messages when errors are found.   
+</p>
+
+<!-- <div class=note> 
+<b>Note:</b> 
+-->
+<p>
+<b>Frame3DD</b> generates several <b>additional output files</b> used in plotting deformed frames.  
+By default, these output files are sent to a temporary file folder. 
+On OS X, Linux, and Unix, the location of this folder defaults to the <b>/tmp</b> directory.
+On Windows, the location of this folder defaults to <b>C:\WINDOWS\Temp</b>.  
+<!--
+or the user's <b>Local Settings\Temp</b> (XP) or <b>AppData\Local\Temp</b> (Vista).  
+-->
+If you would like your output files to be sent to another location, you can set the <a href="http://en.wikipedia.org/wiki/Environment_variable">environment variable</a> <b>Frame3DD</b> with the path to your
+desired temporary output directory (instructions below).
+The additional output files will then appear in the folder you have specified.
+</p>
+<!-- </div> -->
+
+<a name="installrun"><h2>3. How to install and run Frame3DD</h2>
+
+<p>
+Compiled executable programs are updated with some regularity.  
+Frame3DD installation packages are available for download for Linux,
+for OS X, and for Windows operating systems as a .ZIP archive.
+This installation .ZIP archive include:
+</p><ul>
+<li> A copy of the GPL license (LICENSE.txt)
+</li><li> Executable programs (frame3dd) for Linux, OS X, and Windows
+</li><li> This manual, (doc/user-manual.html) 
+</li><li> Some general information (README.txt)
+</li><li> Some Windows-specific issues (README-win32.txt)
+</li><li> The Matlab interface code (matlab/)
+</li><li> A summary of recent updates to the program (ChangeLog.txt)
+</li><li> A set of example Input Data files (examples/)
+</li><li> The complete source code (src/)
+</li></ul>
+<p></p>
+
+<p>
+A separate Windows installer includes a Microstran viewer module for Frame3DD.
+</p>
+   
+<p>
+The date stamp at the beginning of the manual corresponds to the release date of the code.
+</p>
+
+</a><a name="runlinux"><h3>3.1 Linux</h3>
+
+<p>
+You may install Frame3DD from the .ZIP archive 
+or you may compile Frame3DD from the source code.
+The following instructions install Frame3DD to the <b>Desktop</b> but other directories may be substituted, if so desired.  
+</p>
+
+<h4>3.1.1 Installing Frame3DD from the .ZIP archive for Linux</h4>
+
+</a><ol><a name="runlinux">
+</a><li><a name="runlinux">
+<!-- a href="https://sourceforge.net/projects/frame3dd/files/"-->
+<!-- a href="https://sourceforge.net/projects/frame3dd/files/latest/download?source=files" -->
+</a><a href="http://sourceforge.net/project/platformdownload.php?group_id=221386">
+Download</a>
+the Frame3DD .ZIP archive (Frame3DD_VERSION.zip) and save it in your <b>Desktop</b>.<br>
+If the .ZIP archive was not automatically unzipped, 
+double-click the icon to extract it to your <b>Desktop</b>. 
+</li><li>
+<b><i>Recommended</i></b><br>
+Put the <b>Frame3DD</b> directory in your path and set the <b>FRAME3DD_OUTDIR</b> location.<br>
+To do this, double-click the <b>Home</b> icon on the Desktop, and select <b>View &gt; Show Hidden Files</b><br><br>
+
+<ul>
+<li>If you have a file called <b>~/.profile</b> in your home directory,
+open it with a double-click.
+Copy-and-paste the following ten lines into the beginning of <b>~/.profile</b> 
+<pre># for Frame3DD ... http://frame3dd.sourceforge.net/
+# add Frame3DD executable directory to the path
+export PATH=$PATH:$HOME/Desktop/Frame3DD/linux/ 
+# create a Frame3DD output directory
+if [ ! -d /tmp/frame3dd_temp_$USER ]; then
+    mkdir /tmp/frame3dd_temp_$USER
+    echo "creating /tmp/frame3dd_temp_$USER for Frame3DD"
+fi
+# specify the Frame3DD output directory
+export FRAME3DD_OUTDIR=/tmp/frame3dd_temp_$USER
+</pre>
+... save, and exit the editor.   
+
+</li><li>If you have a file named <b>~/.login</b> in your home directory,
+open it with a double-click. 
+Copy-and-paste the following ten lines into the beginning of <b>~/.login</b> 
+<pre># for Frame3DD ... http://frame3dd.sourceforge.net/
+# add Frame3DD executable directory to the path
+set path = ( $path $home/Desktop/Frame3DD/linux )
+# create a Frame3DD output directory
+if ( ! -d /tmp/frame3dd_temp_$user ) then
+    mkdir /tmp/frame3dd_temp_$user
+    echo "creating /tmp/frame3dd_temp_$user for Frame3DD"
+endif
+# specify the Frame3DD output directory
+setenv FRAME3DD_OUTDIR /tmp/frame3dd_temp_$user
+</pre>
+... save, and exit the editor.   <br>.
+
+</li><li> Open a Terminal window. (Right-click on an open part of the Desktop and select <b>Open Terminal</b>), and type:  
+<pre>source ~/.profile   # if you edited ~/.profile 
+source ~/.login     # if you edited ~/.login  
+</pre>
+</li></ul>
+</li></ol>
+
+<h4>3.1.2 Running Frame3DD in Linux</h4>
+
+<ol>
+<li> Open a Terminal window. (Right-click on an open part of the Desktop and select <b>Open Terminal</b>.) <br>
+Change to the directory containing the Frame3DD example files and run an example, as follows. 
+<pre>cd  ~/Desktop/Frame3DD
+frame3dd  examples/exE.3dd  examples/exE.out                      
+</pre>
+Some run-time information will be displayed on the Terminal and
+the results of your Frame3DD analysis will have been appended to the end of the <b>examples/exE.out</b> Output Data file.
+Data files used primarily for plotting are stored in the <b>/tmp/frame3dd_temp_$USER</b> directory.
+</li><li>       You may view Output Data files and edit Input Data files using a good text editor
+(<a href="http://www.vim.org/others.php">vim/evim/gvim</a>,
+ <a href="http://www.gnome.org/projects/gedit/">gedit</a>,
+ <a href="http://www.nano-editor.org/">nano</a>),
+or a spreadsheet program
+(<a href="http://docs.google.com/">GoogleDocs</a>,
+ <a href="http://www.libreoffice.org/">LibreOffice</a>,
+ <a href="http://projects.gnome.org/gnumeric/">Gnumeric</a>).  For example, 
+to read or edit the Input Data file.   Double-click the <b>Home</b> icon on the Desktop, navigate to the directory of your data files, right click
+on the Data File and select the editor of your choice.
+The text editors
+ <a href="http://www.vim.org/others.php">vim/evim/gvim</a>, 
+ <a href="http://www.gnome.org/projects/gedit/">gedit</a>,  and
+ <a href="http://www.nano-editor.org/">nano</a>, 
+should already be installed;
+there should be no need to install another editor.
+Three tutorials for vim/evim/gvim are <a href="http://www.jerrywang.net/vi/">here</a>, 
+<a href="http://thomer.com/vi/vi.html">here</a>, and
+<a href="http://www.duke.edu/~hpgavin/vi.html">here</a>. 
+
+</li><li>Proceed by running your own <b>Frame3DD</b> analyses using a command like ...
+<pre>frame3dd  examples/MyFrame.3dd  examples/MyResultsA.out
+</pre>
+(within a Terminal window).  
+<!-- <li> You may wish to delete all the files in the temporary file directory (c:\temp) after you have finished your analyses.  -->
+</li></ol>
+
+
+<h4>3.1.3 Plotting Results with <a href="http://www.gnuplot.info/">gnuplot</a> in Linux </h4>
+
+<ol>
+<li> Gnuplot is commonly pre-installed on Linux systems.
+If it is not, you may install it only if you have root privileges using a command like ... <tt> sudo apt-get install gnuplot </tt> ... or by using the package manager GUI installed on your system.
+
+</li><li>Change directories to your Frame3DD directory and Start gnuplot in the Terminal with the command:
+<pre>cd ~/Desktop/Frame3DD/examples
+gnuplot
+</pre>
+</li><li>Change directories to Display the plots of your structure using gnuplot with a command like ...
+<pre>      gnuplot&gt;  load 'MyResultsA.plt'
+</pre>
+where <b>MyResultsA.out</b> is the name of of the Output Data file 
+specified when running Frame3DD. 
+</li><li>Hit the 'Return' key in the Terminal window to see the sequence of plots
+and animations until the <b>gnuplot&gt;</b> prompt returns.
+Or hit <b>CTRL-C</b> to stop the plots at the current plot.  
+</li><li> In examining plots of 3D structures with gnuplot, it is convenient to use a scroll-mouse to zoom, pan, and shift the image.  
+<pre>      zoom                           :  hold Alt + scroll   ... or ...    hold the scroll button and drag left-right
+      pan                            :  hold Left mouse button + drag the mouse  ... or ...   arrow key (up, down, left, right)  ... or ... shift + arrow key
+      shift X                        :  hold shift + scroll
+      shift Y                        :  scroll
+      shift Z                        :  hold shift + hold the scroll wheel + drag up-down
+      autoscale                      :  the 'a' key
+      toggle border                  :  the 'b' key
+      toggle grid                    :  the 'g' key
+      toggle mouse functions on/off  :  the 'm' key
+      undo shift                     :  the 'u' key
+</pre>
+</li><li> To save the current plot as a PostScript file in the Frame3DD/examples directory, use the <b>saveplot</b> script included in the Frame3DD/examples directory.
+<pre>     gnuplot&gt;  load 'saveplot'
+     gnuplot&gt;  !cp my-plot.ps PlotFileA.ps
+</pre>
+</li><li>After finishing with your plots, you can exit gnuplot by typing  ...
+<pre>     gnuplot&gt;  quit
+</pre>
+</li></ol>
+
+<h4>3.1.4 Compiling Frame3DD from source for Unix or Linux</h4>
+
+<p>
+<!--
+For Linux and Unix we currently only provide source-code tarball; you must
+build the software yourself.
+-->
+The following instructions work on Ubuntu 8.10 - 14.04
+and should work with minor changes on any other recent Linux or Unix system.
+There are two options for compiling under Linux:
+</p>
+
+<ol> 
+<li> Compiling using <b>make:</b>
+<ol>
+<li> Open a Terminal window,
+(Right-click on an open part of the Desktop and select <b>Open Terminal</b>.) 
+and compile the code
+<pre>cd ~/Desktop/Frame3DD/src/
+make
+mv frame3dd ../linux/
+</pre>
+</li></ol>
+</li><li> Compiling using SCONS: 
+<ol>
+<li>Ensure you have Python, SCons and GCC installed on your system. 
+On Debian-based systems it should suffice to 
+<pre>sudo apt-get install build-essential scons
+</pre>
+</li><li>If you would like to build the Microstran viewer, ensure that the package
+<tt>libsoqt-dev4</tt> is installed on your system.
+<pre>sudo apt-get install libsoqt-dev4
+</pre>
+<!--
+<a href="http://sourceforge.net/project/platformdownload.php?group_id=221386">Download</a>
+Download</a> the Frame3DD source-code tarball (frame3dd-VERSION.tar.bz2)
+and save it in your home directory.
+-->
+
+</li><li>Open a Terminal, unpack the source code, enter the source directory,
+and build the code, as follows:
+<pre>tar jxvf frame3dd-VERSION.tar.bz2
+cd frame3dd-VERSION
+scons
+</pre>
+</li><li>
+If you have root privileges, install <b>build/frame3dd</b> to <b>/usr/local/bin/</b> ...
+<pre>sudo scons install
+</pre>
+or you may install frame3dd in another system directory if your choosing, 
+such as, ...
+<pre>sudo scons install INSTALL_PREFIX=/usr/local/bin/
+</pre>
+</li><li>If you do not have root privileges, you can run Frame3dd directly from the build tree:
+<pre>export LD_LIBRARY_PATH=~/frame3dd-VERSION/build
+export PATH=$PATH:~/frame3dd-VERSION/build
+</pre>
+</li></ol>
+</li></ol>
+
+<a name="runosx"><h3>3.2 Mac OS X</h3>
+
+<!-- 
+<div class="note"><b>Note:</b> The following binary downloads have not been updated
+for some time and may give you problems. You may have more success trying to build
+from source following the instructions for Linux or Unix.</div>
+-->
+
+<p>
+For OS X running on an Intel processor, you may install Frame3DD from the .ZIP archive 
+or you may compile from the source code.
+The following instructions install Frame3DD to the <b>Desktop</b> but other directories may be substituted, if so desired.  
+</p>
+  
+<h4> 3.2.1 Installing Frame3DD from the .ZIP archive for OS X</h4>
+
+</a><ol><a name="runosx">
+</a><li><a name="runosx">
+<!-- a href="https://sourceforge.net/projects/frame3dd/files/" -->
+<!-- a href="https://sourceforge.net/projects/frame3dd/files/latest/download?source=files" -->
+</a><a href="http://sourceforge.net/project/platformdownload.php?group_id=221386">
+Download</a>
+the Frame3DD .ZIP archive (Frame3DD_VERSION.zip) and save it in your <b>Desktop</b>.<br>
+If the .ZIP archive was not automatically unzipped, 
+simply drag the <b>Frame3DD</b> folder icon to your <b>Desktop</b>. 
+</li><li><b><i>Optional</i></b><br>
+Download the <b>Sketchup</b> interface for <b>Frame3DD</b>, available
+<a href="http://sketchucation.com/forums/viewtopic.php?t=46405">here</a>.
+</li><li><b><i>Recommended</i></b><br>
+Put the <b>Frame3DD</b> directory in your path and set the <b>FRAME3DD_OUTDIR</b> location.<br>
+<ul>
+<li> Open your <b>~/.profile</b> file ... 
+open a Terminal window (<b>Applications &gt; Utilities &gt; X11</b> or <b>Applications &gt; Utilities &gt; Terminal</b>)
+and type:
+<pre>touch ~/.profile
+open  -a  TextEdit  ~/.profile
+</pre>
+</li><li> Copy-and-paste the following ten lines into the beginning of your <b>~/.profile</b> file ...
+<pre># for Frame3DD ... http://frame3dd.sourceforge.net/
+# add Frame3DD executable directory to the path
+export PATH=$PATH:$HOME/Desktop/Frame3DD/osx/
+# create a Frame3DD output directory
+if [ ! -d /tmp/frame3dd_temp_$USER ]; then
+    mkdir /tmp/frame3dd_temp_$USER
+    echo "creating /tmp/frame3dd_temp_$USER for Frame3DD"
+fi
+# specify the Frame3DD output directory
+export FRAME3DD_OUTDIR=/tmp/frame3dd_temp_$USER
+</pre>
+</li><li> Save and Quit <b>TextEdit</b>, and, in the Terminal, type:   
+<pre>source ~/.profile
+</pre>
+</li></ul>
+</li></ol>
+
+<h4> 3.2.2 Running Frame3DD in OS X</h4>
+
+<ol>
+<li> Open a Terminal window (<b>Applications &gt; Utilities &gt; X11</b> or <b>Applications &gt; Utilities &gt; Terminal</b>)
+change to the directory of example files and run an example.
+<pre>cd  ~/Desktop/Frame3DD   
+frame3dd  examples/exE.3dd  examples/exE.out        
+</pre>
+Some run-time information will be displayed on the Terminal and
+the results of your Frame3DD analysis will have been appended to the end of the 
+<b>examples/exE.out</b> Output Data file. Data files used primarily for plotting are stored in the <b>/tmp/frame3dd_temp_$USER</b> directory. 
+
+</li><li>     You may view Output Data files and edit Input Data files using a good text editor
+(<a href="http://code.google.com/p/macvim/">vim/evim/gvim</a>, 
+ <a href="http://www.gnome.org/projects/gedit/">gedit</a>,
+ <a href="http://www.jedit.org/index.php">jEdit</a>), 
+or a spreadsheet program
+(<a href="http://docs.google.com/">GoogleDocs</a>,
+<a href="http://www.libreoffice.org/">LibreOffice</a>).<br>
+Three tutorials for vim/evim/gvim are <a href="http://www.jerrywang.net/vi/">here</a>, 
+<a href="http://thomer.com/vi/vi.html">here</a>, and
+<a href="http://www.duke.edu/~hpgavin/vi.html">here</a>. 
+If you use Apple's TextEdit,
+make sure you are in Plain Text mode  ...  [SHIFT] [APPLE] [T] ...  or ...   <b>Format &gt; Make Plain Text </b> ... <br>
+</li><li>
+Proceed by running your own <b>Frame3DD</b> analyses using a command like ...
+<pre>frame3dd  examples/MyFrame.3dd  examples/MyResultsA.out
+</pre>
+(within a Terminal window).  
+</li></ol>
+
+<h4>3.2.3 Plotting Results with <a href="http://www.gnuplot.info/">gnuplot</a> in OS X</h4>
+
+<!--
+<p>
+For a version of gnuplot for OS X-Intel, or for a version with mouse-scrolling and panning features,
+install <a href="http://www.apple.com/macosx/features/x11/">X11</a> and <a href="http://developer.apple.com/tools/">Apple Development Tools</a>, and then <a href="http://maba.wordpress.com/2006/08/02/scientific-plotting-on-mac-os-x-using-gnuplot-and-plot/">compile gnuplot from sources</a>.
+</p>
+-->
+
+<p>
+<b>Installing <a href="http://www.gnuplot.info/">gnuplot</a> for OS X</b>
+</p>
+
+<p>
+From you Mac's Administrator account, first install Xcode, then install MacPorts, and finally install gnuplot.
+</p><ol>
+<li>Install <a href="https://developer.apple.com/xcode/">Xcode</a>,
+<!-- join ADC to create an account, log in, and then click on <b>Downloads > Developer Tools</b>, and browse for the version of Xcode for your version of OS X.<br> 
+For OS X <b>10.4</b> Tiger, install Xcode <b>2.5</b> Developer Tools<br>
+For OS X <b>10.5</b> Leopard, install Xcode <b>3.1.4</b> Developer Tools<br>
+For OS X <b>10.6</b> Snow Leopard, install Xcode <b>3.2.1</b> Developer Tools<br> -->
+Make sure the "Unix Development" option is selected if installing Xcode 3.1.4 or 3.2.1. 
+</li><li> To install MacPorts
+for your version of OS X (10.4 Tiger, 10.5 Leopard, or 10.6 Snow Leopard),
+follow <a href="http://www.macports.org/install.php#pkg">
+these instructions</a>.
+</li><li> To install gnuplot, open a terminal window and type:
+<pre>sudo port install gnuplot
+</pre>
+If this is your first MacPorts package installation, it will take several minutes to complete.
+</li></ol>
+<p></p>
+<!--
+<li>        Test that gnuplot works.
+         Open a Terminal window (Applications > Utilities > Terminal) and 
+<pre>
+gnuplot
+     gnuplot>  plot sin(x)
+     gnuplot>  quit
+</pre>
+-->
+
+<p>
+<b>Running <a href="http://www.gnuplot.info/">gnuplot</a> in OS X</b>
+</p>
+
+<p>
+</p><ol>
+<li>        Visualize your <b>Frame3DD</b> analysis output.
+Open a Terminal window (Applications &gt; Utiltities X11, or Applications &gt; Utilities &gt; Terminal) and ...
+<pre>cd ~/Desktop/Frame3DD/examples
+gnuplot
+     gnuplot&gt;  load 'MyResultsA.plt'
+</pre>
+where <b>MyResultsA.out</b> is the name of of the Output Data file specified 
+when running frame3dd.
+</li><li>Hit the 'Return' key in the Terminal window to see the sequence of plots
+and animations until the <b>gnuplot&gt;</b> prompt returns.
+</li><li> In examining plots of 3D structures with gnuplot, it is convenient to use a scroll-mouse to zoom, pan, and shift the image. 
+<pre>      zoom                           :  hold command + scroll   ... or ...    hold the scroll button and drag left-right
+      pan                            :  hold Left mouse button + drag the mouse  ... or ...   arrow key (up, down, left, right)  ... or ... shift + arrow key
+      shift X                        :  hold shift + scroll
+      shift Y                        :  scroll
+      shift Z                        :  hold shift + hold the scroll wheel + drag up-down
+      autoscale                      :  the 'a' key
+      toggle border                  :  the 'b' key
+      toggle grid                    :  the 'g' key
+      toggle mouse functions on/off  :  the 'm' key
+      undo shift                     :  the 'u' key
+</pre>
+</li><li> To save the current plot as a PDF file in the Frame3DD/examples directory, use the <b>saveplot_osx</b> script included in the Frame3DD/examples directory.
+<pre>     gnuplot&gt;  load 'saveplot_osx'
+     gnuplot&gt;  !cp my-plot.pdf PlotFileA.pdf
+</pre>
+</li><li>After finishing with your plots, you can exit gnuplot by typing  ...
+<pre>     gnuplot&gt;  quit
+</pre>
+</li></ol>
+<p></p>
+
+
+<h4> 3.2.4 Compiling Frame3DD from source for OS X</h4>
+
+<ol>
+<li>Install <a href="https://developer.apple.com/xcode/">Xcode</a>.
+</li><li> Compile and install the code, as follows:
+<pre>    cd ~/Desktop/Frame3DD/src/
+    make
+    mv frame3dd ../osx/
+</pre>
+</li></ol>
+
+
+<a name="runwindows"><h3>3.3 Windows</h3>
+
+<p>
+For Microsoft Windows, 
+you may install Frame3DD from the .ZIP archive
+<!-- (recommended), you may use a binary installer (which is currently out of date), -->
+or you may compile from the source code.
+The following instructions install Frame3DD to the <b>Desktop</b> but other directories may be substituted, if so desired.  
+</p>
+
+<h4> 3.3.1 Installing Frame3DD from the .ZIP archive for Windows</h4>
+
+</a><ol><a name="runwindows">
+</a><li><a name="runwindows"> </a><a href="http://sourceforge.net/project/platformdownload.php?group_id=221386">
+Download</a> the Frame3DD .ZIP archive (Frame3DD_VERSION_win32.zip) and save it to your <b>Desktop</b>.<br>
+If the .ZIP archive was not automatically unzipped, 
+simply drag <b>Frame3DD</b> folder icon to your <b>Desktop</b>. 
+</li><li><b><i>Optional</i></b><br>
+Download the <b>Sketchup</b> interface for <b>Frame3DD</b>, now available <a href="http://sketchucation.com/forums/viewtopic.php?t=46405">here</a>.
+</li><li> <b><i>Recommended</i></b><br>
+Put the <b>Frame3DD</b> directory in your path and set the 
+<b>PATH</b> and <b>FRAME3DD_OUTDIR</b> environment variables.<br>
+To do this,
+<b> right-click My Computer &gt; Properties &gt; Advanced &gt; Environment Variables</b><br>
+Set a new user variable name <b>PATH</b>
+with variable value <b>%HOMEPATH%\Desktop\Frame3DD\windows</b><br>
+Set a new user variable name <b>FRAME3DD_OUTDIR</b> 
+with variable value <b>%HOMEPATH%\Desktop\Frame3DD\temp</b><br>
+(The <b>Desktop\Frame3DD\temp</b> folder should already exist.)<br>
+Detailed information on how to set environment variables in Windows is <a href="http://vlaurie.com/computers2/Articles/environment.htm">here</a>, if you need it. 
+</li><li> <b><i>Recommended</i></b><br>
+Install
+<a href="https://github.com/adoxa/ansicon/downloads/">
+ansicon</a>, a Windows console program that can display text in color.<br>
+Download and extract the
+<a href="https://github.com/adoxa/ansicon/downloads/">
+ansicon .ZIP file</a> and copy the <b>x86</b> folder 
+into the <b>Desktop\Frame3DD\</b> folder.  <br>
+Make a shortcut from <b>Desktop\Frame3DD\x86\ansicon</b> to the <b>Desktop</b>.
+</li></ol>
+
+<h4> 3.3.2 Running Frame3DD in Windows</h4>
+
+<ol>
+<li> Go to the <b>Desktop &gt; Frame3DD</b> folder,
+double-click on the <b>frame3dd</b> application icon and
+enter the Input Data file name and Output Data file name when prompted, as follows:
+<pre>Please enter the  input data file name:  examples/exE.3dd
+Please enter the output data file name:  examples/exE.out
+</pre>
+
+Alternatively, you may open a 
+"<a href="http://www.bleepingcomputer.com/tutorials/tutorial76.html#intro">command prompt window</a>" 
+<!-- <a href="http://en.wikipedia.org/wiki/Windows_command_line">Command Prompt</a> window -->
+(<b>Start &gt; All Programs &gt; Accessories &gt; Command Prompt</b>),
+or an
+<a href="https://github.com/adoxa/aansicon/downloads/">ansicon</a> window.<br> 
+Change to the directory of example files, and run an example, as follows:
+<pre>chdir %HOMEPATH%\Desktop\Frame3DD
+frame3dd  examples/exE.3dd  examples/exE.out
+</pre>
+The results of your Frame3DD analysis will have been appended to the end of the <b>examples/exE.out</b> Output Data file.
+Data files used primarily for plotting are stored in the <b>Desktop\Frame3DD\temp</b> folder.
+
+</li><li>       You may view Output Data files and edit Input Data files
+using a good text editor
+(<a href="http://www.vim.org/others.php">vim/evim/gvim</a>, 
+ <a href="http://www.gnome.org/projects/gedit/">gedit</a>,
+ <a href="http://www.jedit.org/index.php">jEdit</a>,
+ <a href="http://notepad-plus.sourceforge.net/uk/site.htm">NotePad++</a>),
+ <a href="http://en.wikipedia.org/wiki/Notepad_(Windows)">NotePad</a>,  
+or a spreadsheet program
+(<a href="http://docs.google.com/">GoogleDocs</a>,
+ <a href="http://www.libreoffice.org/">LibreOffice</a>).
+Three tutorials for vim/evim/gvim are <a href="http://www.jerrywang.net/vi/">here</a>, 
+<a href="http://thomer.com/vi/vi.html">here</a>, and
+<a href="http://www.duke.edu/~hpgavin/vi.html">here</a>. 
+</li><li>Proceed by running your own <b>Frame3DD</b> analyses using a command like ...
+<pre>frame3dd  examples/MyFrame.3dd  examples/MyResultsA.out
+</pre>
+ ... within a Command Prompt or
+<a href="https://github.com/adoxa/ansicon/downloads/">ansicon</a> window.  
+<!-- <li> You may wish to delete all the files in the temporary file directory (c:\temp) after you have finished your analyses.  -->
+</li></ol>
+
+<h4>3.3.3 Plotting Results with <a href="http://www.gnuplot.info/">gnuplot</a> in Windows</h4>
+
+<p>
+<b>Installing <a href="http://www.gnuplot.info/">gnuplot</a> for Windows</b>
+
+</p><ol>
+<li>
+<a href="http://sourceforge.net/projects/gnuplot/files/gnuplot/4.6.3/gp463-win32-setup.exe/download">
+Download</a> the MS-Windows version of gnuplot 4.6.3
+and extract it to your <b>Desktop</b>.
+</li><li> Navigate to <b>Desktop &gt; gnuplot &gt; bin</b>, 
+right click on the <b>wgnuplot</b> application icon, and create a shortcut to your <b>Desktop</b>.
+</li></ol>
+<p></p>
+
+<p>
+<b>Running <a href="http://www.gnuplot.info/">gnuplot</a> in Windows</b>
+
+</p><ol>
+<li>Clicking on the <b>wgnuplot</b> icon on the Desktop starts gnuplot.
+</li><li>To view the plot with gnuplot, first change directories to to location of your output files, by clicking on the <b>ChDir</b> button at the top of the gnuplot window and navigating to <b>Desktop &gt; Frame3DD &gt; examples</b>.
+</li><li>Display the plots of your structure using gnuplot with a command like ...
+<pre>      gnuplot&gt;  load 'exE.plt'
+</pre>
+or
+<pre>      gnuplot&gt;  load 'MyResultsA.plt'
+</pre>
+where <b>exE.out</b> or <b>MyResultsA.out</b>
+is the name of of the specified Output Data file. 
+</li><li>Click <b>OK</b> to see the next plot or <b>Cancel</b> to stop with the current plot.  
+</li><li> In examining plots of 3D structures with gnuplot, it is convenient to use a scroll-mouse to zoom, pan, and shift the image. 
+<pre>      zoom                           :  hold Alt + scroll   ... or ...    hold the scroll button and drag left-right
+      pan                            :  hold Left mouse button + drag the mouse  ... or ...   arrow key (up, down, left, right)  ... or ... shift + arrow key
+      shift X                        :  hold shift + scroll
+      shift Y                        :  scroll
+      shift Z                        :  hold shift + hold the scroll wheel + drag up-down
+      autoscale                      :  the 'a' key
+      toggle border                  :  the 'b' key
+      toggle grid                    :  the 'g' key
+      toggle mouse functions on/off  :  the 'm' key
+      undo shift                     :  the 'u' key
+</pre>
+</li><li> To save the current plot as a PostScript file in the Frame3DD/examples folder, use the <b>saveplot_w32</b> script included in the Frame3DD/examples folder.
+<pre>     gnuplot&gt;  load 'saveplot_w32'
+     gnuplot&gt;  !copy my-plot.ps PlotFileA.ps
+</pre>
+</li><li>After finishing with your plots, you can exit gnuplot by typing  ...
+<pre>     gnuplot&gt;  quit
+</pre>
+</li></ol>
+<p></p>
+
+
+<!-- 
+<h4> 3.3.4 Installing Frame3DD from the binary installer </h4>
+
+<ol>
+<li><a href="https://sourceforge.net/projects/frame3dd/files/">
+Download</a> and run the binary installer (frame3dd-VERSION.exe).
+
+<li>Use the Start menu to access README information and this documentation.
+
+<li> <b><i>Recommended</i></b><br>
+Put the <b>Frame3DD</b> directory in your path and set the 
+<b>PATH</b> and <b>FRAME3DD_OUTDIR</b> environment variables.<br> 
+To do this,
+<b> right-click My Computer > Properties > Advanced > Environment Variables</b><br>
+Set a new user variable name <b>PATH</b>
+with variable value <b>%PROGRAMFILES%\Frame3DD</b></br>
+Set a new user variable name <b>FRAME3DD_OUTDIR</b> 
+with variable value <b>%HOMEPATH%\Desktop\Frame3DD\temp</b> .</br>
+You will need to create this Temp folder: <b>Desktop\Frame3DD\temp</b> before running <b>Frame3DD</b>.<br> 
+Detailed information on how to set environment variables in Windows is <a href="http://vlaurie.com/computers2/Articles/environment.htm">here</a>, if you need it.  
+
+<li>Copy one or more of the example files (eg <b>exE.3dd</b>) from your <b>%PROGRAMFILES%\FRAME3DD\examples</b> folder into your <b>Desktop</b> folder
+<li>
+Open a
+"<a href="http://www.bleepingcomputer.com/tutorials/tutorial76.html#intro">command prompt window</a>" 
+(Start > All Programs > Accessories > Command Prompt), 
+change to the directory of example files and run an example:
+<pre>
+chdir %HOMEPATH%\Desktop
+frame3dd  examples/exE.3dd  examples/exE.out
+</pre>
+Some run-time information will be displayed on the Command Prompt window and
+the results of your Frame3DD analysis will have been appended to the end of the <b>examples/exE.out</b> Output Data file.
+Data files used primarily for plotting are stored in the <b>Desktop\Frame3DD\temp</b> folder.
+<li> You may run <b>Frame3DD</b>, examine the analysis results, visualize the results using gnuplot, and edit Input Data files
+ as described above.  
+</ol>
+-->
+
+<h4> 3.3.4 Compiling Frame3DD from source for Windows </h4>
+
+<ol>
+<li> Install a GCC compatible compiler, such as the 
+<a href="http://www.delorie.com/djgpp/"> DJGPP gcc compiler</a>,
+the <a href="http://www.cs.virginia.edu/~lcc-win32/"> LCC-win32 compiler</a>,
+or the <a href="http://www.mingw.org/"> MinGW compiler</a>.
+<!-- a href="https://sourceforge.net/projects/frame3dd/files/" -->
+<!-- a href="https://sourceforge.net/projects/frame3dd/files/latest/download?source=files" -->
+<a href="http://sourceforge.net/project/platformdownload.php?group_id=221386">
++Download</a>
+the Frame3DD .ZIP archive (Frame3DD_VERSION.zip) and save it to your <b>Desktop</b>.<br>
+If the .ZIP archive was not automatically unzipped, 
+double-click the icon to extract it to your <b>Desktop</b>. 
+and compile the code, as follows:
+<pre>chdir Desktop\Frame3DD\src\
+make
+move frame3dd ..\windows\.
+</pre>
+</li></ol>
+
+<a name="Matlab"><h2>4. Matlab Interface</h2>
+
+</a><p><a name="Matlab">
+<b>Frame3DD</b> may optionally be executed from within Matlab on any platform,
+via the Matlab interface function </a><a href="http://svn.code.sourceforge.net/p/frame3dd/code/trunk/matlab/frame_3dd.m">frame_3dd.m</a>
+</p><pre>function [D,R,F,L,Ks] = frame_3dd(XYZ,JTS,RCT,EAIJ,P,U,D)
+% [D,R,F,L,Ks] = frame_3dd (XYZ,JTS,RCT,EAIJ,P,U,D)
+%
+% Solve a a three-dimensional frame analysis problem
+%
+% INPUT DATA:
+%
+%  XYZ : a 4xJ matrix containing the XYZ coordinate of each node
+%          row 1 = X-axis coordinate  for each node
+%          row 2 = Y-axis coordinate  for each node
+%          row 3 = Z-axis coordinate  for each node
+%          row 4 = rigid radius       for each node
+%
+%  JTS : a 2xB matrix indicating which 2 nodes each frame element connects
+%          row 1 = the 'starting' node  for each frame element
+%          row 2 = the 'ending'   node  for each frame element
+%
+%  RCT : a 6xJ matrix indicated which nodes have reactions
+%        0: the node has no reaction in that degree of freedom,
+%        1: the node does have a reaction in that degree of freedom.
+%
+% EAIJ : a 10xB containing the section and modulus properties of each frame el.
+%         row  1 = Ax  cross section area    for each frame el.
+%         row  2 = Asy shear area y-directionfor each frame el.
+%         row  3 = Asz shear area z-directionfor each frame el.
+%         row  4 = Jxx torsional moment of inertia - x axis for each frame el.
+%         row  5 = Iyy bending moment of inertia - y axis   for each frame el.
+%         row  6 = Izz bending moment of inertia - z axis   for each frame el.
+%         row  7 = E   elastic modulus       for each frame el.
+%         row  8 = G   shear   modulus       for each frame el. 
+%         row  9 = p   roll angle            for each frame el.
+%         row 10 = d   mass density          for each frame el.
+%
+%    P : a 6xJ matrix containing the components of the external
+%        forces and moments applied to each node.
+%          row 1 = External nodal force in X-direction    for each node
+%          row 2 = External nodal force in Y-direction    for each node
+%          row 3 = External nodal force in Z-direction    for each node
+%          row 4 = External nodal moment about X-axis     for each node
+%          row 5 = External nodal moment about Y-axis     for each node
+%          row 6 = External nodal moment about Z-axis     for each node
+%
+%    U : a 3xB matrix containing the unif. dist. load on each frame element
+%          row 1 = uniform distributed load along the local element x axis
+%          row 2 = uniform distributed load in    the local element y axis
+%          row 3 = uniform distributed load in    the local element z axis
+%
+%    D : a 6xJ matrix of prescribed displacements at the reaction DoF's
+%          row 1 = prescribed node displ. in the X-direction for each node
+%          row 2 = prescribed node displ. in the Y-direction for each node
+%          row 3 = prescribed node displ. in the Z-direction for each node
+%          row 4 = prescribed node rot'n  about the X-axis   for each node
+%          row 5 = prescribed node rot'n  about the Y-axis   for each node
+%          row 6 = prescribed node rot'n  about the Z-axis   for each node
+%
+% OUTPUT DATA:
+%
+%    D : a 6xJ matrix   of the deflections and rotations of each node
+%    R : a 6xJ matrix   of the reaction forces and moments
+%    F : a 12xB matrix  of the end forces of each frame element
+%    L : a 1xB vector   of the length of each frame element
+%   Ks : a 6Jx6J matrix of the structural stiffness matrix
+</pre>
+<p></p>
+
+<p>
+The <b>Frame3DD</b> executable program
+(<b>frame3dd</b> on Linux and OS X, <b>frame3dd.exe</b> on Windows)
+and the matlab interface function, <b>frame_3dd.m</b>
+must be saved to directories within your Matlab path.    
+<!-- 
+You may either copy the <b>Frame3DD</b> executable program and <b>frame_3dd.m</b> to 
+directories in your Matlab path, or you may add the <b>Desktop/Frame3DD</b> and <b>Desktop/Frame3DD/matlab</b>
+directories to your Matlab path. 
+-->
+To display the or modify the matlab path, use the matlab command <b>path</b>.   
+</p>
+
+<p>
+In Linux and OS X you can add the Frame3DD directory to your matlab path with the matlab commands:<br>
+</p><pre>path([ getenv('HOME') '/Desktop/Frame3DD' ],path) 
+path([ getenv('HOME') '/Desktop/Frame3DD/matlab' ],path) 
+</pre>
+<p></p>
+
+<p>
+In Windows you can add the Frame3DD directory to your matlab path with the matlab commands:<br>
+</p><pre>path([ getenv('USERPROFILE') '/Desktop/Frame3DD' ],path) 
+path([ getenv('USERPROFILE') '/Desktop/Frame3DD/matlab' ],path) 
+</pre>
+<p></p>
+
+<p>
+The matlab interface function, <a href="http://svn.code.sourceforge.net/p/frame3dd/code/trunk/matlab/frame_3dd.m">frame_3dd.m</a>, executes the system command
+(<b>frame3dd</b> on Linux and OS X, <b>frame3dd.exe</b> on Windows) to compute the solution.
+</p><ol>
+<li> The Matlab file for your problem first sets up the various matrices defining the problem for analysis and calls frame_3dd.m <br>
+A <a href="http://svn.code.sourceforge.net/p/frame3dd/code/trunk/matlab/exA.m">Matlab version of Example A</a> illustrates
+how to analyze problems using the Matlab interface to <b>Frame3DD</b>.<br>
+Matlab versions of the other examples are forthcoming.
+</li><li> frame_3dd.m writes a <b>Frame3DD</b> input data file called IOdata.FMM,
+</li><li> frame_3dd.m calls a system command to run the executable program <b>frame3dd</b> in the input data file IOdata.FMM .
+</li><li> The executable program <b>frame3dd</b> writes the Output Data to IOdata.OUT ,
+and also writes IOdata_out.m, containing the Output Data.<br>
+An m-file containing the Output Data is written whenever the frame3dd
+executable is run on a file ending in ".FMM",
+whether or not the analysis is initiated by frame_3dd.m.
+</li><li> frame_3dd.m runs IOdata_out.m, containing the matrices D, R, F, L, and Ks,
+</li><li> frame_3dd.m returns D, R, F, L, and Ks, to the Matlab workspace, or to your Matlab function.
+</li></ol>
+<p></p>
+
+<p>
+This m-function interface to <b>Frame3DD</b>
+is currently capable of static analyses.
+It does not (yet) implement the following features of <b>Frame3DD</b>:
+</p><ul>
+  <li> Matlab functions for graphical display of the results
+  </li><li> gravity loading 
+  </li><li> concentrated point forces applied at a point along a frame element 
+  </li><li> trapezoidally-distributed loads
+  </li><li> temperature loads
+  </li><li> multiple load cases
+  </li><li> modal analysis
+  </li><li> matrix condensation
+</li></ul>
+<p></p>
+
+<p>
+Adding these features would require editing the matlab inteface function, frame_3dd.m.
+</p>
+
+<p>
+If you plan to run <b>frame_3dd.m</b> repeatedly, and in quick succession,
+(for example as part of a structural optimization, using Matlab's fmincon function), remove the IOdata_out.m file after each run of <b>frame_3dd.m</b> 
+in order to prevent asynchronous over-writing of the file. 
+</p>
+
+<a name="CSV"><h2>5. Spreadsheet Interface</h2>
+
+</a><p><a name="CSV">
+Input Data for <b>Frame3DD</b> may be read and written using spreadsheet programs
+(excel,
+ </a><a href="http://docs.google.com/">GoogleDocs</a>,
+ <a href="http://www.libreoffice.org/">LibreOffice</a>,
+ <a href="http://projects.gnome.org/gnumeric/">Gnumeric</a>).
+</p>
+
+<p>
+Any of the  <a href="http://www.duke.edu/~hpgavin/frame3dd/#examples"><b>
+Frame3DD</b> example Input Data files</a>
+may be opened with a spreadsheet program.
+A <b>.CSV</b> formatted Input Data template is here:
+<a href="http://svn.code.sourceforge.net/p/frame3dd/code/trunk/doc/template.csv">template.csv</a>. 
+When editing an Input Data file with a spreadsheet program, save it in
+<b>.CSV</b> format (with a "<b>.CSV</b>" filename extension).
+</p>
+
+<p>
+When run on a <b>.CSV</b> file,
+<b>Frame3DD</b> writes results
+as plain text to the named Output Data file and also
+writes results of the static analyses to a spreadsheet with a filename ending in "<b>.CSV</b>".
+For example, running <b>Frame3DD</b> as follows:
+</p><pre>frame3dd  examples/MyFrame.CSV  MyResultsA.out
+</pre>
+<p></p>
+<p>
+results in the two Output Data files  <b>MyResultsA.out</b> and <b>MyResultsA_out.CSV</b>.
+These <b>.CSV</b> files may be viewed, edited, pre-processed, and post-processed with a spreadsheet program.
+</p>
+
+<p>
+The results spreadsheet file includes an index table specifying the row numbers
+of each type of result.   <br>
+Sections of an example results spreadsheet are shown below.<br>
+<img src="./Frame3DD User Manual_files/CSV1.png" align="center" border="0"><br>
+This example has three load cases.  <br> <br>
+Displacements for load case 1 start at row 21 and end at row 25.<br>
+Frame element end forces for load case 1 start at row 28 and end at row 35.<br>
+Reaction forces for load case 1 start at row 38 and end at row 42.<br>
+Peak internal element forces for load case 1 start at row 47 and end at row 54.<br><br>
+
+Displacements for load case 2 start at row 60 and end at row 64.<br>
+Frame element end forces for load case 2 start at row 67 and end at row 74.<br>
+Reaction forces for load case 2 start at row 77 and end at row 81.<br>
+Peak internal element forces for load case 2 start at row 86 and end at row 93.<br><br>
+
+Displacements for load case 3 start at row 99 and end at row 103.<br>
+Frame element end forces for load case 3 start at row 106 and end at row 113.<br>
+Reaction forces for load case 3 start at row 116 and end at row 120.<br>
+Peak internal element forces for load case 3 start at row 125 and end at row 132.<br><br>
+</p>
+
+<p>
+For any <b>Frame3DD</b> .CSV results file, the spreadsheet cells containing the result
+row numbers are given in the following table.<br>
+<table border="1">
+<tbody><tr> <th>Load Case 1</th> <th>First Row</th> <th>Last Row</th></tr>
+<tr> <td>Node Displacements</td> <td>C-10</td><td>C-11</td></tr>
+<tr><td>Frame Element End Forces</td> <td>D-10</td><td>D-11</td></tr>
+<tr><td>Reaction Forces</td> <td>E-10</td><td>E-11</td></tr>
+<tr><td>Peak Internal Forces</td> <td>F-10</td><td>F-11</td></tr>
+<tr> <th>Load Case 2</th> <th>First Row</th> <th>Last Row</th></tr>
+<tr> <td>Node Displacements</td> <td>C-12</td><td>C-13</td></tr>
+<tr><td>Frame Element End Forces</td> <td>D-12</td><td>D-13</td></tr>
+<tr><td>Reaction Forces</td> <td>E-12</td><td>E-13</td></tr>
+<tr><td>Peak Internal Forces</td> <td>F-12</td><td>F-13</td></tr>
+<tr> <th>Load Case 3</th> <th>First Row</th> <th>Last Row</th></tr>
+<tr> <td>Node Displacements</td> <td>C-14</td><td>C-15</td></tr>
+<tr><td>Frame Element End Forces</td> <td>D-14</td><td>D-15</td></tr>
+<tr><td>Reaction Forces</td> <td>E-14</td><td>E-15</td></tr>
+<tr><td>Peak Internal Forces</td> <td>F-14</td><td>F-15</td></tr>
+<tr> <td><i>et cetera</i></td> </tr>
+</tbody></table>
+</p>
+
+<p>
+The columns of the spreadsheet results file are arranged as follows.<br>
+Displacement results are in columns A through G:<br>
+<img src="./Frame3DD User Manual_files/CSV2.png" align="center" border="0"><br><br>
+Frame element end force results are in columns A through H:<br>
+<img src="./Frame3DD User Manual_files/CSV3.png" align="center" border="0"><br><br>
+Reaction results are in columns A through G:<br>
+<img src="./Frame3DD User Manual_files/CSV4.png" align="center" border="0"><br><br>
+Peak frame element internal force results are in columns A through H:<br>
+<img src="./Frame3DD User Manual_files/CSV5.png" align="center" border="0"><br><br>
+</p>
+
+<p>
+Modal analysis results are not (yet) written to the .CSV formatted output file.
+</p>
+
+<a name="FrameEd"><h2>6. FrameEd</h2>
+
+</a><p><a name="FrameEd">
+<b>Frame_Ed</b> is a Windows GUI for the 20020103 version of <b>Frame3DD</b> (Jan 3, 2002).<br>
+ The .zip file </a><a href="http://www.duke.edu/~hpgavin/frame3dd/DOS/FrameEd.zip">FrameEd.zip</a> includes:
+</p>
+ <ul>
+ <li>the GUI executable, Frame_Ed.exe
+ </li><li>the frame analysis executable, Frame3d.exe, for the 20020103 version
+ </li><li>an example input file, exG.3dd, for the 20020103 version
+ </li><li>a template for the Input Data file, ex2002.3dd, for the 20020103 version
+ </li></ul>
+<p>
+ Differences between the 2002 and the current versions of <b>Frame3DD</b> are:
+</p>
+<ul>
+ <li> The 2002 version does not support comments in the Input Data.
+ </li><li> The 2002 version does not support multiple load cases.
+ </li><li> The 2002 version does not support roll angles for frame element orientation.
+ </li><li> The 2002 version uses the Jacobi method for modal analysis.
+ </li><li> The 2002 version requires specification of node masses and inertias for every node.
+ </li><li> The 2002 version does not support panning of the animation.
+ </li><li> The 2002 version uses Guyan reduction for matrix condensation,
+to match the first mode.
+</li></ul>
+
+
+<p>Source code for FrameEd is not currently available, and development on this GUI is no longer active.</p>
+
+<a name="structuralmodeling"><h2>7. Structural Modeling</h2>
+
+<!--
+<p>
+       For an introduction to the theory of framed structures, check
+       <a href="http://www.duke.edu/~hpgavin/ce131/index.html">http://www.duke.edu/~hpgavin/ce131/</a> and <a href="http://www.duke.edu/~hpgavin/ce283/index.html">http://www.duke.edu/~hpgavin/ce283/</a>.
+</p>
+-->
+
+<h3>7.1 Units</h3>
+
+<p>
+The Output Data is formatted using floating point display, not scientific notation.  To
+obtain the greatest number of significant digits in the output, use units of force
+and length such that the modulus of elasticity occupies three to five figures before
+the decimal point.  For example, if the frame to be analyzed is made of steel or
+aluminum, use units of (kips (1000 pounds) and inches), or
+(Newtons, millimeters, and tonne), or (MegaNewtons, meters, and kilotonnes).
+</p>
+
+<p>
+It is recommended to write the units used in your analysis in the
+<i>title</i> of the analysis and throughout the Input Data files,
+as is done in the example Input Data files.
+
+</p><ul>
+<li> 1 inch = 25.4 millimeter = 0.0254 meter
+</li><li> 1 kip = 4 448.221 6 Newton = 0.004 448 221 6 MegaNewton
+</li><li> 1 kip/square inch = 6.894 757 28 Newton/square millimeter = 6.894 757 28 MegaNewton/square meter
+</li><li> 1 kip/cubic inch = 0.027 679 904 593 tonne/cubic millimeter = 27.679 904 593 kilotonne/cubic meter
+</li><li> 1 /deg.F = 1.8 /deg.C
+</li></ul>
+<p></p>
+
+<h3> 7.2 Nodes, Coordinates, Support Conditions and Reactions </h3>
+
+<p>
+Node positions are specified by locations in a three-dimensional
+Cartesian coordinate system.
+Each node has six coordinates: three translations
+in the global <i>X</i>, <i>Y</i>, and <i>Z</i> directions and three rotations about the
+global <i>X</i>, <i>Y</i>, and <i>Z</i> axes.
+Optionally,
+nodes may be modeled as "rigid" within a sphere of radius <i>r</i>.
+The effects of finite node sizes are modeled approximately
+in the calculation of the frame element stiffness
+through the use of an <i>effective beam length</i>, which is the node-to-node
+length of the frame element less the rigid radii on each end.
+All nodes are fully moment resisting.   
+Semi-rigid connections may be modeled through the use of short frame elements
+at the ends of longer members.  
+</p>
+<img src="./Frame3DD User Manual_files/coords.png" align="center" border="0"><br>
+
+<p>
+For two-dimensional (planar) structures the global <i>X</i> direction is horizontal and the global <i>Y</i> direction is vertical.
+For three-dimensional structures the global <i>X</i> and <i>Y</i> directions are horizontal and the global <i>Z</i> direction is vertical.
+</p>
+
+<p>
+Node numbers should be assigned in a systematic way, moving from
+one end of the structural system to the opposite end.  
+<!--
+Ideally a frame element
+will connect every pair of nodes with sequential numbers.
+-->
+</p>
+
+<p>
+Support conditions are modeled by fixing the degrees of freedom
+collocated with reaction forces.
+By default, displacements at the fixed degrees of freedom are zero.
+Optionally, displacements at the fixed degrees of freedom may be prescribed
+as a type of loading.
+Elastic support conditions may be modeled by additional elements
+with the desired flexibility.
+Static reaction forces at the fixed degrees of freedom are
+computed and are appended to the Output Data file.
+</p>
+
+
+<h3> 7.3 Numbering of Frame Element Starting Nodes and Ending Nodes </h3>
+
+<p>
+Coordinate transformations in 3D are not unique and depend upon
+the sequence of rotations.
+In some cases the orientation of an element within a structure
+may not be obvious if the element has rotated by more than 90 degrees in going
+from the local system to the global system.
+For this reason it can be helpful to define end nodes in a way that requires 
+rotations of less than 90 degrees about any axis.
+Coordinate transformations in 2D are unique
+and these potential ambiguities are not a concern. 
+For 3D structures the following recommendations can help in 
+avoiding ambiguous coordinate transformations.  
+</p> 
+
+</a><p><a name="structuralmodeling">
+Frame elements connect pairs of nodes.  Each frame element has a 
+"starting node" (element node 1, N1)
+and an "ending node" (element node 2, N2),
+as described in the </a><a href="http://svn.code.sourceforge.net/p/frame3dd/code/trunk/doc/Frame3DD-manual.html#InputData">Input Data format</a>.
+In principle, either node of the frame element could be node N1 
+and either node could be N2.  
+The assignment of N1 and N2 to the frame element should not affect the results. 
+However, to avoid confusion in certain 3D models, the following guidelines are recommended: <br>
+</p><ul>
+<li>In general node N1 of the frame element should have more negative
+coordinates than node N2 of the element.   </li>
+</ul>
+<p></p>
+<p>
+More specifically, 
+specifying element node 1 location as (<i>x1, y1, z1</i>) and 
+element node 2 location as (<i>x2, y2, z2</i>), 
+</p><ul>
+<li>If <i>x1 ≠ x2</i> then <i>x1</i> should be less then <i>x2</i>.
+Node N2 should be toward the more positive side of the <i>X</i>-axis.  
+ 
+</li><li>If <i>x1=x2</i> and <i>y1 ≠ y2</i> then <i>y1</i> should be less then <i>y2</i>. 
+Node N2 should be toward the more positive side of the <i>Y</i>-axis.  
+</li><li> If <i>x1=x2</i> and <i>y1=y2</i> and <i>z1 ≠ z2</i> then <i>z1</i> should be less then <i>z2</i>.
+Node N2 should be toward the more positive side of the <i>Z</i>-axis.  
+</li></ul>
+<p></p>
+<p>
+The figure below attempts to illustrate the application of these guidelines.
+</p>
+<img src="./Frame3DD User Manual_files/j1j2.png" align="center" border="0"><br>
+
+<h3> 7.4 Frame Element Cross Section Properties </h3>
+
+<p>
+Cross-sectional properties of frame elements are specified in a local
+coordinate system, in which the <i>x</i>-axis of the local coordinate system
+is oriented along the axis of the frame element. 
+The local <i>y</i>-axis and <i>z</i>-axis are aligned with the principle directions of the shape of the cross section.  
+</p>
+
+<h4> 7.4.1 Axial Effects</h4>
+
+<p>
+<i>Ax</i> is the cross-sectional area of the frame element, which is given as the cross-sectional area
+of the material perpendicular to the local <i>x</i>-axis.   
+</p>
+
+<h4> 7.4.2 Shear Effects </h4>
+
+<p>
+For slender frame elements shear deformations contribute
+only slightly to the overall structural deformation
+(less than three percent for elements with a span-to-depth ratio greater than 10).
+For stocky frame elements shear deformations contribute
+significantly to the overall structural deformation 
+(more than seventy percent for elements with a span-to-depth ratio less than 2).
+Shear strains in frame elements are distributed in a relatively complicated manner over the cross section and   
+the shear area values, <i>Asy</i> and <i>Asz</i>, account for this non-uniform distributions of shear strain.  
+Shear areas may be thought of as effective cross-sectional areas corresponding to the average shear strain over the cross section, <i>V/(GAx)</i>.   
+The shear area formulas below for circular, square, and rectangular tube
+cross sections provide approximations for these cross section properties  
+(consistent with the self-contradictory assumptions of Timoshenko beam theory
+that plane sections remain plane,
+that shear stresses are constant across the width of a section 
+(shear stress is permissible at a free surface), and 
+without consideration of lateral strains arising from the Poisson effect).  
+These shear area equations are computed based upon an assumed uniform shear flow across the 
+wall of tube sections.  
+Other shear correction factors, based on A.E.H. Love's theory of elasticity,
+are tabulated in 
+reference <a href="http://scitation.aip.org/getabs/servlet/GetabsServlet?prog=normal&amp;id=JAMCAV000033000002000335000001&amp;idtype=cvips&amp;gifs=yes&amp;ref=no">5</a>.
+Additional shear area approximations (below) for solid circular and rectangular sections
+do account for Poisson's effect and have been experimentally validated  
+with prismatic beams of materials 
+having a Poisson ratio, <i>v</i>, of 0.16 to 0.38. 
+(See references <a href="http://www.sciencedirect.com/science/article/pii/S0020768310000685">8</a>, 
+<a href="http://iopscience.iop.org/0022-3727/11/14/010">10</a>, and <a href="http://iopscience.iop.org/0022-3727/10/11/009">19</a>.)
+</p>
+<p>
+Regardless of the section shape and Poisson ratio, the shear areas <i>Asy</i> and <i>Asz</i> are less than the cross section area <i>Ax</i>. 
+For circular tube sections, <i>As/Ax</i> is approximately 0.50 to 0.53.  
+For square tube sections, <i>As/Ax</i> is approximately 0.42 to 0.45.  
+</p>
+
+<h4> 7.4.3 Torsion Effects </h4>
+
+<p>
+Polar Moments of Inertia depend on the shape of the cross-section.
+For sections with a circular cross section:   <br>
+<i>Jxx = Iyy + Izz </i>
+
+</p><p>
+For sections with a solid rectangular cross section
+(width=<i>b</i>, depth=<i>d</i>  <i>( b &lt; d ) </i>):   <br>
+<i>Jxx =  Q d b<sup>3</sup>   </i><br>
+where
+<i>Q = 1/3 - 0.2244 / (d/b + 0.1607); </i>
+<!-- a = 0.224435; b = 0.160705 -->
+<br>
+<img src="./Frame3DD User Manual_files/tors.jpg" align="center" border="0"><br>
+For more details, see page 271 of Timoshenko and Goodier (1951).
+</p>
+
+<p>
+For open sections made up of thin plates (length=<i>b</i>, thickness=<i>t</i>):   <br>
+<i>Jxx = Σ<sub>i</sub> [  b<sub>i</sub> t<sub>i</sub><sup>3</sup> / 3 ]  - Σ<sub>j v t<sub>j</sub><sup>4 </sup></sub></i> <br> 
+where <i>v</i> is the Poissons ratio and <i>Σ<sub>j</sub></i> is
+a summation over the free ends of the open cross section,
+which may be neglected in most cases.  
+<!-- the bt^3/3 assumes parabolic distribution of shear stress across 
+the wall thickness ... like a membrane -->
+</p>
+
+<p>
+For closed single-box sections made up of thin plates (length=<i>b</i>, thickness=<i>t</i>): <br>
+<i> Jxx = 4 A<sup>2</sup> / Σ<sub>i</sub> [ b<sub>i</sub> / t<sub>i</sub> ] </i><br>
+where <i>A</i> is the area enclosed by the box. 
+</p>
+
+<p>
+Restraints to 
+<!-- a href="http://www.archoneng.com/tptasm.html" --> 
+warping deformation
+<!-- /a -->
+and the dynamic radial expansion of beams in torsion are not considered in the analysis.
+</p>
+
+<h4> 7.4.4 Bending Effects </h4>
+
+<p>
+The bending moments
+of inertia, <i>Iyy</i> and <i>Izz</i>, are the principle bending moments of inertia for the cross section.
+</p>
+
+<!--
+<p>
+     The frame element cross section shapes are assumed to be symmetric about
+     both the local <i>Y</i>-axis and the local <i>Z</i>-axis.  By 'rolling' the frame element about
+     the local <i>x</i>-axis, however,  transverse loads in the local <i>y</i>-direction can
+     cause bending about both the <i>Z</i>-axis and the <i>Y</i>-axis and shear deformation
+     in both the <i>Y</i>-direction and <i>Z</i>-direction.
+</p>
+-->
+
+
+<h4> 7.4.5 Cross Section Properties of Circular Tube, Square Tube, Rectangular Tube and I-shaped Sections </h4>
+
+<img src="./Frame3DD User Manual_files/Tsections.png" align="center" border="0"><br>
+
+<p>
+Circular Tube (outer radius= <i>R<sub>o</sub></i>, inner radius = <i>R<sub>i</sub></i>):
+</p><ul>
+<li> <i>Ax = π ( R<sub>o</sub><sup>2</sup> - R<sub>i</sub><sup>2</sup> )</i>
+</li><li> <i>Asy = Asz = Ax / ( 0.54414 + 2.97294(R<sub>i</sub>/R<sub>o</sub>) - 1.51899(R<sub>i</sub>/R<sub>o</sub>)<sup>2</sup> )</i> ± 0.05% 
+</li><li> <i>Jxx = (1/2) π ( R<sub>o</sub><sup>4</sup> - R<sub>i</sub><sup>4</sup> )</i>
+</li><li> <i>Ixx = Iyy = (1/4) π ( R<sub>o</sub><sup>4</sup> - R<sub>i</sub><sup>4</sup> )</i>
+</li></ul>
+<p></p>
+
+
+<p>
+Square Tube (outer dimension = <i>b</i> x <i>b</i>, wall thickness = <i>t</i>):
+</p><ul>
+<li> <i> Ax = b<sup>2</sup> - (b - 2t)<sup>2</sup></i>
+</li><li> <i> Asy = Asz = Ax / ( 2.39573 - 0.25009(t/b) - 7.89675(t/b)<sup>2</sup> )</i> ± 0.05%
+</li><li> <i> Jxx =  (b - t)<sup>3</sup> t </i>
+</li><li> <i> Izz = Iyy = (1/12) ( b<sup>4</sup> - (b - 2t)<sup>4</sup> )</i>
+</li></ul>
+<p></p>
+
+
+<p>
+Rectangular Tube (outer dimension = <i>a</i> x <i>b</i>, wall thickness = <i>t</i>):
+</p><ul>
+<li> <i> Ax = ab -  (a - 2t)(b - 2t)</i>
+
+</li><li> <i> Asy = Ax / ( 0.93498 - 1.28084(t/b) + 1.36441(b/a) + 0.00295(a/b)<sup>2</sup> + 0.25797(ta/b<sup>2</sup>) )</i> ± 1% ... <b>(a &gt; b)</b>
+
+</li><li> <i> Asz = Ax / ( 1.63544 - 8.34935(t/b) + 0.60125(a/b) + 0.41403(a/b)<sup>2</sup> + 4.95373(ta/b<sup>2</sup>) )</i> ± 1% ... <b>(a &gt; b)</b>
+
+</li><li> <i> Asy = Ax / ( 1.63544 - 8.34935(t/a) + 0.60125(b/a) + 0.41403(b/a)<sup>2</sup> + 4.95373(tb/a<sup>2</sup>) )</i> ± 1% ... <b>(b &gt; a)</b>
+
+</li><li> <i> Asz = Ax / ( 0.93498 - 1.28084(t/a) + 1.36441(a/b) + 0.00295(b/a)<sup>2</sup> + 0.25797(tb/a<sup>2</sup>) )</i> ± 1% ... <b>(b &gt; a)</b>
+
+</li><li> <i> Jxx =  2 t (a - t)<sup>2</sup>(b - t)<sup>2</sup> / (a + b - 2t) </i>
+</li><li> <i> Iyy = (1/12) ( ab<sup>3</sup> - (a - 2t)(b - 2t)<sup>3</sup> )</i>
+</li><li> <i> Izz = (1/12) ( a<sup>3</sup>b - (a - 2t)<sup>3</sup>(b - 2t) )</i>
+</li></ul>
+<p></p>
+
+
+<p>
+I sections (depth = <i>d</i>, width = <i>b</i>, flange thickness = <i>t</i>, web thickness = <i>w</i>):
+</p>
+
+<img src="./Frame3DD User Manual_files/Isection.png" align="center" border="0"><br>
+
+<ul>
+<li> <i> Ax = bd  - (d-2t)(b-w)</i>
+</li><li> <i> Asy = 1.64 b t </i>
+</li><li> <i> Asz = d w </i>
+</li><li> <i> Jxx = (1/3) ( 2 b t<sup>3</sup> + d w<sup>3</sup> ) </i>
+</li><li> <i> Iyy = (1/12) ( bd<sup>3</sup> - (b-w)(d-2t)<sup>3</sup> )</i>
+</li><li> <i> Izz = (1/12) ( 2 t b<sup>3</sup> + (d-2t)w<sup>3</sup> ) </i>
+</li></ul>
+<p></p>
+<p>
+<b>Note:</b> Commercial sections have rounded corners.   Manufacturer specifications for cross sectional properties account for the fact that the corners of the cross sections are rounded.   Manufacturer specifcations for section properties should therefore be used whenever available.   Some tabulated section properties are provided below.  
+</p>
+
+<!-- 
+Asy coefficients
+ 1.114691 0.552486 -1.234540 1.576674 1.053296 -0.081960 -2.192489 0.027438
+ 1.14766  0.28187      0.96199            -2.17742
+
+Asz coefficients
+ 1.158912 -2.291419 1.223522 7.370911 0.964439 0.004778 0.718828 -5.417298
+ 1.10498  -1.98518           8.74762  0.99548           0.69146  -5.36255
+-->
+
+<p>
+Approximate formulae for the effective shear areas of solid circular and rectangular cross sections including the Poisson effect have been experimentally validated for Poisson ratio, <i>v</i>, from 0.16 to 0.38.  
+(See references <a href="http://iopscience.iop.org/0022-3727/11/14/010">10</a> and <a href="http://iopscience.iop.org/0022-3727/10/11/009">19</a>.)
+
+</p><ul>
+<li> <b> Solid Circular Section:</b> <i> Asy = Asz = Ax (6+12v+6v<sup>2</sup>)/(7+12v+4v<sup>2</sup>) </i>
+</li><li> <b> Solid Rectangular Section:</b>   <i> Asy = Asz = Ax (5+5v)/(6+5v) </i>
+</li></ul>
+<p></p>
+<p>
+For solid circular sections <i>Ax/As</i> ranges from 1.13 to 1.05 for <i>v</i> between 0.1 and 0.4.  
+For solid rectangular sections <i>Ax/As</i> ranges from 1.18 to 1.14 for <i>v</i> between 0.1 and 0.4.  
+Reference <a href="http://www.sciencedirect.com/science/article/pii/S0020768310000685">7</a>
+compares a number of methods for computing the shear correction factor
+and presents results for other shapes.   
+</p>
+
+<h4> 7.4.6 Cross Section Properties Of Some Common Steel Sections</h4>
+
+<ul>
+
+<li><a href="http://en.wikipedia.org/wiki/Structural_steel">Structural Steel</a>
+</li><li><a href="http://www.engineersedge.com/standard_material/Steel_ibeam_properties.htm">Steel W-section I beams #1</a>
+</li><li><a href="http://www.engineersedge.com/standard_material/Steel_ibeam_properties_2.htm">Steel W-section I beams #2</a>
+</li><li><a href="http://www.engineersedge.com/standard_material/Steel_ibeam_s_properties.htm">Steel S-section I beams</a>
+</li><li><a href="http://www.engineersedge.com/standard_material/Steel_angle_properties.htm">Steel Angles #1</a>
+</li><li><a href="http://www.engineersedge.com/standard_material/Steel_angle_properties_2.htm">Steel Angles #2</a>
+</li><li><a href="http://www.engineersedge.com/standard_material/Steel_channel_properties.htm">Steel Channels</a>
+</li><li><a href="http://www.engineersedge.com/I_beams_aluminum.htm">Aluminum I beam</a>
+</li><li><a href="http://www.engineersedge.com/channel_aluminum.htm">Aluminum Channels</a>
+</li></ul>
+
+
+<!-- <li><a href="http://www.aisc.org/Content/NavigationMenu/ePubs/ePubs_Home/AISC_SHAPES_DATABASE/AISC_SHAPES_DATABASE.htm">AISC Shapes Database</a>-->
+
+<!--
+efunda
+<ul>
+<li><a href="http://www.efunda.com/math/areas/RolledSteelBeamsW.cfm">Steel W-section I beams</a>
+<li><a href="http://www.efunda.com/math/areas/RolledSteelBeamsS.cfm"> Steel S-section I beams</a>
+<li><a href="http://www.efunda.com/math/areas/RolledSteelChannels.cfm">Steel Channels</a>
+<li><a href="http://www.efunda.com/math/areas/RolledSteelBeamsL.cfm">Steel Angles</a>
+<li><a href="http://www.efunda.com/math/areas/AluminumIbeams.cfm">Aluminum I beams</a>
+<li><a href="http://www.efunda.com/math/areas/AluminumChannels.cfm">Aluminum Channels</a>
+</ul>
+-->
+
+<h4> 7.4.7 Cross Section Properties Of Some Standard Wood Sections</h4>
+
+<pre>             Ax      Asy     Asz     Jxx     Iyy     Izz
+             in^2    in^2    in^2    in^4    in^4    in^4
+
+     2x3    3.750   2.500   2.500   1.776   1.953   0.708
+     2x4    5.250   3.500   3.500   2.875   6.359   0.984
+     2x5    6.750   4.500   4.500   3.984  11.390   1.266
+     2x6    8.250   5.500   5.500   5.099  20.800   1.547
+     2x8   10.850   7.233   7.233   7.057  47.630   2.039
+     2x10  13.880   9.253   9.253   9.299  98.930   2.602
+     2x12  16.880  11.253  11.253  11.544 178.000   3.164
+     2x14  19.880  13.253  13.253  13.790 290.800   3.727
+</pre>
+
+<h3> 7.5 Approximate Properties of Structural Materials </h3>
+
+<p>
+</p><pre>                                                  Thermal                     Modulus
+                      Young's       Shear         Expansion     Mass          per
+                      Modulus       Modulus       Coefficient   Density       Density
+                      E             G             a             d             E/d
+                      N/mm^2        N/mm^2        /deg.C        T/mm^3        mm^2/s^2
+  
+Steel A36             200000        79300         11.7e-6       7.85e-9       2.55e13
+Boron  Fiber-Epoxy    106000        38000         30.0e-6       2.00e-9       5.30e13
+Carbon Fiber-Epoxy     83000        30000         30.0e-6       1.54e-9       5.39e13
+Aluminum 2024-T4       73100        28000         23.2e-6       2.78e-9       2.63e13
+Aluminum 6061-T6       68900        26000         23.6e-6       2.70e-9       2.55e13
+Kevlar Fiber-Epoxy     40000        50000         30.0e-6       1.40e-9       2.86e13
+Glass  Fiber-Epoxy     22000        80000         30.0e-6       1.97e-9       1.12e13
+Magnesium AM1000A      44800        17500         25.2e-6       1.80e-9       2.49e13
+Douglas Fir            12400         4600         30.0e-6       0.50e-9       2.48e13
+
+</pre>
+<p></p>
+
+<p>
+Note:
+</p>
+<ul>
+<li> These material properties are approximate.
+</li><li> Properties of Douglas Fir vary naturally by +/- 15 percent.
+</li><li> Properties of Fiber-Epoxy composites depend on the volume fraction and
+   orientations of the fibers.  <br>
+   The values above correspond to volume fractions of roughly 50 percent.
+</li></ul>
+<p>
+<a href="http://www.matweb.com/search/MaterialGroupSearch.aspx">MatWeb</a>
+lists properties of other materials.
+</p>
+
+<h3> 7.6 Frame Element Coordinate Transformation</h3>
+
+<p>
+When a frame element is placed into the structure
+it is translated and rotated and optionally rolled about
+its local <i>x</i>-axis.  
+</p>
+
+<p>
+The default coordinate transformation process starts with the frame 
+element's centroidal axis placed along the global <i>X</i>-axis, and the principle
+axes of the cross section (the local <i>y</i>- and <i>z</i>-axes) aligned with the global <i>Y</i>- and <i>Z</i>-axes.  
+The global <i>Y</i>- and <i>Z</i>-axes must coincide with the principle axes of the cross section.
+To place the frame element in the structure, first it is rotated about the
+global <i>Y</i>-axis, then about the global <i>Z</i>-axis, then 'rolled' or spun
+about the local <i>x</i>-axis.   If the roll angle, <i>p</i>, is zero, this process results
+in a transformation for which loads in the global <i>Z</i>-direction will cause no
+cross-axis bending.   In this code, this type of coordinate transformation is
+called "<i>Z</i>-axis is vertical" and is selected primarily for the sake of visualization
+with gnuplot, in which the <i>Z</i>-axis is vertical for all three-dimensional plots.
+</p>
+
+<p>
+Another, more customary, coordinate transformation process is also
+implemented in the software.  
+In the alternative coordinate transformation process, the frame element
+is first rotated about the global <i>Z</i>-axis, then about the
+global <i>Y</i>-axis, then rolled about the local <i>x</i>-axis.  
+If the roll angle is zero,
+this transformation results in a frame element with no cross-axis bending due to
+loads are applied in the global <i>Y</i>-direction.   In the code, this type of
+transformation is called "<i>Y</i>-axis is vertical."   
+For a derivation of the alternative coordinate transformation method, refer
+to section 8.3 of the textbook <i>Matrix Analysis of Structures</i>
+by A. Kassimali.
+</p>
+
+<p>
+By allowing the frame element to be
+'rolled' about its local <i>x</i>-axis during the stiffness matrix
+assembly process, cross-axis bending effects may be included.
+Issues related to rolling of cross sections and cross-axis bending
+are important for three-dimensional structural systems or planar
+structures with out-of-plane deformation, such as grillages.  For planar
+structures with deformations only in the plane, these issues do not arise.
+In addition, these issues do not arise for three-dimensional structures
+made entirely of elements for which <i>Iyy=Izz</i>, i.e., square and circular cross sections.
+To reiterate, in 2D frames,
+the roll angle <i>p</i> does not matter,
+and can be set to 0 (zero) for all frame elements.  
+For frame elements with doubly-symmetric sections (e.g., circular or square)
+the roll angle <i>p</i> does not matter, and can be set to 0 (zero).   
+For 3D frames made of non-circular or non-square sections and all
+frame elements are aligned with the global X, Y, or Z axes then 
+the roll angle <i>p</i> 
+might matter but <i>p</i> would probably be either "0" or "90 degrees."
+Again, for planar structures,
+with no out-of-plane bending, which lie in the global <i>X-Y</i>, <i>Y-Z</i>, or <i>X-Z</i> planes,
+and for structures made entirely of bars with Iyy=Izz, the roll angle, <i>p</i> may be set to zero.  
+</p>
+
+
+<p>
+Coordinate transformations do not currently consider the effect of
+finite node sizes, and are based on node-to-node lengths of each
+frame element.
+</p>
+
+
+<h3> 7.7 Connections</h3>
+
+<p>
+All connections in a <b>Frame3DD</b> analysis are moment-resisting.
+Internal hinges may be modeled using a short element with
+low values of <i>Jxx</i>, <i>Iyy</i>, and <i>Izz</i>.
+Many connections are more realistically modeled as having some flexibility.
+Such semi-rigid connections may be modeled through the inclusion of short
+frame elements with appropriate section and material properties to model
+the behavior of the connection.   
+Frame elements may be considered infinitely rigid within a sphere of a specified radius,
+<i>r</i> around a node.
+The effects of finite node sizes are modeled approximately
+in the calculation of frame element stiffness
+through the use of an <i>effective beam length</i>, which is the node-to-node
+length of the frame element less the rigid radii on each end.
+</p>
+
+<p>
+To analyze a structure as a "truss" with this software, specify <i>Jxx</i>, <i>Iyy</i>, and <i>Izz</i>
+to be much smaller than they would be normally, but not zero.   If the shear forces and bending
+moments in the structural elements are small, then the structural model
+represents a "truss" approximation of the actual structure.    
+Shear deformation effects and geometric stiffness effects should <b>not</b> be incorporated if  <i>Jxx</i>, <i>Iyy</i>, and <i>Izz</i> are made very small.  
+See Frame3DD example A.
+</p>
+
+<h3> 7.8 Shear Deformation, Geometric Stiffness, and Buckling </h3>
+
+<p>
+     The <b>Frame3DD</b> analysis will optionally include the effects of shear deformation and/or geometric stiffness.
+The geometric stiffness matrix includes the effects of axial forces
+on bending and warping-torsional behaviors.
+When both shear deformations and geometric stiffness effects are included, the geometric stiffness matrix includes shear deformation effects.
+If shear deformation effects are not to be included, simply set the <i>shear</i>
+variable to zero (0).  If shear deformation effects are neglected then the
+values for the shear areas <i>Asy</i> and <i>Asz</i> <b>are not</b> used in the calculations.
+Any non-zero value for <i>Asy</i> and <i>Asz</i> will do.
+</p>
+
+<p>
+To determine the buckling load of a structure, include geometric stiffness
+effects and increase the loads until the stiffness matrix ceases to be positive-
+definite.   Additionally, you may compute the fundamental natural frequency of
+the structure and observe how the fundamental frequency decreases with increased
+loading.  In principle, the fundamental frequency is zero when the loads are at the buckling
+load.
+</p>
+
+<p>
+If geometric stiffness effects are included in the analysis and if the loads
+are close to the buckling load of the structure, then it is recommended to put
+two or three nodes along each frame element.  (i.e. divide each frame element
+into three or four segments).   Including these extra nodes is strongly
+recommended if a buckling analysis is to be performed.
+</p>
+
+<p>
+Whenever geometric stiffness effects are included, the analysis is non-linear
+and superposition does not hold.  
+<!--
+The geometric stiffness matrix is a secant stiffness matrix.  
+-->
+In most cases the geometric stiffness matrix lies between the
+un-stressed stiffness matrix and the tangent stiffness matrix.
+</p>
+
+
+<h3> 7.9 Loads</h3>
+
+<p>
+Seven types of static loads may be specified:
+</p><ul>
+<li><b>Gravity Loads</b><br>
+Uniformly-distributed gravity loads may be applied to each frame element
+in a structural model.  
+Gravity loads are specified in terms of the three componenets of
+gravitational acceleration
+in the structure's global <i>X-Y-Z</i> coordinate system.  
+The magnitude of the gravity load applied to a frame element is the product
+of the frame element's mass density, its cross-sectional area,
+and the structure's gravitational acceleration resultant.  
+Density should be specified in units consistent with the other aspects of the model.   
+For example, if the elastic moduli are in MPa and dimensions are in mm, then
+the mass density will be Tonne/mm^3; if the elastic moduli are in ksi and
+the dimensions are in inches, then the mass density will be kip/in^3/g where
+the gravitational acceleration, g, is in inch/sec^2.  
+The direction of the gravity load is the same as the direction of the 
+gravitational acceleration resultant.  
+</li>
+<li><b>Nodal Loads</b><br>
+Concentrated static force loads and concentrated static moments may be applied
+to individual nodes.  These loads are specified as
+values of point forces and concentrated moments applied to nodes
+in the directions of the structure's global <i>X-Y-Z</i> coordinate system.  
+</li>
+<li><b>Uniformly-Distributed Loads</b><br>
+Uniformly distributed static loads may be applied in the local element coordinate system over the entire length of a frame element.
+Uniformly distributed loads are specified as
+values of the load per unit length applied to the frame element
+in the local <i>x</i> direction,
+the local <i>y</i> direction, and the local <i>z</i> direction.
+</li>
+<li><b>Frame Element Interior Point Loads</b><br>
+Concentrated static force loads may be applied at a point along a frame element.
+The number of interior frame element point loads in the model can be up to 
+ten times the number of frame elements.  
+These loads are specified as values of point forces applied to the frame element
+in the directions of the frame element's local coordinate system
+at a distance <i>x</i> from node <i>N1</i> of the frame element.  
+</li>
+<li><b>Trapezoidally-Distributed Loads</b><br>
+Trapezoidally distributed loads may be applied
+over a partial span of frame elements.
+Up to ten trapezoidal loads may be specified per frame element.  
+Trapezoidally distributed loads have components in the local <i>x</i> direction,
+the local <i>y</i> direction, and the local <i>z</i> direction.
+Trapezoidally distributed loads are specified by the distances along
+the local <i>x</i>-axis where the loading starts and stops, and
+by the value of the load at the starting location and the stopping location.<br>
+The starting location for a trapezoidal load must be greater than 0 and less
+than the stopping location of the trapezoidal load.
+The stopping location for a trapezoidal load must be greater than the
+starting value of the trapezoidal load and less
+than the length of the frame element.
+Fixed end forces computed from trapezoidal loads include the effects of
+shear deformation when shear deformation effects are incorporated.  
+</li>
+<li><b>Thermal Loads</b><br>
+Thermal loads assume a linear temperature gradient through cross sections.
+Thermal loads are specified by values for the coefficient of thermal expansion,
+the depth of the section in the local <i>y</i> direction, 
+the depth of the section in the local <i>z</i> direction, 
+and the temperature changes on
+the <i>+y</i> surface, 
+the <i>-y</i> surface, 
+the <i>+z</i> surface, and
+the <i>-z</i> surface. 
+Thermal loads are applied over the entire frame element.  
+</li>
+<li><b>Prescribed Displacements</b><br>
+Static node displacements and rotations may be prescribed only at reaction degrees of freedom.
+Static node displacements and rotations are specified in the structure's global <i>X-Y-Z</i>
+coordinate system.  
+</li>
+</ul>
+<p></p>
+
+<p>
+Up to thirty static load cases may be anlayzed by specifying
+<a href="http://svn.code.sourceforge.net/p/frame3dd/code/trunk/doc/Frame3DD-manual.html#Variables">the variable nL</a>
+in the
+<a href="http://svn.code.sourceforge.net/p/frame3dd/code/trunk/doc/Frame3DD-manual.html#InputData">Input Data file</a>,
+and by specifying the seven types of loads for each load case, as shown in
+<a href="http://svn.code.sourceforge.net/p/frame3dd/code/trunk/examples/exA.3dd">Frame3DD example A</a> and
+<a href="http://svn.code.sourceforge.net/p/frame3dd/code/trunk/examples/exB.3dd">Frame3DD example B</a>.
+</p>
+
+<p>
+More than one load of the same type on the same element or node may be specified.   
+For example, one or more trapezoidally distributed loads may be applied to
+the same frame element in the same load case.   
+</p>
+
+<p>
+Whenever the average axial strain in a frame element connection (<i>Nx/(EAx)</i>) exceeds 0.001 (0.1%) in magnitude, a warning message is displayed indicating the strain level and the element in question.   
+Most structural materials yield at strains between 0.1% and 0.2%.  
+When this warning message is displayed the structure is likely in an overloaded condition and the loads should be reduced.
+Note that this check for overloaded elements provides an approximate stress check.
+A more complete stress check would compute the composite axial, shear, torsion
+and bending stresses and strains within each element.   
+Such a check requires additional cross section information: 
+the section moduli and the section dimensions,
+as described in sections 7.13 and 7.14 below.  
+</p>
+
+<p>
+The static stability of many structures depends upon a level of prestress
+within the structure.   In such geometrically non-linear analyses,
+pre-stressed structres may be modeled by specifying a uniform temperature cooling in all pre-tensioned elements.   The value of the temperature change corresponding to a desired pre-stress tension force depends on the stiffness of the 
+components of the structural system and may be determined with a few iterations.
+As an initial guess, set the temperature change to be 
+(<i>-T</i>)/(<i>a E Ax</i>),  
+where <i>T</i> is the value of the desired pre-stress tension of the frame element,
+<i>a</i> is the coefficient of thermal expansion,
+<i>E</i> is the elastic modulus, and
+<i>Ax</i> is the cross section area of the frame element.  
+Section 8, below, describes how thermal (pre-stress) loads are analyzed before 
+the response to mechanical loads is analyzed.  
+</p>
+
+<h3> 7.10 Dynamic Modal Analysis </h3>
+
+<p>
+The <b>Frame3DD</b> analysis will optionally include a dynamic analysis for natural modes of vibration.
+Dynamic properties may be obtained for the un-stressed or the stressed
+structure by either neglecting or including geometric stiffness effects.
+The mass may be modeled using either the consistent mass matrix or the
+lumped mass matrix.
+</p>
+
+<p>
+The natural frequencies and mode-shapes of the structural frame may be computed from the stiffness and mass matrices using either the Stodola method or
+the Jacobi method.    The solution method and the convergence tolerance for these iterative methods is specified in the Input Data file.
+Mass density of each element is specified along with other element data.  
+If a dynamic modal analysis is to be carried out,
+the Input Data file may also specify
+any additional mass carried by frame elements, and extra mass or inertia
+concentrated at nodal points. 
+A specified set of modes may be animated within gnuplot.
+</p>
+
+<p>
+<b>Frame3DD</b> has the capability of computing the natural frequencies
+and mode-shapes of frames that are
+fully restrained, partially restrained, or completely un-restrained.
+Partially restrained frames have up to six independent rigid body modes.
+A completely un-restrained frame has six independent rigid body modes.
+Stiffness matrices for
+partially restrained and completely unrestrained structures are not invertible.
+Such structural configurations cannot carry static loads.
+Furthermore, the numerical methods used in computing the
+natural frequencies and mode shapes presume that the stiffness matrix
+is invertible.
+A  numerical trick called "frequency shifting" overcomes this difficulty.
+Presuming the mass matrix [<i>M</i>] is
+invertible, and given a <i>sufficiently large</i> positive scalar value <i>s</i>, the matrix [[<i>K</i>] + <i>s</i>[<i>M</i>]] is invertible,
+even if the stiffness matrix [<i>K</i>] is not invertible.
+So, for the purpose of computing the natural frequencies of frames
+with rigid-body modes, [<i>K</i>] is replaced by
+[[<i>K</i>]+s[<i>M</i>]].
+The desired natural frequencies
+are shifted by an amount equal to the "shift" variable, <i>s</i>,
+and can be shifted back, after the natural frequencies and mode shapes are found.
+The mode shapes are un-changed by this "shifting."
+If natural frequencies are computed as "nan" (not a number)
+try increasing the value of the frequency shift variable
+either in the Input Data file or using the
+<a href="http://svn.code.sourceforge.net/p/frame3dd/code/trunk/doc/Frame3DD-manual.html#commandline"><i>-f</i> command line option</a>.
+Structural models that are partially restrained or unrestrained should not 
+include geometric stiffness effects.   
+</p>
+
+<p>
+A Sturm check is carried out to determine if any eigen-values were missed.
+</p>
+
+<p>
+If a dynamic analysis is not to be performed, simply set the
+<a href="http://svn.code.sourceforge.net/p/frame3dd/code/trunk/doc/Frame3DD-manual.html#Variables" <i="">nM variable</a> (the number of desired modes) to zero (0).
+If <i>nM</i> is set to zero,
+<b>Frame3DD</b> will stop reading the Input file at this point.
+If <i>nM</i> is set to zero, there is no need to provide numerical values for the quantities after the <i>nM</i> variable.  
+<!--
+(See the
+<a href="#InputData"><b>Input Data Format</b></a> specification and
+<a href="#Variables"><b>Variable Definitions</b></a>
+below.)
+-->
+</p>
+
+<h3> 7.11 Matrix Condensation</h3>
+
+<p>
+Reduced order stiffness and mass matrices may be computed via a static
+condensation, dynamic condensation, or modal condensation.  The condensed mass
+and stiffness matrices are saved as text files called Kc and Mc.  
+The dynamic condensation 
+method is Paz's generalization of Guyan condensation so that the condensed matrices match the fundamental
+frequency of the original structure exactly. 
+(See reference <a href="http://dx.doi.org/10.2514/3.48498">15</a>.)
+The modal condensation method
+is a pseudo-inverse-modal-matrix method, and the resulting condensed mass and
+stiffness matrices may be ill-conditioned.  The pseudo-inverse of the modal
+matrix is computed using a regularization method which somewhat improves the
+conditioning of the condensed mass and stiffness matrices.
+</p>
+
+<h3> 7.12 End Force Sign Convention</h3>
+
+<p>
+The frame element end forces listed in the Output data file adhere to a
+sign convention determined by the local coordinate system of the frame element.
+The local coordinate system of the frame element has its origin at node 1 of the frame element.   
+The local <i>x</i>-axis lies along the element, from node 1 to node 2.  
+The local <i>y</i> and <i>z</i> axes are aligned with the principle axes of the frame element cross section.   
+The frame element end forces are designated as
+<i>Nx</i>, <i>Vy</i>, <i>Vz</i> for the axial force and end shears 
+in the local <i>y</i> and <i>z</i> directions; and 
+<i>Tx</i>, <i>My</i>, <i>Mz</i> for the torsional moment and bending moments
+about the local <i>y</i> and <i>z</i> axes.  
+The sign convention for frame element end forces is shown in the figure below.
+The double-headed arrows adhere to the "right hand rule."
+<img src="./Frame3DD User Manual_files/sign_convention.png" align="center" width="800" border="0"><br>
+</p>
+
+<p>
+The mathematical signs of the member end forces are 
+relative to the local <i>x-y-z</i> axes of the frame element
+and designate the direction of the force along those axes.  
+A positive <i>Nx</i> at node 1
+of the member is compressive, while a negative <i>Nx</i> at node 2 is also
+compressive.  The opposite is true for tension.
+The Output Data lists a "t" or a "c" along with the axial forces (<i>Nx</i>)
+in order to help clarify whether the end force is putting the frame element
+into <b>t</b>ension or <b>c</b>ompression.  
+A frame element with positive <i>My</i> at node 1 and a negative <i>My</i> at node 2
+has positive curvature in the <i>x-z</i> plane.  
+A frame element with negative <i>Mz</i> at node 1 and a positive <i>Mz</i> at node 2
+has positive curvature in the <i>x-y</i> plane.  
+</p>
+
+<h3> 7.13 Internal Frame Element Forces and Transverse Displacements</h3>
+
+<p>
+<b>Frame3DD</b> optionally generates output data files listing the internal
+axial force, shear forces, torsion, and bending momements and
+transverse displacements for each frame element.   
+These quantities are tabulated at user-specified increments 
+of length <i>dx</i> along the local <i>x</i>-axis of each frame element.   
+If the <i>x</i>-axis increment, <i>dx</i>, is specified as a value of "-1"
+then the calculation of internal frame element forces 
+and transverse displacements is skipped.  
+Otherwise a separate internal force output file is written for each load case.
+For frame elements of length shorter than <i>dx</i>, internal forces and
+displacements are calculated at <i>x</i>=0 and <i>x=L</i>.
+If the Frame3DD analysis Output Data file 
+is named <b>MyResultsA.out</b>, then the internal force output data 
+files are automatically named 
+<b>MyResultsA.if01</b> for load case 1, 
+<b>MyResultsA.if02</b> for load case 2, and so on. 
+The internal force output data contains a section for each frame element.
+Each section has eleven columns, as follows:
+</p><ul>
+<li> column A: (x) <i>x</i>-axis data with a user-specified <i>x</i>-axis increment, <i>dx</i>.
+</li><li> column B: (Nx) frame element axial force along the local <i>x</i>-axis 
+</li><li> column C: (Vy) frame element shear force in the local <i>y</i> direction
+</li><li> column D: (Vz) frame element shear force in the local <i>z</i> direction
+</li><li> column E: (Tx) frame element torsion about the local <i>x</i>-axis
+</li><li> column F: (My) frame element bending moments about the local <i>-y</i>-axis
+</li><li> column G: (Mz) frame element bending moments about the local <i>z</i>-axis
+</li><li> column H: (Dx) frame element axial displacement in the local <i>x</i> direction
+</li><li> column I: (Dy) frame element transverse displacement in the local <i>y</i> direction
+</li><li> column J: (Dz) frame element transverse displacement in the local <i>z</i> direction
+</li><li> column K: (Rx) frame element twist rotation about the local <i>x</i>-axis 
+</li></ul>
+<p></p>
+<p>
+The data in the frame element internal force data file is tab-delimitted.  
+The frame element internal force data file may be 
+plotted with gnuplot, may be read by a spreadsheet program,
+may be read by Matlab or may be read by your own program
+for further post-processing or visualization.   An example
+of the first several lines of an internal force data file is shown here.
+In this example, the <i>x</i>-axis increment, <i>dx</i>, has a length of 10 mm.
+</p>
+
+<img src="./Frame3DD User Manual_files/InternalForces.png" align="center" border="0"><br>
+
+<p>
+The header information for each frame element contains the element number (column B),
+the element's end nodes (columns C and D), the end node coordinates (columns E - J),
+and the number of <i>x</i>-axis increments for the frame element (column K).   
+The header also includes a listing of the maximum and minimum internal forces and modments and the maximum and minimum element displacements.  
+The data for this part of the header information is preceded with a '@' character, to facilitate parsing of this data file.  
+The last header character prior to the the internal force data is a '~' character, again to facilitate parsing of the data. 
+In the figure above, <i>nx</i> is 181 (K,10), indicating that the following element data is tabulated at 181 increments along the local <i>x</i>-axis.  
+</p>
+
+<p>
+The computation of internal element forces is consistent with linear elastic analysis.   
+Internal forces and displacements will have some error if geoemetric stiffness effects are significant, and are included in the analysis.
+</p>
+
+<p>
+The data in this file is sufficient to plot the undeformed mesh, the deformed mesh, and plots of internal forces, torisons, and moments
+super-imposed upon the structural mesh.
+</p>
+
+<p>
+The sign convention for internal forces and transverse displacements is as follows:
+</p><ul>
+<li> Positive internal axial force (Nx) is tensile.
+</li><li> Positive internal shear forces (Vy and Vz) are in the positive <i>y</i> and <i>z</i> directions on positive <i>x</i> surfaces.
+</li><li> Positive internal torsion (Tx) is counter-clockwise about the positive <i>x</i>-axis.  
+</li><li> Positive bending moments (My and Mz) produce positive curvature bending deformation in the <i>x-z</i> and <i>x-y</i> planes.  
+</li><li> Positive transverse displacements (Dy and Dz) are in the positive <i>y</i>
+and <i>z</i> directions.
+</li></ul>
+<p></p>
+
+<p>
+The sign convention for internal forces is illustrated below:<br>
+<img src="./Frame3DD User Manual_files/IntForceSign.png" align="center" border="0"><br>
+</p>
+
+<p>
+Internal forces and transverse displacements
+are computed using numerical integration of the
+distributed loads on the frame elements.   
+A corrected trapezoidal integration method is implemented 
+so that the internal force and transverse displacement data match the 
+known internal forces and node displacements at both ends of each frame element.  
+Internal forces and displacements computed with 
+a smaller increment length, <i>dx</i>, are more accurate.  
+In general, a value of <i>dx</i> equal to one percent to ten percent of the
+typical frame element length is sufficiently accurate.  
+</p>
+
+<h3> 7.14 Stress Check </h3>
+
+<h4> 7.14.1 Section Modulus and Torsion Shear Constant </h4>
+
+<p>
+The section properties required for elastic frame analysis are
+<i>Ax</i>, <i>Asy</i>, <i>Asz</i>, <i>Jxx</i>, <i>Iyy</i>, and <i>Izz</i>,
+as described section 7.4.  
+To compute stresses from the frame element end forces,
+the following section properties are required:
+</p><ul>
+<li> Section Area, <i>Ax</i> , 
+</li><li> Section Shear Area, <i>Asy</i> and <i>Asz</i> , 
+</li><li> Section Modulus, <i>Sy</i> and <i>Sz</i> , and
+</li><li> Torsion Shear Constant, <i>C</i> . 
+</li></ul>
+<p></p>
+<p>
+The units of <i>Sy</i>, <i>Sz</i> and <i>C</i> are length-cubed
+(like in<sup>3</sup> or mm<sup>3</sup>).  
+Referring to the text and figures of section 7.4, the section moduli and torsional shear constants may be found as follows:
+</p>
+
+<p>
+Circular Tube (outer radius= <i>R<sub>o</sub></i>, inner radius = <i>R<sub>i</sub></i>):
+</p><ul>
+<li> <i> Sy  =  Sz  =  Iyy / R<sub>o</sub>  =  Izz / R<sub>o</sub></i>
+</li><li> <i> C = Jxx / R<sub>o</sub></i>
+</li></ul>
+<p></p>
+
+<p>
+Square Tube (outer dimension = <i>b</i> x <i>b</i>, wall thickness = <i>t</i>):
+</p><ul>
+<li> <i> Sy  =  Sz  =  Iyy / (b/2)  =  Izz / (b/2)</i>
+</li><li> <i> C = 2 t ( b-t )<sup>2</sup></i>
+</li></ul>
+<p></p>
+
+<p>
+Rectangular Tube (outer dimension = <i>a</i> x <i>b</i>, wall thickness = <i>t</i>):
+</p><ul>
+<li> <i> Sy  =  Iyy / ( b/2 ) </i>
+</li><li> <i> Sz  =  Izz / ( a/2 )</i>
+</li><li> <i> C = 2 t (a-t) (b-t)</i>
+</li></ul>
+<p></p>
+
+<p>
+I sections (depth = <i>d</i>, width = <i>b</i>, flange thickness = <i>t</i>, web thickness = <i>w</i>):
+</p><ul>
+<li> <i> Sy  =  Iyy / ( d/2 ) </i>
+</li><li> <i> Sz  =  Izz / ( b/2 )</i>
+</li><li> <i> C = Jxx / ( 1.28 t )</i> ... assuming <i> t &gt; w </i>
+</li></ul>
+<p></p>
+
+<p>
+<b>Note:</b> Commercial sections have rounded corners.   Manufacturer specifications for cross sectional properties account for the fact that the corners of the cross sections are rounded.   Manufacturer specifcations for section properties should therefore be used whenever available.   Some tabulated section properties are provided in section 7.4.
+</p>
+
+
+<h4> 7.14.2 Axial Stress </h4> 
+
+<p>
+Given the section properties <i>Ax</i>, <i>Sy</i>, and <i>Sz</i>,  
+the axial stresses at the ends of frame elements may be bounded as follows:
+</p>
+
+<p>
+At end (1) of a frame element the maximum bending plus axial tensile stress in the frame element is no greater than:
+</p><ul>
+<li><i>-Nx<sub>1</sub> / Ax  +  abs(Myy<sub>1</sub>) / Sy  +  abs(Mzz<sub>1</sub>) / Sz</i>
+</li></ul>
+<p></p>
+<p>
+At end (2) the maximum bending plus axial tensile stress in the frame element is no greater than:
+</p><ul>
+<li><i>+Nx<sub>2</sub> / Ax  +  abs(Myy<sub>2</sub>) / Sy  +  abs(Mzz<sub>2</sub>) / Sz</i>
+</li></ul>
+<p></p>
+<p>
+A "c" indicator on "Nx" values in the Frame3DD Output Data file indicates compression.
+A "t" indicator on "Nx" values indicates tension.
+</p>
+
+<h4> 7.14.3  Shear Stress </h4> 
+
+<p>
+Given the section properties <i>Asy</i>, <i>Asz</i>, and <i>C</i>,
+the axial stresses at the ends of frame elements may be approximated as follows:
+</p>
+
+<p>
+At end (1) the shear stress in the local y axis (on average) is roughly:
+</p><ul>
+<li> <i>abs(Vy<sub>1</sub>) / Asy  +  abs(Txx<sub>1</sub>) / C</i>
+</li></ul>
+<p></p>
+<p>
+At end (1) the shear stress in the local z axis (on average) is roughly:
+</p><ul>
+<li><i>abs(Vz<sub>1</sub>) / Asz  +  abs(Txx<sub>1</sub>) / C</i>
+</li></ul>
+<p></p>
+<p>
+And likewise for end (2).
+</p>
+
+
+<a name="numerical"><h2>8. Numerical Details</h2>
+
+<p>
+<b>Frame3DD</b> imposes no limit on the number of degrees of freedom.
+Dynamic memory allocation is accomplished by the public-domain routines
+found in Press, W.H., et al,  <i>Numerical Recipes In C</i>, (Cambridge, England: Cambridge University Press, 1991).
+</p>
+
+<p> 
+<b>Frame3DD</b> analyzes the response to temperature loads alone prior to
+solving for the response to the combination of temperature loads and
+mechanical loads.
+In this way, temperature loads may be used to simulate the effect of
+pre-tension in structures, which can provide geometric stiffness.    
+For each load case <b>Frame3DD</b> carries out the following eight steps:
+</p><ol>
+<li> Assemble the elastic structural stiffness matrix for the un-stressed structure, <i>K(D=0)</i>.
+
+</li><li>Compute the node displacements due to temperature loads, <i>F<sup>t</sup></i>,  using a linear elastic analysis,
+<i>K<sub>qq</sub> (0) D<sup>t</sup><sub>q</sub> = F<sup>t</sup><sub>q</sub></i>.
+
+</li><li> If geometric stiffness effects are to be considered,
+<ul>
+<li>Compute frame element end forces from the displacements due to temperature loads, <i>Q(D<sup>t</sup>)</i>.
+</li><li>Assemble the structural stiffness matrix again
+making use of
+the axial frame element forces arising from the temperature loads, <i>K(D<sup>t</sup>)</i>.
+</li></ul>
+
+</li><li>Compute the node displacements due to mechanical loads, <i>F<sup>m</sup></i>, only, including prescribed joint displacements, 
+<i>K<sub>qq</sub> (D<sup>t</sup>) D<sup>m</sup><sub>q</sub> = F<sup>m</sup><sub>q</sub> - K<sub>qr</sub> (D<sup>t</sup>) D<sub>r</sub></i>.
+<br>
+(For a linear-elastic analysis, neglecting geometric stiffness, <i>K = K(0)</i>.)
+
+</li><li>Add the node displacements due to mechanical loads to the node displacements due to temperature loads,
+<i>D<sup>1</sup> = D<sup>t</sup>  + D<sup>m</sup></i>, <br>
+and combine the temperature and mechanical loads, 
+<i>F = F<sup>t</sup>  + F<sup>m</sup></i>. 
+
+</li><li>Compute frame element end forces from the displacements due to the combined temperature and mechanical loads, <i>Q(D<sup>1</sup>)</i>.
+
+</li><li> If geometric stiffness effects are to be considered,
+carry out a second-order analysis
+via quasi Newton-Raphson iterations in order to converge upon the displacements that satisfy equilibrium
+(starting with <i>i</i>=1).
+<ol>
+<li> Assemble the structural stiffness matrix again,
+now making use of the axial frame element forces arising from the combined temperature and mechanical loads,
+<i>K(D<sup>(i)</sup>)</i>,
+</li><li> Compute the equilibrium error at displacements <i>D<sup>(i)</sup></i>:
+<i>dF<sub>q</sub><sup>(i)</sup> = F<sub>q</sub> - K<sub>qq</sub>(D<sup>(i)</sup>) D<sub>q</sub><sup>(i)</sup> - K<sub>qr</sub>(D<sup>(i)</sup>) D<sub>r</sub> </i>
+</li><li> Compute the RMS relative equilibrium error criterion || <i>dF<sub>q</sub><sup>(i)</sup></i> || / || <i>F<sub>q</sub> </i> || 
+</li><li> Solve for the incremental displacements, <i>dD<sup>(i)</sup></i>:
+<i> K<sub>qq</sub>(D<sup>(i)</sup>) dD<sub>q</sub><sup>(i)</sup> = dF<sub>q</sub><sup>(i)</sup> </i>
+
+</li><li> Increment the displacements: <i> D<sub>q</sub><sup>(i+1)</sup> = D<sub>q</sub><sup>(i)</sup> + dD<sub>q</sub><sup>(i)</sup></i>
+</li><li> Compute frame element end forces from the displacements due to the combined temperature and mechanical loads, <i>Q(D<sup>(i)</sup>)</i>.
+</li><li>The  Newton-Raphson iterations have converged when the root-mean-square relative equilibrium error (the root-mean-squre of <i>dF<sub>q</sub><sup>(i)</sup></i> divided by the root-mean-square of <i>F<sub>q</sub></i> computed in step 3., above) is less than the specified tolerance. <br>
+The convergence tolerance is taken as the convergence tolerance for the dynamic modal analysis.
+The default value is 10<sup>-9</sup>.
+</li></ol>
+</li><li> Compute the reaction forces for the converged solution:
+<i>R<sub>r</sub><sup></sup> = K<sub>rq</sub>(D<sup>(i)</sup>) D<sub>q</sub><sup>(i)</sup> + K<sub>rr</sub>(D<sup>(i)</sup>) D<sub>r</sub> - F<sub>r</sub> </i>
+<p>
+Notation:
+</p>
+<ul>
+<li> subscript <i>q</i> indicates the set of displacement coordinates
+</li><li> subscript <i>r</i> indicates the set of reaction coordinates
+</li><li> superscript <i>(i)</i> indicates the iteration number
+</li><li> <i>D<sub>q</sub><sup>(i)</sup> </i>   is the vector of unknown
+displacements at iteration <i>i</i> 
+</li><li> <i>D<sub>r</sub></i>   is the vector of known prescribed displacements 
+(at reaction coordinates)
+</li><li> <i>K(D<sup>(i)</sup>)</i> is the stiffness matrix, dependent upon
+displacements at iteration <i>i</i>
+</li><li> <i>F<sub>q</sub> </i>     is the vector of known applied loads (at displacement coordinates) 
+</li><li> <i>F<sub>r</sub> </i>     is the vector of known applied loads (at reaction coordinates) 
+</li><li> <i>R<sub>r</sub> </i>     is the vector of unknown reaction forces for the converged solution
+</li><li> <i>dF<sub>q</sub><sup>(i)</sup></i>  is the equilibrium error vector at iteration <i>i</i> 
+</li><li> <i>dD<sub>q</sub><sup>(i)</sup></i>  is the incremental displacement vector at iteration <i>i</i> 
+</li><li> <i>D<sub>q</sub><sup>(i+1)</sup></i>  is the vector of uknown displacements at iteration <i>i+1</i>
+</li><li> <i>Q(D<sup>(i)</sup>)</i>  is the set of frame element end forces at iteration <i>i</i>
+</li></ul>
+</li></ol>
+<p></p>
+
+<img src="./Frame3DD User Manual_files/Newton-Raphson1.png" align="center" border="0"><br>
+
+</a><p><a name="numerical">
+The second-order analysis carried out in steps 7.1. - 7.6. is illustrated above and is described in more detail in
+section 4.5 of reference </a><a href="http://www.amazon.com/Structural-Stability-Implementation-Wai-Kai-Chen/dp/0135005396/">4</a>.
+</p>
+
+<p>
+Solutions to linear matrix equations (steps 2., 4., and 7.3)  are obtained via an LDL'
+decomposition/back-substitution with sparse-matrix short-cuts and
+iterative improvement for enhanced speed and accuracy.
+Iterative improvements to the solution to <i>[K]{dD} = {dF}</i> 
+are obtained (for both linear elastic and geometrically nonlinear problems)
+by iteratively solving
+<i>[K<sub>qq</sub>]{r<sub>q</sub>}<sup>(k)</sup>  = {dF<sub>q</sub>}-[K<sub>qq</sub>]{dD<sub>q</sub>}<sup>(k)</sup>
+-[K<sub>qr</sub>]{dD<sub>r</sub>}<sup>(k)</sup></i>
+with <i>{dD}<sup>(k+1)</sup> = {dD}<sup>(k)</sup> + {r}<sup>(k)</sup>.</i>
+The superscript <i>(k)</i> is the LDL' iteration counter.  
+Iterations are stopped when the root-mean-square of the residual incremental
+displacement vector (the root-mean-square of <i>{r}<sup>(k)</sup></i>)
+decreases by less than ten percent within an LDL' iteration.
+The stiffness matrix <i>[K]</i> does not change within these iterations.  
+</p>
+
+
+<!-- <p>
+At each LDL' back-substitution iteration,
+the root-mean-square of the residual vector (the root-mean-square of <i>r<sup>(k)</sup></i>) is displayed to the screen as the "LDL' RMS residual."
+</p> -->
+
+
+<p>
+At each Newton-Raphson iteration, the root-mean-square relative equilibrium error is
+displayed to the screen.  This error is the root-mean-square of
+<i>dF<sub>q</sub><sup>(i)</sup></i> divided by the root-mean-square of <i>F<sub>q</sub></i>.
+</p>
+
+<p>
+For the converged solution, the final value of the root-mean-square of the residual incremental displacement, <i>r<sup>(k)</sup></i>, 
+is displayed.  
+For converged solutions the root-mean-square of <i>r<sup>(k)</sup></i> is typically on the order of 10<sup>-20</sup>.  
+</p>
+
+<!-- 
+<p>
+If the "RMS relative equilibrium precision" is not adequately small
+and geometric stiffness effects <i>are not</i> included in the analysis,
+try including the effects of geometric stiffness by changing
+the geometric stiffness variable <i>geom</i>
+in the Input Data file to <i>1</i> or by using the
+<a href="#commandline"><i>-gOn</i> command line option</a>.
+Conversely, if the "RMS relative equilibrium precision" is not adequately small
+and geometric stiffness effects <i>are</i> included in the analysis,
+try neglecting the effects of geometric stiffness by changing
+the geometric stiffness variable <i>geom</i>
+in the Input Data file to <i>0</i> or by using the
+<a href="#commandline"><i>-gOff</i> command line option</a>.
+</p>
+-->
+
+<p>
+Natural frequencies and mass-normalized mode-shapes of the lower modes may be
+obtained using a generalized Jacobi sub-space iteration procedure
+or a Stodola iteration procedure.
+Jacobi-subspace iterations are stopped when the frequency convergence error is less than the specified
+frequency convergence tolerance.  The frequency convergence error is defined here as:
+ <i> error = | f<sub>N</sub><sup>(i)</sup> - f<sub>N</sub><sup>(i-1)</sup> | / f<sub>N</sub><sup>(i)</sup> </i>, 
+where
+</p><ul>
+<li><i> f<sub>N</sub><sup>(i)</sup></i>    is the highest natural frequency computed at iteration <i>i</i> ,
+</li><li><i>f<sub>N</sub><sup>(i-1)</sup></i>  is the highest natural frequency computed at iteration <i>i-1</i> ,
+</li></ul>
+<p></p>
+
+<a name="InputData"><h2>9. Input Data Format</h2>
+</a><p><a name="InputData">
+Input Data templates in plain text (.3dd) and spreadsheet (.csv) formats are
+here:  </a><a href="http://svn.code.sourceforge.net/p/frame3dd/code/trunk/doc/template.3dd">template.3dd</a>
+and here:  <a href="http://svn.code.sourceforge.net/p/frame3dd/code/trunk/doc/template.csv">template.csv</a>
+</p>
+
+<p>
+The first line of the Input Data file must be a one-line title of your analysis.
+It is recommended to write the system of units into the title.   
+The title must not contain the '@' or the '~' characters, as these characters are used for parsing the Internal Force data file.  
+</p>
+
+<pre>Template Input Data file for Frame3DD - 3D structural frame analysis (N,mm,ton)
+
+# this template indicates units of Newton, millimeter, and tonne
+# other units may be specified as desired      
+
+
+# node data ...
+
+nN                        # number of nodes
+#.node       X-coord  Y-coord  Z-coord  radius 
+#                mm       mm       mm      mm
+  N[1]           x[1]     y[1]     z[1]    rj[1]    
+    :              :        :        :       :  
+  N[nN]          x[nN]    y[nN]    z[nN]   rj[nN]
+
+
+# reaction data ...
+
+nR                           # number of nodes with reactions
+#.node    X      Y      Z       XX      YY      ZZ       0:free, 1:fixed
+  N[1]    Rx[1]  Ry[1]  Rz[1]   Rxx[1]  Ryy[1]  Rzz[1]
+    :        :      :      :        :       :       :          
+  N[nR]   Rx[nR] Ry[nR] Rz[nR]  Rxx[nR] Ryy[nR] Rzz[nR]
+
+
+# frame element data ...
+
+nE                        # number of frame elements 
+
+#.elmnt n1     n2    Ax     Asy     Asz     Jx     Iy     Iz     E     G     roll  density
+#       .      .     mm^2   mm^2    mm^2    mm^4   mm^4   mm^4   MPa   MPa   deg   tonne/mm^3
+EL[1]  N1[1]  N2[1]  Ax[1]  Asy[1]  Asz[1]  Jx[1]  Iy[1]  Iz[1]  E[1]  G[1]  p[1]  d[1]
+   :      :      :      :       :       :      :      :      :     :     :     :     :
+EL[nE] N1[nE] N2[nE] Ax[nE] Asy[nE] Asz[nE] Jx[nE] Iy[nE] Iz[nE] E[nE] G[nE] p[nE] d[nE]
+
+shear        # 1=Do, 0=Don't include shear deformation effects
+geom         # 1=Do, 0=Don't include geometric stiffness effects
+exagg_static # exaggeration factor for static mesh deformations
+scale        # zoom scale for 3D plotting
+dx           # length of x-axis increment for frame element internal force data, mm
+             # if dx is -1 then internal force calculations are skipped
+
+
+# load data ...
+
+nL                        # number of static load cases,  1..30
+
+# Begin Static Load Case 1  
+
+# gravitational acceleration for self-weight loading, mm/s^2 (global)
+#   gX         gY         gZ
+#   mm/s^2     mm/s^2     mm/s^2
+    gX         gY         gZ   
+
+nF                   # number of loaded nodes (global)
+#.node  X-load   Y-load   Z-load   X-mom     Y-mom     Z-mom
+#         N        N        N        N.mm      N.mm      N.mm
+  N[1]    Fx[1]    Fy[1]    Fz[1]    Mxx[1]    Myy[1]    Mzz[1]
+    :        :        :        :         :         :         :  
+  N[nF]   Fx[nF]   Fy[nF]   Fz[nF]   Mxx[nF]   Myy[nF]   Mzz[nF]
+
+nU                   # number of uniformly-distributed element loads (local)
+#.elmnt  X-load   Y-load   Z-load   uniform member loads in member coordinates
+#         N/mm     N/mm     N/mm
+ EL[1]    Ux[1]    Uy[1]    Uz[1]
+    :        :        :        :  
+ EL[nU]   Ux[nU]   Uy[nU]   Uz[nU]
+
+nW                   # number of trapezoidally-distributed element loads (local)
+#       start    stop     start    stop
+#.elmnt loc'n    loc'n    load     load
+#       mm       mm       N/mm     N/mm
+ EL[1]  xx1[1]   xx2[2]   wx1[1]   wx2[1]  # locations and loads - local x-axis
+        xy1[1]   xy2[2]   wy1[1]   wy2[1]  # locations and loads - local y-axis
+        xz1[1]   xz2[2]   wz1[1]   wz2[1]  # locations and loads - local z-axis
+    :       :        :        :        :
+ EL[nW] xx1[nW]  xx2[nW]  wx1[nW]  wx2[nW] # x1 and x2: start and end locations
+        xy1[nW]  xy2[nW]  wy1[nW]  wy2[nW] # w1 and w2: start load and end load
+        xz1[nW]  xz2[nW]  wz1[nW]  wz2[nW] # 0 &lt; x1 &lt; x2 &lt; L
+
+nP                   # number of concentrated interior point loads (local)
+#.elmnt  X-load   Y-load   Z-load    x-loc'n  point loads in member coordinates 
+ EL[1]    Px[1]    Py[1]    Pz[1]    x[1]      
+    :        :        :        :       :    # x=distance from coordinate N1 
+ EL[nP]   Px[nP]   Py[nP]   Pz[nP]   x[nP]  # 0 &lt; x &lt; L
+
+nT                   # number of frame elements with temperature changes (local)
+#.elmnt   coef.  y-depth  z-depth  deltaTy+  deltaTy-  deltaTz+  deltaTz-
+#         /deg.C  mm       mm       deg.C     deg.C     deg.C     deg.C
+ EL[1]    a[1]    hy[1]    hz[1]    Ty+[1]    Ty-[1]    Tz+[1]    Tz-[1] 
+    :       :        :        :         :         :         :         :   
+ EL[nT]   a[nT]   hy[nT]   hz[nT]   Ty+[nT]   Ty-[nT]   Tz+[nT]   Tz-[nT] 
+
+nD                   # number of prescribed displacements nD&lt;=nR (global)
+#.node   X-displ  Y-displ  Z-displ  X-rot'n   Y-rot'n   Z-rot'n
+#         mm       mm       mm       radian    radian    radian
+  N[1]    Dx[1]    Dy[1]    Dz[3]    Dxx[1]    Dyy[1]    Dzz[1]
+    :        :        :        :         :         :         : 
+  N[nD]   Dx[nD]   Dy[nD]   Dz[nD]   Dxx[nD]   Dyy[nD]   Dzz[nD]
+
+# End Static Load Case 1
+
+# Begin Static Load Case 2
+
+# gravitational acceleration for self-weight loading, mm/s^2 (global)
+#   gX         gY         gZ
+#   mm/s^2     mm/s^2     mm/s^2
+    gX         gY         gZ   
+
+nF                   # number of loaded nodes (global)
+#.node  X-load   Y-load   Z-load   X-mom     Y-mom     Z-mom
+#         N        N        N        N.mm      N.mm      N.mm
+  N[1]    Fx[1]    Fy[1]    Fz[1]    Mxx[1]    Myy[1]    Mzz[1]
+    :        :        :        :         :         :         :  
+  N[nF]   Fx[nF]   Fy[nF]   Fz[nF]   Mxx[nF]   Myy[nF]   Mzz[nF]
+
+nU                   # number of uniformly-distributed element loads (local)
+#.elmnt  X-load   Y-load   Z-load   uniform member loads in member coordinates
+#         N/mm     N/mm     N/mm
+ EL[1]    Ux[1]    Uy[1]    Uz[1]
+    :        :        :        :  
+ EL[nU]   Ux[nU]   Uy[nU]   Uz[nU]
+
+nW                   # number of trapezoidally-distributed element loads (local)
+#       start    stop     start    stop
+#.elmnt loc'n    loc'n    load     load
+#       mm       mm       N/mm     N/mm
+ EL[1]  xx1[1]   xx2[2]   wx1[1]   wx2[1]  # locations and loads - local x-axis
+        xy1[1]   xy2[2]   wy1[1]   wy2[1]  # locations and loads - local y-axis
+        xz1[1]   xz2[2]   wz1[1]   wz2[1]  # locations and loads - local z-axis
+    :       :        :        :        :
+ EL[nW] xx1[nW]  xx2[nW]  wx1[nW]  wx2[nW] # x1 and x2: start and end locations
+        xy1[nW]  xy2[nW]  wy1[nW]  wy2[nW] # w1 and w2: start load and end load
+        xz1[nW]  xz2[nW]  wz1[nW]  wz2[nW] # 0 &lt; x1 &lt; x2 &lt; L
+
+nP                   # number of concentrated interior point loads (local)
+#.elmnt  X-load   Y-load   Z-load    x-loc'n  point loads in member coordinates 
+ EL[1]    Px[1]    Py[1]    Pz[1]    x[1]      
+    :        :        :        :       :    # x=distance from coordinate N1 
+ EL[nP]   Px[nP]   Py[nP]   Pz[nP]   x[nP]  # 0 &lt; x &lt; L
+
+nT                   # number of frame elements with temperature changes (local)
+#.elmnt   coef.  y-depth  z-depth  deltaTy+  deltaTy-  deltaTz+  deltaTz-
+#         /deg.C  mm       mm       deg.C     deg.C     deg.C     deg.C
+ EL[1]    a[1]    hy[1]    hz[1]    Ty+[1]    Ty-[1]    Tz+[1]    Tz-[1] 
+    :       :        :        :         :         :         :         :   
+ EL[nT]   a[nT]   hy[nT]   hz[nT]   Ty+[nT]   Ty-[nT]   Tz+[nT]   Tz-[nT] 
+
+nD                   # number of prescribed displacements nD&lt;=nR (global)
+#.node   X-displ  Y-displ  Z-displ  X-rot'n   Y-rot'n   Z-rot'n
+#         mm       mm       mm       radian    radian    radian
+  N[1]    Dx[1]    Dy[1]    Dz[3]    Dxx[1]    Dyy[1]    Dzz[1]
+    :        :        :        :         :         :         : 
+  N[nD]   Dx[nD]   Dy[nD]   Dz[nD]   Dxx[nD]   Dyy[nD]   Dzz[nD]
+
+# End Static Load Case 2
+
+# repeat up to 30 static load cases
+
+
+# dynamic analysis data ...
+
+nM      # number of desired dynamic modes 
+
+# if nM is set to 0 (zero) the remaining Input Data may be omitted
+
+Mmethod # 1= Subspace-Jacobi iteration, 2= Stodola (matrix iteration) method
+lump    # 0= consistent mass matrix, 1= lumped mass matrix
+tol     # frequency convergence tolerance  approx 1e-4
+shift   # frequency shift-factor for rigid body modes, make 0 for pos.def. [K]
+exagg_modal  # exaggerate modal mesh deformations
+
+
+# extra node inertia data ...
+nI      # number of nodes with extra node mass or rotatory inertia
+#.node  mass      XX-inertia   YY-inertia   ZZ-inertia
+#       tonne     tonne.mm^2   tonne.mm^2   tonne.mm^2
+ N[1]   NMs[1]    NMx[1]       NMy[1]       NMz[1]  
+   :        :         :            :            :    # (global coordinates)
+ N[nI]  NMs[nI]   NMx[nI]      NMy[nI]      NMz[nI]
+
+
+# extra frame element mass data ...
+nX      # number of frame elements with extra mass 
+#.elmnt   extra mass
+#         tonne
+ EL[1]    EMs[1]
+    :         :   
+ EL[nX]   EMs[nE]
+
+
+# mode shape animation data ...
+nA                        # number of modes to be animated, nA 
+# list of modes to be animated, sorted in increasing order 
+ anim[1] ... anim[nA]	  # this list should be omitted if nA == 0
+pan                       # pan rate of the animation 0 = no panning
+
+# matrix condensation data ...
+
+Cmethod # matrix condensation method ...  0=none, 1=static, 2=dynamic, 3=modal
+nC      # number of condensed nodes
+#.node  X      Y      Z       XX      YY     ZZ   1: condense; 0: don't
+ N[1]  cx[1]  cy[1]  cz[1]   cxx[1]  cyy[1] czz[1]
+   :      :      :      :        :       :       :    
+ N[nC] cx[nC] cy[nC] cz[nC]  cxx[nC] cyy[nC] czz[nC]
+
+  m[1]   m[2]   m[3]  ...      # list of modes matched in dynamic condensation
+                               # if Cmethod == 1, only mode m[1] is matched.
+                               
+</pre>
+
+<a name="Variables"><h2>10. Variable Definitions</h2>
+
+<pre>    a            - Coefficient of thermal expansion (1/degree)
+    anim         - List of modes to be animated, by mode number
+    Ax           - Cross-sectional area of a prismatic frame element
+                   (The x-axis is along the element length, in local coordinates)
+    Asy          - Shear area in the local y-axis of a prismatic frame element
+    Asz          - Shear area in the local z-axis of a prismatic frame element
+    Cmethod      -  matrix condensation method ...  0=none, 1=static, 2=dynamic, 3=modal
+    cx           - 1: retain X d.o.f. in condensed system at node J;  0: don't
+    cy           - 1: retain Y d.o.f. in condensed system at node J;  0: don't
+    cz           - 1: retain Z d.o.f. in condensed system at node J;  0: don't
+    cxx             - 1: retain X axis rotation at node J;  0: don't
+    cyy          - 1: retain Y axis rotation at node J;  0: don't
+    czz          - 1: retain Z axis rotation at node J;  0: don't
+    Dx           - Prescribed displacement in the global X direction
+    Dy           - Prescribed displacement in the global Y direction
+    Dz           - Prescribed displacement in the global Z direction
+    Dxx          - Prescribed rotation in the global X direction
+    Dyy          - Prescribed rotation in the global Y direction
+    Dzz          - Prescribed rotation in the global Z direction
+    d            - mass density of a frame element (using consistent units).
+    dx           - x-axis increment for frame element internal force data
+    E            - Modulus of elasticity of a frame element
+    EL           - Element number
+    EMs          - extra mass on a frame element, not including self mass
+    exagg_modal  - Exaggeration factor for the modal  displacements in the plot
+    exagg_static - Exaggeration factor for the static displacements in the plot
+    Fx           - Externally applied nodal force in the global X direction
+    Fy           - Externally applied nodal force in the global Y direction
+    Fz           - Externally applied nodal force in the global Z direction
+    G            -  Shear modulus of elasticity of frame element i
+    gX           - gravitational acceleration in the global X direction
+    gY           - gravitational acceleration in the global Y direction          
+    gZ           - gravitational acceleration in the global Z direction
+    geom         - 1: include geometric stiffness effects, 0: do not.
+    hy           - cross-section dimension in the local y coordinate dir.
+    hz           - cross-section dimension in the local z coordinate dir.
+    Iy           - Moment of inertia for bending about the local y axis
+    Iz           - Moment of inertia for bending about the local z axis
+    Jx           - Torsional moment of inertia of a frame element
+    lump         - 1: use lumped mass matrix, 0: use consistent mass matrix
+    Mxx          - Externally applied nodal Moment about the global X axis
+    Myy          - Externally applied nodal Moment about the global Y axis
+    Mzz          - Externally applied nodal Moment about the global Z axis
+    m            - list of modes to match in dynamic condensation
+    Mmethod      - the modal analysis method 1: Subspace Jacobi, 2: Stodola
+    N            - Node number
+    N1           - Node 1 of a frame element
+    N2           - Node 2 of a frame element
+    NMs          - extra mass of a node for translational motion
+    NMx          - extra rotatory inertia of a node about global x coord. dir.
+    NMy          - extra rotatory inertia of a node about global y coord. dir.
+    NMz          - extra rotatory inertia of a node about global z coord. dir.
+    nA           - number of mode shapes to Animate must be less than 20
+    nC           - number of nodes for matrix Condensation
+    nD           - number of nodes with prescribed Displacements (nD &lt;= nR)
+    nE           - number of frame Elements
+    nF           - number of nodes with point Forces or concentrated moments
+    nI           - number of nodes with extra node mass or Inertia
+    nL           - number of static Load cases
+    nM           - number of Modes to be calculated
+    nN           - number of Nodes in the model
+    nP           - number of concentrated interior point loads
+    nR           - number of nodes with Reaction forces
+    nT           - number of frame elements with Temperature changes
+    nU           - number of uniformly distributed loads
+    nW           - number of trapezoidally distributed loads
+    p            - the roll angle of the frame element, in degrees
+    pan          - the pan rate of the view point during animation
+    Px           - concentrated point load in the local x direction
+    Py           - concentrated point load in the local y direction
+    Pz           - concentrated point load in the local z direction
+    Rx           - 1: reaction force in the global X direction,  0: free
+    Ry           - 1: reaction force in the global Y direction,  0: free
+    Rz           - 1: reaction force in the global Z direction,  0: free
+    Rxx          - 1: reactoin moment about the global X axis, 0: free
+    Ryy          - 1: reaction moment about the global Y axis, 0: free
+    Rzz          - 1: reaction moment about the global Z axis, 0: free
+    rj           - radius of rigid node sphere around node i
+    scale        - zoom scale for 3D plotting in gnuplot
+    shear        - 1: include shear deformations, 0: do not.
+    shift        - shift factor for non-definite stiffness matrices
+    tol          - tolerance for finding mode shapes ~ 1.e-4
+    Ty+          - temperature change on the local +y face of the element
+    Ty-          - temperature change on the local -y face of the element
+    Tz+          - temperature change on the local +z face of the element
+    Tz-          - temperature change on the local -z face of the element
+    Ux           - uniform distributed load in the local X direction
+    Uy           - uniform distributed load in the local Y direction
+    Uz           - uniform distributed load in the local Z direction
+    wx1          - starting value for trapezoidally-distributed loads
+                   in the local x-direction
+    wx2          - stopping value for trapezoidally-distributed loads
+                   in the local x-direction
+    wy1          - starting value for trapezoidally-distributed loads
+                   in the local y-direction
+    wy2          - stopping value for trapezoidally-distributed loads
+                   in the local y-direction
+    wz1          - starting value for trapezoidally-distributed loads
+                   in the local z-direction
+    wz2          - stopping value for trapezoidally-distributed loads
+                   in the local z-direction
+    xx1          - distance along a frame element for starting
+                   trapezoidally-distributed loads in the x-direction
+    xx2          - distance along a frame element for stopping
+                   trapezoidally-distributed loads in the x-direction
+    xy1          - distance along a frame element for starting
+                   trapezoidally-distributed loads in the y-direction
+    xy2          - distance along a frame element for stopping
+                   trapezoidally-distributed loads in the y-direction
+    xz1          - distance along a frame element for starting
+                   trapezoidally-distributed loads in the z-direction
+    xz2          - distance along a frame element for stopping
+                   trapezoidally-distributed loads in the z-direction
+    x            - x coordinate of a node in global coordinates
+    y            - y coordinate of a node in global coordinates
+    z            - y coordinate of a node in global coordinates
+    xP           - distance from N1 to the concentrated point load
+
+</pre>
+
+</a><a name="commandline"><h2>11. Command-line options</h2>
+
+<p>
+</p></a><ul><a name="commandline">
+</a><li><a name="commandline"><b>Frame3DD</b> is executed from within a
+</a><a href="http://www.ee.surrey.ac.uk/Teaching/Unix/unix1.html">terminal</a>
+<!-- <a href="LinuxTerminal.pdf"><img src="img/Terminal.jpg" border="0" width="25"></a> -->
+or
+"<a href="http://www.bleepingcomputer.com/tutorials/tutorial76.html#intro">command prompt window</a>"
+<!-- <a href="http://www.bleepingcomputer.com/tutorials/tutorial76.html#intro">
+<img src="img/WindowsCommandIcon.jpg" border="0" width="25"></a>-->.
+</li><li><b>Frame3DD</b> may be run with interactive prompting for file names by typing ...<br>
+<pre>frame3dd
+</pre>
+</li><li><b>Frame3DD</b> may be run without command-line options by typing ...<br>
+<pre>frame3dd  InFile   OutFile
+</pre>
+</li><li><b>Frame3DD</b> may be run with command-line options by typing ...<br>
+<pre>frame3dd -i InFile -o OutFile [OPTIONS]
+</pre>
+
+ ... where <tt>[OPTIONS]</tt> over-rides values in the Input Data file and can include one or more of the following:
+<p></p>
+
+<pre> -------------------------------------------------------------------------
+  -i   InFile   the  input data file name --- described in the manual
+  -o  OutFile   the output data file name
+  -h            print this help message and exit
+  -v            display program version, website, brief help info and exit
+  -a            display program version, website, and exit
+  -c            data check only - the output data reviews the input data
+  -q            suppress screen output except for warning messages
+  -w            write stiffness and mass matrices to files named Ks Kd Md
+  -x            suppress writing of 't' or 'c' for sign of axial forces
+  -s  On|Off    On: include shear deformation or Off: neglect ...
+  -g  On|Off    On: include geometric stiffness or Off: neglect ...
+  -e  value     static deformation exaggeration factor for gnuplot output
+  -z            force X-Y-Z plotting 
+  -l  On|Off    On: lumped mass matrix or Off: consistent mass matrix
+  -f  value     modal frequency shift for unrestrained structures
+  -m   J|S      modal analysis method: J=Jacobi-Subspace or S=Stodola
+  -t  value     convergence tolerance for modal analysis
+  -p  value     pan rate for mode shape animation
+  -r  value     matrix condensation method: 0, 1, 2, or 3
+ -------------------------------------------------------------------------
+</pre>
+
+</li><li> Examples:<br>
+
+  Display help information and exit:
+<pre>frame3dd -h
+</pre>
+
+  Suppress screen output:
+<pre>frame3dd -i InFile -o OutFile -q
+</pre>
+
+  Include shear deformation, over-riding the Input Data file value:
+<pre>frame3dd -i InFile -o OutFile -sOn
+</pre>
+
+  Include geometric stiffness and set static deformation exaggeration factor, over-riding Input Data file values:
+<pre>frame3dd -i InFile -o OutFile -e100 -gOn
+</pre>
+
+  Use consistent mass matrix, set static deformation exaggeration factor, 
+set the animation pan rate, over-riding Input Data file values,
+and force 3D plotting in gnuplot:
+<pre>frame3dd -i InFile -o OutFile -lOff -e100 -p3.4 -z
+</pre>
+</li></ul>
+
+
+<a name="sourcecode"><h2>12. Source code</h2>
+
+<p>The source code is written in ANSI C and is extensively commented. The source code includes functions for frame analysis, LDL' decomposition, LU decomposition, Newton-Raphson iteration, sub-space iteration, Stodola iteration, Sturm eigen-value check, static condensation, dynamic condensation, and modal condensation.</p>
+
+<pre>    file name       description
+    -------------     -------------------------------
+    main.c          main driver routines
+    frame3dd.c      frame analysis
+    frame3dd_io.c   input-output functions
+    eig.c           generalized eigenvalue analysis
+    HPGmatrix.c     LU decomposition, LDL' decomposition, pseudo-inverse, 
+    coordtrans.c    coordinate transformation
+    HPGutil.c       ansi.sys color functions
+    NRutil.c        dynamic memory allocation
+</pre>
+
+</a><p><a name="sourcecode">In addition to the recommended method using 
+</a><a href="http://www.scons.org/">SCons</a> (see <a href="http://svn.code.sourceforge.net/p/frame3dd/code/trunk/doc/Frame3DD-manual.html#installrun">above</a>), Frame3DD can also be compiled directly with the <a href="http://gcc.gnu.org/">GNU gcc compiler</a>,
+the <a href="http://developer.apple.com/tools/xcode/">Apple Xcode gcc compiler</a>,
+the <a href="http://www.delorie.com/djgpp/"> DJGPP gcc compiler</a>,
+the <a href="http://www.cs.virginia.edu/~lcc-win32/"> LCC-win32 compiler</a>,
+and the <a href="http://www.mingw.org/"> MinGW gcc compiler</a>.
+</p>
+
+<p>Using GCC, the command to compile without using the Makefile is:</p>
+
+<pre>gcc -O -o frame3dd main.c frame3dd.c frame3dd_io.c HPGmatrix.c coordtrans.c eig.c HPGutil.c NRutil.c -lm
+</pre>
+
+<a name="exitcodes"><h2>13. Exit code index</h2>
+
+<p>
+When Frame3DD exits it returns an integer value to the system calling Frame3DD. 
+An exit code of 0 (zero) indicates error-free completion.  
+Prior to exiting with a non-zero exit code, Frame3DD writes a 
+diagnostic error message to "stderr".
+Exit code values have the following meanings:
+</p><ul>
+<li>   0 : error-free completion
+</li><li>   1 : unknown error
+</li><li>   2 : error with the command line options (see Section 11, above)
+</li><li>   3 : error with the command line option for shear deformation -s
+</li><li>   4 : error with the command line option for geometric stiffness -g
+</li><li>   5 : error with the command line option for lumped mass -l
+</li><li>   6 : error with the command line option for modal analysis method -m
+</li><li>   7 : error with the command line option for modal analysis tolerance -t
+</li><li>   8 : error with the command line option for modal analysis shift -f
+</li><li>   9 : error with the command line option for pan rate -p
+</li><li> 10  : error with the command line option for matrix condensation -r
+</li><li> 11  : error in opening the Input Data file
+</li><li> 12  : error in opening the temporary cleaned input data file for writing
+</li><li> 13  : error in opening the temporary cleaned input data file for reading
+</li><li> 14  : error in opening the Output Data file
+</li><li> 15  : error in creating the path for temporary output data files
+</li><li> 16  : error in creating the temporary output data file path name
+</li><li> 17  : error in opening the .CSV (spread-sheet) output data file
+</li><li> 18  : error in opening the .M (matlab) output data file
+</li><li> 19  : error in opening the interior force output data file for writing 
+</li><li> 20  : error in opening the interior force output data file for reading 
+</li><li> 21  : error in opening the undeformed mesh ouput data file
+</li><li> 22  : error in opening the deformed mesh ouput data file
+</li><li> 23  : error in opening the plotting script file for writing first static load case plots
+</li><li> 24  : error in opening the plotting script file for appending second and higher static load case results
+</li><li> 25  : error in opening the plotting script file for appending modal plots
+</li><li> 26  : error in opening the plotting script file for appending modal animations
+</li><li> 27  : error in opening the modal mesh data file
+</li><li> 28  : error in opening the modal mesh animation data file
+</li><li> 29  : error in opening the mass data debugging file , MassData.txt
+</li><li> 30  : cubic curvefit system matrix for element deformation is not positive definite
+</li><li> 31  : non-positive definite structural static stiffness matrix 
+</li><li> 32  : error in eigen-problem analysis
+</li><li> 40  : error in input data file
+</li><li> 41  : input data formatting error in the node data, node number out of range
+</li><li> 42  : input data formatting error in node or element data, unconnected node
+</li><li> 51  : input data formatting error in the frame element data, frame element number out of range
+</li><li> 52  : input data formatting error in the frame element data, node number out of range
+</li><li> 53  : input data formatting error in the frame element data, negative section value
+</li><li> 54  : input data formatting error in the frame element data, cross section area is 0 (zero)
+</li><li> 55  : input data formatting error in the frame element data, shear area and shear modulus are 0 (zero)
+</li><li> 56  : input data formatting error in the frame element data, torsional moment of inertia is 0 (zero)
+</li><li> 57  : input data formatting error in the frame element data, bending moment of inertia is 0 (zero)
+</li><li> 58  : input data formatting error in the frame element data, modulus value is non-positive 
+</li><li> 59  : input data formatting error in the frame element data, mass density value is non-positive 
+</li><li> 60  : input data formatting error in the frame element data, frame element starts and stops at the same node
+</li><li> 61  : input data formatting error in the frame element data, frame element has length of zero
+</li><li> 71  : input data formatting error with the "shear" variable specifying shear deformation
+</li><li> 72  : input data formatting error with the "geom" variable specifying geometric stiffness 
+</li><li> 73  : input data formatting error with the "exagg_static" variable specifying static mesh exageration
+</li><li> 74  : input data formatting error with the "dx" variable specifying the length of the internal force x-axis increment
+</li><li> 80  : input data formatting error in reaction data, number of nodes with reactions out of range
+</li><li> 81  : input data formatting error in reaction data, node number out of range
+</li><li> 82  : input data formatting error in reaction data, reaction data is not 1 (one) or 0 (zero)
+</li><li> 83  : input data formatting error in reaction data, specified node has no reactions
+</li><li> 84  : input data formatting error in reaction data, under-restrained structure
+</li><li> 85  : input data formatting error in reaction data, fully restrained structure
+</li><li> 86  : input data formatting error in extra node inertia data, node number out of range
+</li><li> 87  : input data formatting error in extra beam mass data, frame element number out of range
+</li><li> 88  : input data formatting error in mass data, frame element with non-positive mass
+</li><li> 90  : input data formatting error in matrix condensation data, number of nodes with condensed degrees of freedom are less than the total number of nodes
+</li><li> 91  : input data formatting error in matrix condensation data, node number out of range
+</li><li> 92  : input data formatting error in matrix condensation data, mode number out of range
+</li><li> 94  : input data formatting error in matrix condensation data, number of condensed degrees of freedom greater than number of modes
+</li><li> 100 : input data formatting error in load data
+</li><li> 101 : number of static load cases must be greater than zero
+</li><li> 102 : number of static load cases must be less than 30
+</li><li> 121 : input data formatting error in nodal load data, node number out of range
+</li><li> 131 : input data formatting error in uniformly-distributed load data, number of uniform loads is greater than the number of frame elements
+</li><li> 132 : input data formatting error in uniformly-distributed load data, frame element number out of range
+</li><li> 140 : input data formatting error in trapezoidally-distributed load data, too many trapezoidally distributed loads
+</li><li> 141 : input data formatting error in trapezoidally-distributed load data, frame element number out of range
+</li><li> 142 : input data formatting error in trapezoidally-distributed load data, x1 &lt; 0
+</li><li> 143 : input data formatting error in trapezoidally-distributed load data, x1 &gt; x2
+</li><li> 144 : input data formatting error in trapezoidally-distributed load data, x2 &gt; L
+</li><li> 150 : input data formatting error in concentrated internal load data, number concentrated loads greater than number of frame elements
+</li><li> 151 : input data formatting error in internal concentrated load data, frame element number out of range
+</li><li> 152 : input data formatting error in internal concentrated load data, x-location less than 0 or grater than L
+</li><li> 160 : input data formatting error in thermal load data, number thermal loads greater than number of frame elements
+</li><li> 161 : input data formatting error in thermal load data, frame element number out of range
+</li><li> 162 : input data formatting error in thermal load data, frame element number out of range
+</li><li> 171 : input data formatting error in prescribed displacement data, prescribed displacements may be applied only at coordinates with reactions
+</li><li> 181 : elastic instability (elastic + geometric stiffness matrix not positive definite)
+</li><li> 182 : large strain (the average axial strain in one or more elements is greater than 0.001)
+</li><li> 183 : large strain and elastic instability
+</li><li> 200 : memory allocation error
+</li><li> 201 : error in opening an output data file saving a vector of "floats"
+</li><li> 202 : error in opening an output data file saving a vector of "ints"
+</li><li> 203 : error in opening an output data file saving a matrix of "floats"
+</li><li> 204 : error in opening an output data file saving a matrix of "doubles"
+</li><li> 205 : error in opening an output data file saving a symmetric matrix of "floats"
+</li><li> 206 : error in opening an output data file saving a symmetric matrix of "doubles"
+</li></ul>
+<p></p>
+
+
+</a><a name="enhancements"><h2>14. Enhancements projected for future versions</h2>
+
+</a><ul><a name="enhancements">
+</a><li><a name="enhancements">       A GPL'able GUI<br>
+</a><ul><a name="enhancements">
+ </a><li><a name="enhancements"> A <b>Sketchup</b> interface for <b>Frame3DD</b> is now available </a><a href="http://sketchucation.com/forums/viewtopic.php?t=46405">here</a>. (July 2012)
+ </li><li> <b>FrameEd</b> is a Windows GUI for the 20020103 version of <b>Frame3DD</b> (Jan 3, 2002).
+ (<a href="http://svn.code.sourceforge.net/p/frame3dd/code/trunk/doc/Frame3DD-manual.html#FrameEd">See above</a>.)
+ </li><li> Work has been done on a <a href="http://www.trolltech.com/products/qt">Qt</a> GUI (Fall 2004)<br>
+ </li><li> A Microstran-Viewer interface is in the works
+<a href="http://svn.code.sourceforge.net/p/frame3dd/code/trunk/src/microstran/">here</a>.
+(Summer 2008)
+ </li><li> A Google-sketchup interface is in the works <a href="http://www.steelweb.info/whatsnew.htm">here</a>
+and possibly
+<a href="http://chakkree.blogspot.com/2008_05_01_archive.html">here</a>.
+(Summer 2008)
+</li><li>Wood truss analysis and design software that makes use of Frame3DD is in development <a href="http://www.trussoft.com/Home.html">here</a> (Winter 2010).
+</li></ul>
+</li><li>       Consistent mass matrix including the effects of shear deformation on rotatory inertia
+</li><li>       Dynamic time-history analysis with the HHT-alpha method
+</li><li>       Spectral modal superposition
+</li><li>       Member end node releases
+</li><li>       Linearly tapered frame elements
+<!-- <li>       Membrane elements  -->
+<!-- <li>       Plate elements   -->
+</li><li>       Sparse matrix storage and <a href="http://ascendwiki.cheme.cmu.edu/Survey_of_sparse_matrix_software">sparse matrix solvers</a>
+</li><li>       ... your recommendations ... send me an e-mail!
+</li></ul>
+
+<a name="acknowledgments"><h2>15. Acknowledgments</h2>
+
+</a><p><a name="acknowledgments">Frame3DD started as a side-project when the author was a student of
+</a><a href="http://www.ociv.utfsm.cl/docencia/academicos/hjensen.php">
+Hector Jensen</a> in
+<a href="http://www.engin.umich.edu/bulletin/civil/courses.html#section-4">
+CE 512, Theory of Structures</a>, at
+<a href="http://cee.engin.umich.edu/">The University of Michigan</a>.
+The development of Frame3DD has benefited from many questions, observations, and suggestions from students and other users over a number of years.
+</p>
+
+<p><b>Frame3DD</b> is developed using the free-and-open
+<a href="http://www.vim.org/"><b>vim</b></a> text editor and the 
+<a href="http://gcc.gnu.org/"><b>gcc</b></a> compiler.
+</p>
+
+<p>If you find <b>Frame3DD</b> to be useful please consider
+a donation to the vim charity, 
+<a href="http://iccf-holland.org/">iccf-holland</a>, which provides education 
+and health-care to needy children in Uganda.<br>
+<!-- Donations to <a href="http://iccf-holland.org">iccf-holland</a>
+are tax deductible in Holland, Germany, Canada and in the USA. -->
+</p>
+
+<a name="references"><h2>16. References</h2>
+
+</a><p><a name="references">This software was developed using methods described in the following texts.
+The two primary sources are the texts by
+</a><a href="http://www.amazon.com/exec/obidos/tg/detail/-/0534206700/qid=1036162662/sr=1-4/ref=sr_1_4/002-7358683-1549619?v=glance">A. Kassimali</a> and <a href="http://www.amazon.com/exec/obidos/ASIN/0486649482/qid=1003514977/sr=1-1/ref=sr_1_8_1/002-2386037-4350467">J.S. Przemieniecki</a>. Other relevant books and articles are:
+</p>
+
+<ol>
+<li> Howard G. Allen,
+<a href="http://www.amazon.com/exec/obidos/ASIN/0070841004/qid%3D1010096524/ref%3Dsr_11_0_1/103-4346676-9568602">Background to Buckling</a>,
+McGraw-Hill, 1980.  ASIN: 0070841004
+
+</li><li> Klaus-Jurgen Bathe,
+<a href="http://www.amazon.com/exec/obidos/ASIN/0133014584/qid=1003515087/sr=1-1/ref=sr_1_27_1/002-2386037-4350467">Finite Element Procedures</a>,
+Prentice-Hall, 1995. ISBN: 0133014584
+
+</li><li> Arthur P. Boresi, Richard J. Schmidt, and Omar M. Sidebottom,
+<a href="http://www.amazon.com/exec/obidos/ASIN/0471551570/ref=pd_cp_nsr_b_1/002-2386037-4350467">Advanced Mechanics of Materials</a>,
+John Wiley &amp; Sons, 1993.            ISBN: 0471551570
+
+<a name="Chen-1987">
+</a></li><li><a name="Chen-1987"> Wai-Fah Chen and E.M. Lui,
+</a><a href="http://www.amazon.com/Structural-Stability-Implementation-Wai-Kai-Chen/dp/0135005396/">
+Structural Stability: Theory and Implementation</a>,
+Prentice-Hall, 1997, ISBN: 0135005396
+
+</li><li> Raymond W. Clough and Joseph Penzien,
+<a href="http://www.amazon.com/exec/obidos/ASIN/0070113920/qid%3D1003514837/ref%3Dsr_11_0_1/002-2386037-4350467">Dynamics of Structures</a>,
+McGraw-Hill, 1993.   ASIN: 0070113920
+
+</li><li> G.R. Cowper,
+<a href="http://scitation.aip.org/getabs/servlet/GetabsServlet?prog=normal&amp;id=JAMCAV000033000002000335000001&amp;idtype=cvips&amp;gifs=yes&amp;ref=no">
+Shear coefficient in Timoshenko's Beam Theory</a>,
+<i> Journal of Applied Mechanics</i> vol. 33, no. 2, pp. 335-346, 1966.
+
+</li><li> J.P. Den Hartog,
+<a href="http://www.amazon.com/exec/obidos/ASIN/0486654079/qid=1003515697/sr=2-1/ref=sr_2_11_1/002-2386037-4350467">Advanced Strength of Materials</a>,
+Dover Press, 1987.   ISBN: 0486654079
+
+<a name="Dong-IJSS-2010">
+</a></li><li><a name="Dong-IJSS-2010"> S.B. Dong, C. Alpdogan, and E. Taciroglu, 
+</a><a href="http://www.sciencedirect.com/science/article/pii/S0020768310000685">
+Much ado about shear correction factors in Timoshenko beam theory</a>,
+<i>International Journal of Solids and Structures,</i>
+vol. 47, no. 13, pp. 1651-1665, 2010.
+
+</li><li> Thomas J. R. Hughes,
+<a href="http://www.amazon.com/exec/obidos/ASIN/0486411818/ref=pd_pym_sim_1_2/002-2386037-4350467">The Finite Element Method: Linear Static and Dynamic Finite Element Analysis</a>,
+Dover Press, 2000.   ISBN: 0486411818
+
+</li><li> T. Kaneko,
+<a href="http://iopscience.iop.org/0022-3727/11/14/010">
+An experimental study on the Timoshenko's shear coefficient for flexurally vibrating beams</a>,
+<i>Journal of Physics, D: Applied Physics</i>, vol 11, no 14, pp 1979-1988, (1978)
+
+</li><li> Aslam Kassimali,
+<a href="http://www.amazon.com/exec/obidos/tg/detail/-/0534206700/qid=1036162662/sr=1-4/ref=sr_1_4/002-7358683-1549619?v=glance">Matrix Analysis of Structures</a>,
+Brooks/Cole, 1999.   ISBN: 0534206700
+
+</li><li> Jaroslav Mackerle,
+<a href="http://www.emeraldinsight.com/Insight/viewContentItem.do;jsessionid=AFE435BAE8FB9E5AD60E5AEDC2A3ADB3?contentType=Article&amp;contentId=1455399">
+Finite element linear and nonlinear, static and dynamic analysis of structural
+elements: a bibliography (1992-1995)</a>,
+Engineering Computations, vol. 14, no. 4, pp. 347-440,  1997.
+
+</li><li> Jaroslav Mackerle,
+<a href="http://www.emeraldinsight.com/Insight/viewContentItem.do;jsessionid=AFE435BAE8FB9E5AD60E5AEDC2A3ADB3?contentType=Article&amp;contentId=878085">
+Finite element linear and nonlinear, static and dynamic analysis of structural
+elements - an addendum - A bibliography (1996-1999)</a>,
+Engineering Computations, vol. 17, no. 3, pp. 274-351,  2000.
+
+</li><li> William McGuire, Richard H. Gallagher, and Ronald D. Ziemian,
+<a href="http://www.amazon.com/Structural-Analysis-MASTAN2-William-McGuire/dp/0471376515/ref=pd_bbs_sr_1?ie=UTF8&amp;s=books&amp;qid=1198185313&amp;sr=8-1">
+Matrix Structural Analysis, 2nd ed.</a> John Wiley, 1999.
+ISBN: 0471376515
+
+</li><li> M. Paz,
+<a href="http://dx.doi.org/10.2514/3.48498">
+Dynamic condensation</a>, AIAA Journal, vol. 22, no. 5, pp. 724-727, 1984.
+ 
+</li><li> W.D. Pilkey, Weize Kang and Uwe Schramm,
+<a href="http://www.sciencedirect.com/science?_ob=ArticleURL&amp;_udi=B6V36-3YB56X8-9&amp;_user=10&amp;_coverDate=02%2F28%2F1995&amp;_rdoc=5&amp;_fmt=high&amp;_orig=browse&amp;_srch=doc-info(%23toc%235722%231995%23999809998%23154123%23FLP%23display%23Volume)&amp;_cdi=5722&amp;_sort=d&amp;_docanchor=&amp;_ct=11&amp;_acct=C000050221&amp;_version=1&amp;_urlVersion=0&amp;_userid=10&amp;md5=6e4bfbc9d1ce188436efb35e9a9e444d">
+New structural matrices for a beam element with shear deformation</a>,
+Finite Elements in Analysis and Design, vol. 19, pp. 25-44,  1995.
+
+</li><li> William H. Press, Saul A. Teukolsky, William T. Vetterling, Brian P. Flannery,
+<a href="http://www.amazon.com/exec/obidos/ASIN/0521431085/qid=1003515201/sr=1-1/ref=sr_1_10_1/002-2386037-4350467">Numerical Recipes in C: The Art of Scientific Computing</a>,
+Cambridge University Press, 1993.   ISBN: 0521431085
+
+</li><li> J.S. Przemieniecki,
+<a href="http://www.amazon.com/exec/obidos/ASIN/0486649482/qid=1003514977/sr=1-1/ref=sr_1_8_1/002-2386037-4350467">Theory of Matrix Structural Analysis</a>,
+Dover Press, 1985.   ISBN: 0486649482
+
+<a name="Rosinger-JPD-1977">
+</a></li><li><a name="Rosinger-JPD-1977"> H.E. Rosinger and I.G. Ritchie, 
+</a><a href="http://iopscience.iop.org/0022-3727/10/11/009">
+On Timoshenko's correction for shear in vibrating isotropic beams</a>, 
+<i>Journal of Physics, D: Applied Physics</i>, vol. 10, no. 14, pp. 1461-1466, (1977). 
+
+</li><li> Robert E. Sennett,
+<a href="http://www.amazon.com/exec/obidos/ASIN/1577661435/qid=1003515858/sr=1-2/ref=sr_1_12_2/002-2386037-4350467">Matrix Analysis of Structures</a>,
+Waveland Press, 2000.ISBN: 1577661435
+
+</li><li> S. Timoshenko and J.N. Goodier, Theory of Elasticity, 2nd ed.,
+McGraw Hill, 1951.
+
+</li><li> Ansel C. Ugural and Saul K. Fenster,
+<a href="http://www.amazon.com/exec/obidos/ASIN/013137589X/qid=1003514318/sr=1-1/ref=sr_1_8_1/002-2386037-4350467">Advanced Strength and Applied Elasticity, 3rd ed.</a>,
+Prentice-Hall, 1995. ISBN: 013137589X
+
+</li></ol>
+
+<hr>
+
+<h2>About this document</h2>
+
+<p>Authors:</p>
+
+<pre>Henri P. Gavin, Ph.D., P.E.
+Department of Civil and Environmental Engineering
+Duke University, Box 90287
+Durham, NC  27708--0287
+</pre>
+
+<pre>John Pye
+Dept of Engineering
+Australian National University
+</pre>
+
+<p align="justify">
+<a href="http://sourceforge.net/projects/frame3dd/"><img src="./Frame3DD User Manual_files/sflogo.php" align="left" border="0" width="150" height="40" style="margin:10px" alt="Get Frame3DD at SourceForge.net. Fast, secure and Free Open Source software downloads"></a>
+Source code for this document as well as Frame3dd itself is available from
+<a href="http://sourceforge.net/projects/frame3dd/">
+http://sourceforge.net/projects/frame3dd/</a> <br>
+</p><hr>
+<!-- Automatically updated "last-modified" date -->
+<font face="Arial, Helvetica, sans-serif" size="2">
+<script language="JavaScript">
+<!--
+m = "Last updated " + document.lastModified;
+document.write(m);
+// -->
+</script>Last updated 07/01/2018 07:52:46
+(See the full <a href="https://sourceforge.net/p/frame3dd/code/">revision log</a>.)
+</font>
+<p></p>
+
+<!-- google analytics -->
+<script type="text/javascript">
+var gaJsHost = (("https:" == document.location.protocol) ? "https://ssl." : "http://www.");
+document.write(unescape("%3Cscript src='" + gaJsHost + "google-analytics.com/ga.js' type='text/javascript'%3E%3C/script%3E"));
+</script><script src="./Frame3DD User Manual_files/ga.js.download" type="text/javascript"></script>
+<script type="text/javascript">
+try {
+var pageTracker = _gat._getTracker("UA-12391001-1");
+pageTracker._trackPageview();
+} catch(err) {}</script>
+
+
+
+</body></html>

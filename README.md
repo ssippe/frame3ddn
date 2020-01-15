@@ -4,9 +4,17 @@
 
 Incomplete c# implementation of frame3dd. 
 
-
+# Original Source
 * http://frame3dd.sourceforge.net/
 * https://github.com/pslack/frame3dd
+
+# Documentation
+* [Original](http://svn.code.sourceforge.net/p/frame3dd/code/trunk/doc/Frame3DD-manual.html)
+* [Backup](/docs/originalWebDocumentation/Frame3DD%20User%20Manual.html)
+
+# Units
+This project will have comments that reflect the default units: Newtons, millimeters, and tonnes. Other units are supported. See the documentation for details.
+
 
 # Features
 - Input file format:

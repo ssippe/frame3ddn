@@ -10,7 +10,14 @@ namespace Frame3ddn.Model
             Radius = radius;
         }
 
+        /// <summary>
+        /// Position [mm]
+        /// </summary>
         public Vec3Float Position { get; }
+
+        /// <summary>
+        /// Radius [mm]
+        /// </summary>
         public float Radius { get; }
 
         public static Node Parse(string inputString)

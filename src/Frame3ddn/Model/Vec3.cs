@@ -2,9 +2,9 @@
 {
     public struct Vec3
     {
-        public double X;
-        public double Y;
-        public double Z;
+        public double X { get; }
+        public double Y { get;}
+        public double Z { get; }
 
         public Vec3(double x, double y, double z)
         {
@@ -12,5 +12,7 @@
             Y = y;
             Z = z;
         }
+
+        public override string ToString() => $"{X:G3},{Y:G3},{Z:G3}";        
     }
 }

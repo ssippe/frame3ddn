@@ -17,7 +17,7 @@ namespace Frame3ddn.Model
         /// </summary>
         public Vec3 Displacement { get; }
         /// <summary>
-        /// Rotation [units?]
+        /// Rotation [radians]
         /// </summary>
         public Vec3 Rotation { get; }
 

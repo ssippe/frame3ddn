@@ -9,7 +9,7 @@ namespace Frame3ddn.Model
         /// </summary>
         public int LoadcaseIdx { get; }
         /// <summary>
-        /// 0 based index (vs frame3dd who uses 1 based in their files)
+        /// Element Index base-0 (vs frame3dd who uses 1 based in their files)
         /// </summary>
         public int ElementIdx { get; }
         /// <summary>
@@ -17,29 +17,33 @@ namespace Frame3ddn.Model
         /// </summary>
         public bool? IsMin { get; }
         /// <summary>
-        /// Newtons (N) Force along the primiary axis of the member. +ve tension, -ve compression
+        /// Frame element axial force along the local x-axis [N]
+        /// Force along the primiary axis of the member. +ve tension, -ve compression        
         /// </summary>
         public double Nx { get; }
         /// <summary>
-        /// Newtons (N)
+        /// Frame element shear force in the local y direction [N]
         /// </summary>
         public double Vy { get; }
         /// <summary>
-        /// Newtons (N)
+        /// Frame element shear force in the local z direction [N]
         /// </summary>
         public double Vz { get; }
         /// <summary>
-        /// Newton.Metres (Nm)
+        /// Frame element torsion about the local x-axis [N.mm]
         /// </summary>
         public double Txx { get; }
         /// <summary>
-        /// Newton.Metres (Nm)
+        /// Frame element bending moments about the local -y-axis [N.mm]
         /// </summary>
         public double Myy { get; }
         /// <summary>
-        /// Newton.Metres (Nm)
+        /// Frame element bending moments about the local z-axis [N.mm]
         /// </summary>
         public double Mzz { get; }
+        /// <summary>
+        /// Offset from the start of the member [mm]
+        /// </summary>
         public double? XOffset { get; }
 
         public PeakFrameElementInternalForce(int loadcaseIdx, int elementIdx, bool? isMin, double nx, double vy, double vz, double txx, double myy, double mzz, double? xOffset)
@@ -80,9 +84,9 @@ EXAMPLE LINES
             var nx = double.Parse(splits[col++]); //N
             var vy = double.Parse(splits[col++]); //N
             var vz = double.Parse(splits[col++]); //N
-            var txx = double.Parse(splits[col++]); //Nmm -> Nm
-            var myy = double.Parse(splits[col++]); //Nmm -> Nm
-            var mzz = double.Parse(splits[col++]); //Nmm -> Nm
+            var txx = double.Parse(splits[col++]); //Nmm 
+            var myy = double.Parse(splits[col++]); //Nmm 
+            var mzz = double.Parse(splits[col++]); //Nmm 
             return new PeakFrameElementInternalForce(loadCaseIdx, memberIdx, !isMax, nx, vy, vz, txx, myy, mzz, null);
         }
     }

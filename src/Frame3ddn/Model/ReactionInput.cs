@@ -11,9 +11,16 @@ namespace Frame3ddn.Model
             R = r;
         }
 
+        /// <summary>
+        /// Postion [mm]
+        /// </summary>
         public Vec3Float Position { get; }
+        /// <summary>
+        /// 1: reaction force in the global X,Y,Z direction,  0: free
+        /// ?? Not sure. Where is Rxx,Ryy,Rzz?
+        /// </summary>
         public Vec3Float R { get; }
-        public int Number { get; set; }//This can't be replaced by index
+        public int Number { get; }//This can't be replaced by index
 
         public static ReactionInput Parse(string inputString)
         {

@@ -11,7 +11,7 @@ namespace Frame3ddn.Model
         public bool IncludeGeometricStiffness { get; }
         public float ExaggerateMeshDeformations { get; }
         public float ZoomScale { get; }
-        public float XAxisIncrementForInternalForces { get; set; }
+        public float XAxisIncrementForInternalForces { get;  }
 
         public IReadOnlyList<Node> Nodes { get; }
         public IReadOnlyList<ReactionInput> ReactionInputs { get; }

@@ -1,11 +1,10 @@
 ﻿namespace Frame3ddn.Model
 {
-    /// <inheritdoc />
     public struct Vec3Float
     {
-        public float X;
-        public float Y;
-        public float Z;
+        public float X { get; }
+        public float Y { get; }
+        public float Z { get; }
 
         public Vec3Float(float x, float y, float z)
         {
@@ -13,5 +12,7 @@
             Y = y;
             Z = z;
         }
+
+        public override string ToString() => $"{X:G3},{Y:G3},{Z:G3}";
     }
 }
