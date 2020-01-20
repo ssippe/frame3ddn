@@ -247,9 +247,6 @@ nF                   # number of loaded nodes (global)
                 return sb.ToString().TrimEndExt(Environment.NewLine);
             }
 
-
-
-
             private static string CreateFrameElementLine(int idx, FrameElement frameElement)
             {
                 //# e,n1,n2,Ax,Asy,Asz,Jxx,Iyy,Izz,E,G,roll,density
@@ -269,7 +266,6 @@ nF                   # number of loaded nodes (global)
                 var density = frameElement.Density;
                 return $"{ei}, {n1}, {n2}, {ax}, {asy}, {asz}, {jxx}, {iyy}, {izz}, {e}, {g}, {roll}, {density} ";
             }
-
 
             private static string CreateNodes(Input input)
             {
