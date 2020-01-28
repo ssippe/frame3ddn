@@ -14,9 +14,9 @@
     <PackageId>Frame3ddn</PackageId>
     <Version>1.0.11</Version>
     <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
-    <PackageReleaseNotes>Add documentation for units</PackageReleaseNotes>
-    <AssemblyVersion>1.0.11.0</AssemblyVersion>
-    <FileVersion>1.0.11.0</FileVersion>
+    <PackageReleaseNotes>InputCsvWriter</PackageReleaseNotes>
+    <AssemblyVersion>1.0.12.0</AssemblyVersion>
+    <FileVersion>1.0.12.0</FileVersion>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
