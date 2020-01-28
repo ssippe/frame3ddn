@@ -12,7 +12,7 @@
     <PackageTags>frame3dd, structual analysis</PackageTags>
     <Copyright>copyright © Steelx 2018</Copyright>
     <PackageId>Frame3ddn</PackageId>
-    <Version>1.0.11</Version>
+    <Version>1.0.12</Version>
     <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
     <PackageReleaseNotes>InputCsvWriter</PackageReleaseNotes>
     <AssemblyVersion>1.0.12.0</AssemblyVersion>
