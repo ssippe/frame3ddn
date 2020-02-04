@@ -808,8 +808,8 @@ namespace Frame3ddn
 
                 for (i = 0; i <= nx; i++)
                 {
-                    peakFrameElementInternalForces.Add(new PeakFrameElementInternalForce(lc, m, null, Dx[i], Dy[i],
-                        Vy[i], Tx[i], My[i], Mz[i], x[i]));
+                    peakFrameElementInternalForces.Add(new PeakFrameElementInternalForce(lc, m, null, Nx[i], Vy[i],
+                        Vz[i], Tx[i], My[i], Mz[i], x[i]));
                 }
 
                 peakFrameElementInternalForces.Add(new PeakFrameElementInternalForce(lc, m, false, maxNx, maxVy, maxVz,

@@ -12,11 +12,11 @@
     <PackageTags>frame3dd, structual analysis</PackageTags>
     <Copyright>copyright © Steelx 2018</Copyright>
     <PackageId>Frame3ddn</PackageId>
-    <Version>1.0.12</Version>
+    <Version>1.0.13</Version>
     <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
-    <PackageReleaseNotes>InputCsvWriter</PackageReleaseNotes>
-    <AssemblyVersion>1.0.12.0</AssemblyVersion>
-    <FileVersion>1.0.12.0</FileVersion>
+    <PackageReleaseNotes>bug fix for nx, vy and vz intermediate values.</PackageReleaseNotes>
+    <AssemblyVersion>1.0.13.0</AssemblyVersion>
+    <FileVersion>1.0.13.0</FileVersion>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
