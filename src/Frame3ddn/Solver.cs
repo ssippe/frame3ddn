@@ -33,13 +33,13 @@ namespace Frame3ddn
             float[] r = new float[DoF];
             for (int i = 0; i < nR; i++) 
             {
-                int j = input.ReactionInputs[i].Number;  //This index number is decreased by 1 when importing
-                r[j * 6 + 0] = input.ReactionInputs[i].Position.X;
-                r[j * 6 + 1] = input.ReactionInputs[i].Position.Y;
-                r[j * 6 + 2] = input.ReactionInputs[i].Position.Z;
-                r[j * 6 + 3] = input.ReactionInputs[i].R.X;
-                r[j * 6 + 4] = input.ReactionInputs[i].R.Y;
-                r[j * 6 + 5] = input.ReactionInputs[i].R.Z;
+                int j = input.ReactionInputs[i].NodeIdx;  //This index number is decreased by 1 when importing
+                r[j * 6 + 0] = input.ReactionInputs[i].Force.X;
+                r[j * 6 + 1] = input.ReactionInputs[i].Force.Y;
+                r[j * 6 + 2] = input.ReactionInputs[i].Force.Z;
+                r[j * 6 + 3] = input.ReactionInputs[i].Moment.X;
+                r[j * 6 + 4] = input.ReactionInputs[i].Moment.Y;
+                r[j * 6 + 5] = input.ReactionInputs[i].Moment.Z;
             }
 
             for (int i = 0; i < DoF; i++)

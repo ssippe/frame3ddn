@@ -21,7 +21,7 @@ namespace Frame3ddn.Test
             StreamReader sr = new StreamReader(Directory.GetFiles(inputPath, "B.csv")[0]);
             Model.Input input = Input.Parse(sr);
             Assert.Equal(18, input.Nodes.Count);
-            Assert.Equal(17, input.ReactionInputs[3].Number);
+            Assert.Equal(17, input.ReactionInputs[3].NodeIdx);
             Assert.Equal(10, input.FrameElements[3].Ax);
             Assert.True(input.LoadCases[0].UniformLoads[1].Load.Y + 1.1 < 0.0001);
         }

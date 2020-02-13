@@ -311,7 +311,7 @@ nF                   # number of loaded nodes (global)
         {
             int r(float f) => f < 0.5 ? 0 : 1;
             return
-                $"{nodeIndex + 1}, {r(reaction.Position.X)}, {r(reaction.Position.Y)}, {r(reaction.Position.Z)}, {r(reaction.R.X)}, {r(reaction.R.Y)}, {r(reaction.R.Z)},";
+                $"{nodeIndex + 1}, {r(reaction.Force.X)}, {r(reaction.Force.Y)}, {r(reaction.Force.Z)}, {r(reaction.Moment.X)}, {r(reaction.Moment.Y)}, {r(reaction.Moment.Z)},";
         }
     }
 }

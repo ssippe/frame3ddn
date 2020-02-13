@@ -14,8 +14,8 @@
     <PackageId>Frame3ddn</PackageId>
     <Version>1.0.13</Version>
     <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
-    <PackageReleaseNotes>bug fix for nx, vy and vz intermediate values.</PackageReleaseNotes>
-    <AssemblyVersion>1.0.13.0</AssemblyVersion>
+    <PackageReleaseNotes>reactionInput fix comments and property names for json serialization and clarity</PackageReleaseNotes>
+    <AssemblyVersion>1.0.14.0</AssemblyVersion>
     <FileVersion>1.0.13.0</FileVersion>
   </PropertyGroup>
 
