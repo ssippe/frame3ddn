@@ -1,5 +1,4 @@
 <Project Sdk="Microsoft.NET.Sdk">
-
   <PropertyGroup>
     <TargetFramework>netstandard2.0</TargetFramework>
     <Company>Steelx</Company>
@@ -10,18 +9,16 @@
     <PackageLicenseUrl>https://github.com/ssippe/frame3ddn/blob/master/LICENSE</PackageLicenseUrl>
     <RepositoryType>public</RepositoryType>
     <PackageTags>frame3dd, structual analysis</PackageTags>
-    <Copyright>copyright © Steelx 2018</Copyright>
+    <Copyright>copyright © Steelx 2020</Copyright>
     <PackageId>Frame3ddn</PackageId>
-    <Version>1.0.14</Version>
+    <Version>1.0.15</Version>
     <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
-    <PackageReleaseNotes>reactionInput fix comments and property names for json serialization and clarity</PackageReleaseNotes>
-    <AssemblyVersion>1.0.14.0</AssemblyVersion>
-    <FileVersion>1.0.14.0</FileVersion>
+    <AssemblyVersion>1.0.15.0</AssemblyVersion>
+    <FileVersion>1.0.15.0</FileVersion>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
   </PropertyGroup>
-
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
     <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
     <WarningsAsErrors />
   </PropertyGroup>
-
 </Project>
