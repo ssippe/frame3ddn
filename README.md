@@ -1,6 +1,6 @@
 # frame3ddn
 [![NuGet version (Frame3ddn)](https://img.shields.io/nuget/v/Frame3ddn.svg?style=flat-square)](https://www.nuget.org/packages/Frame3ddn/)
-[![Build Status](https://travis-ci.org/ssippe/frame3ddn.png)](https://travis-ci.org/ssippe/frame3ddn)
+![Build Status](https://github.com/ssippe/frame3ddn/workflows/.NET/badge.svg)
 
 Incomplete c# implementation of frame3dd. 
 
