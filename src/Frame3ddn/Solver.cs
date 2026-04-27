@@ -550,14 +550,17 @@ namespace Frame3ddn
             double[,] V;
             try
             {
-                (eigs, V, _) = Eigensolver.Stodola(Km, M, DoF, nMCalc, tol, dyn.Shift);
+                // Method 1 = Subspace–Jacobi (upstream default, every shipped example).
+                // Method 2 = Stodola inverse iteration. Anything else falls back to subspace.
+                (eigs, V, _) = dyn.Method == 2
+                    ? Eigensolver.Stodola(Km, M, DoF, nMCalc, tol, dyn.Shift)
+                    : Eigensolver.Subspace(Km, M, DoF, nMCalc, tol, dyn.Shift);
             }
             catch (InvalidOperationException ex)
             {
-                // Stodola's mode-by-mode inverse iteration with Gram–Schmidt purging can fail
-                // to converge for the higher requested modes when the seeding heuristic is
-                // weak — upstream aborts the whole run; we degrade gracefully and skip modal
-                // results so the static-solve output is still returned.
+                // Either eigensolver can hit its iteration limit on a poorly-conditioned
+                // system. Upstream aborts the whole run; we degrade gracefully and skip
+                // modal results so the static-solve output is still returned.
                 Console.WriteLine($"  warning: modal analysis did not converge — {ex.Message}");
                 return new List<ModalResult>();
             }

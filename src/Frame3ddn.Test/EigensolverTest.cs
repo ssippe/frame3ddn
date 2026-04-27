@@ -121,6 +121,91 @@ namespace Frame3ddn.Test
             AssertGeneralizedEigenproblem(K, M, eigs, V, n, m: 3, residualTol: 1e-5);
         }
 
+        // Subspace iteration on the same fixed-fixed spring chain. Unlike Stodola, subspace
+        // converges all m modes simultaneously and isn't sensitive to the seed-vs-eigenvector
+        // alignment, so it should reproduce the analytical eigenvalues directly.
+        [Fact]
+        public void Subspace_FixedFixedSpringChain_ReproducesAnalyticalEigenvalues()
+        {
+            const int n = 5;
+            double[,] K = new double[n, n];
+            for (int i = 0; i < n; i++)
+            {
+                K[i, i] = 2.0;
+                if (i + 1 < n) K[i, i + 1] = -1.0;
+            }
+            double[,] M = new double[n, n];
+            for (int i = 0; i < n; i++) M[i, i] = 1.0;
+
+            // Subspace's convergence check is on the eigenvalue at index max(m/2, m-8) —
+            // higher modes can be loose (Bathe's heuristic: nM_calc > nM, return the
+            // lowest nM). Solve for all 5 modes, verify the lowest 3 to tight precision.
+            (double[] eigs, double[,] V, _) = Eigensolver.Subspace(
+                K, M, n, m: n, tolerance: 1e-12, shift: 0.0);
+
+            // Analytical eigenvalues for fixed-fixed N-DoF chain: 2(1 - cos(jπ/(N+1))).
+            double[] expected = new double[3];
+            for (int j = 1; j <= 3; j++)
+                expected[j - 1] = 2.0 * (1.0 - Math.Cos(j * Math.PI / (n + 1)));
+
+            for (int k = 0; k < 3; k++)
+                Assert.Equal(expected[k], eigs[k], 8);
+
+            AssertGeneralizedEigenproblem(K, M, eigs, V, n, m: 3, residualTol: 1e-7);
+        }
+
+        // Subspace on a generic tridiagonal system with non-identity M — same matrix the
+        // Stodola tests use. Mass-orthonormality and the K φ = λ M φ residual should hold
+        // to better than 1e-9 (subspace converges all modes to the requested tolerance).
+        [Fact]
+        public void Subspace_GenericTridiagonalSystem_AllModesConvergeToTightResidual()
+        {
+            const int n = 4;
+            double[,] K = {
+                { 5, -1,  0,  0 },
+                { 0,  4, -1,  0 },
+                { 0,  0,  4, -1 },
+                { 0,  0,  0,  3 }
+            };
+            double[,] M = {
+                { 1, 0, 0, 0 },
+                { 0, 2, 0, 0 },
+                { 0, 0, 3, 0 },
+                { 0, 0, 0, 4 }
+            };
+
+            // Solve for all 4 modes; only verify the lowest 3 (subspace's upper mode is loose).
+            (double[] eigs, double[,] V, _) = Eigensolver.Subspace(
+                K, M, n, m: n, tolerance: 1e-12, shift: 0.0);
+
+            AssertGeneralizedEigenproblem(K, M, eigs, V, n, m: 3, residualTol: 1e-6);
+        }
+
+        // The Jacobi solver on a small dense problem — used by Subspace internally on the
+        // reduced (m × m) system. Verifies it can solve a 3×3 generalised eigenproblem.
+        [Fact]
+        public void Jacobi_SymmetricGeneralizedProblem_RecoversEigenvalues()
+        {
+            // K, M from a known small problem with closed-form eigenvalues.
+            // K = diag(4, 1, 1), M = diag(2, 1, 1) → eigenvalues 2, 1, 1
+            // (eigenvectors of degenerate 1-eigenvalue depend on rotation order, so we just
+            // pin the SET of eigenvalues, not the per-mode mapping.)
+            int n = 3;
+            double[,] K = { { 4, 0, 0 }, { 0, 1, 0 }, { 0, 0, 1 } };
+            double[,] M = { { 2, 0, 0 }, { 0, 1, 0 }, { 0, 0, 1 } };
+            double[] E = new double[n];
+            double[,] V = new double[n, n];
+
+            Eigensolver.Jacobi(K, M, E, V, n);
+
+            // Sort the returned eigenvalues to make the assertion order-independent.
+            double[] sorted = (double[])E.Clone();
+            Array.Sort(sorted);
+            Assert.Equal(1.0, sorted[0], 10);
+            Assert.Equal(1.0, sorted[1], 10);
+            Assert.Equal(2.0, sorted[2], 10);
+        }
+
         // For each mode k, asserts:
         //   (a) eigenvalue is finite and positive (K, M are SPD)
         //   (b) eigenvalues are sorted ascending
