@@ -1,8 +1,8 @@
 # frame3ddn
  * Nuget is not maintained (I've lost my login).
-![Build Status](https://github.com/ssippe/frame3ddn/workflows/.NET/badge.svg)
+ * ![Build Status](https://github.com/ssippe/frame3ddn/workflows/.NET/badge.svg)
 
-Incomplete c# implementation of frame3dd. 
+C# implementation of frame3dd. 
 
 # Original Source
 * http://frame3dd.sourceforge.net/
