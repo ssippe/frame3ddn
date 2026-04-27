@@ -6,7 +6,7 @@
     <Description>A library for static structural analysis of 2D and 3D frames and trusses. This is an incomplete C# version of Frame3DD (sourced from http://frame3dd.sourceforge.net/).</Description>
     <PackageProjectUrl>https://github.com/ssippe/frame3ddn</PackageProjectUrl>
     <RepositoryUrl>https://github.com/ssippe/frame3ddn</RepositoryUrl>
-    <PackageLicenseUrl>https://github.com/ssippe/frame3ddn/blob/master/LICENSE</PackageLicenseUrl>
+    <PackageLicenseExpression>GPL-3.0-or-later</PackageLicenseExpression>
     <RepositoryType>public</RepositoryType>
     <PackageTags>frame3dd, structual analysis</PackageTags>
     <Copyright>copyright © Steelx 2020</Copyright>
@@ -17,6 +17,6 @@
     <FileVersion>1.0.15.0</FileVersion>
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
     <NoWarn>1701;1702;1591</NoWarn>
-    <WarningsAsErrors />
-  </PropertyGroup>  
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+  </PropertyGroup>
 </Project>

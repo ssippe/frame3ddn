@@ -182,12 +182,13 @@ namespace Frame3ddn.Parsers
                     throw new Exception($"MEMB {m.Id} references unknown NODE {m.N2Id}");
 
                 float G = ma.E / (2f * (1f + ma.Nu));
+                float roll = ComputeRoll(nodes[n1].Position, nodes[n2].Position, m.Axis, nodes, nodeIdToIdx);
                 frameElements.Add(new FrameElement(
                     n1, n2,
                     p.Ax, p.Ay, p.Az,
                     p.J, p.Iy, p.Iz,
                     ma.E, G,
-                    0f,
+                    roll,
                     ma.Density));
             }
 
@@ -209,6 +210,78 @@ namespace Frame3ddn.Parsers
                 exaggerateMeshDeformations: 0f,
                 zoomScale: 0f,
                 xAxisIncrementForInternalForces: -1f);   // skip internal-force sampling; .arc has no analogue
+        }
+
+        /// <summary>
+        /// Convert a Microstran MEMB axis-alignment flag (X, Y, Z, -X, -Y, -Z, or a node ID)
+        /// into a frame3dd roll angle (radians, rotation about local x). Microstran's flag
+        /// names the global axis (or third-node direction) the local Y axis aligns with;
+        /// frame3dd's coordinate transform places local Y at a default orientation when
+        /// roll = 0, so we compute the signed angle around local x that takes the default
+        /// local Y to Microstran's desired local Y.
+        /// </summary>
+        private static float ComputeRoll(Vec3Float p1, Vec3Float p2, string axisFlag,
+            List<Node> nodes, Dictionary<int, int> nodeIdToIdx)
+        {
+            (double dx, double dy, double dz) = (p2.X - p1.X, p2.Y - p1.Y, p2.Z - p1.Z);
+            double L = Math.Sqrt(dx * dx + dy * dy + dz * dz);
+            if (L == 0) return 0f;
+            double Cx = dx / L, Cy = dy / L, Cz = dz / L;
+
+            // Desired local-y direction in global coordinates from the axis flag.
+            (double yx, double yy, double yz) desired;
+            switch (axisFlag)
+            {
+                case "X":  desired = (1, 0, 0); break;
+                case "-X": desired = (-1, 0, 0); break;
+                case "Y":  desired = (0, 1, 0); break;
+                case "-Y": desired = (0, -1, 0); break;
+                case "Z":  desired = (0, 0, 1); break;
+                case "-Z": desired = (0, 0, -1); break;
+                default:   desired = ResolveThirdNode(axisFlag, p1, p2, nodes, nodeIdToIdx); break;
+            }
+
+            // Project desired_y onto the plane perpendicular to local x, then re-normalize.
+            double dot = desired.yx * Cx + desired.yy * Cy + desired.yz * Cz;
+            double dxC = desired.yx - dot * Cx;
+            double dyC = desired.yy - dot * Cy;
+            double dzC = desired.yz - dot * Cz;
+            double dLen = Math.Sqrt(dxC * dxC + dyC * dyC + dzC * dzC);
+            if (dLen < 1e-9) return 0f;     // axis flag was parallel to local x -- ignore
+            dxC /= dLen; dyC /= dLen; dzC /= dLen;
+
+            // frame3dd's default local-y at p = 0 (mirrors Coordtrans.coordTrans).
+            double defx, defy, defz;
+            if (Math.Abs(Math.Abs(Cz) - 1.0) < 1e-12)
+            {
+                defx = 0; defy = 1; defz = 0;
+            }
+            else
+            {
+                double den = Math.Sqrt(1.0 - Cz * Cz);
+                defx = -Cy / den; defy = Cx / den; defz = 0;
+            }
+
+            // Signed angle from default-y to desired-y, measured around local-x.
+            double cos = defx * dxC + defy * dyC + defz * dzC;
+            double crossX = defy * dzC - defz * dyC;
+            double crossY = defz * dxC - defx * dzC;
+            double crossZ = defx * dyC - defy * dxC;
+            double sin = crossX * Cx + crossY * Cy + crossZ * Cz;
+            return (float)Math.Atan2(sin, cos);
+        }
+
+        private static (double, double, double) ResolveThirdNode(string flag, Vec3Float p1, Vec3Float p2,
+            List<Node> nodes, Dictionary<int, int> nodeIdToIdx)
+        {
+            if (!int.TryParse(flag, NumberStyles.Integer, CultureInfo.InvariantCulture, out int id))
+                return (0, 0, 1);   // unknown -- fall back to +Z; the projection step will sort out degeneracy
+            if (!nodeIdToIdx.TryGetValue(id, out int idx)) return (0, 0, 1);
+            Vec3Float third = nodes[idx].Position;
+            double mx = 0.5 * (p1.X + p2.X);
+            double my = 0.5 * (p1.Y + p2.Y);
+            double mz = 0.5 * (p1.Z + p2.Z);
+            return (third.X - mx, third.Y - my, third.Z - mz);
         }
 
         private static string ReadDataLine(StreamReader sr)

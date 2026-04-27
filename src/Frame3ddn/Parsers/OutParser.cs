@@ -8,7 +8,7 @@ namespace Frame3ddn.Parsers
 {
     /// <summary>
     /// Parses the text output produced by the upstream <c>frame3dd</c> C program (the same
-    /// format <see cref="Frame3ddIO.OutputDataToString"/> emits — typically <c>.out</c> or
+    /// format <see cref="Writers.OutWriter.OutputDataToString"/> emits — typically <c>.out</c> or
     /// <c>.txt</c> files) into a list of <see cref="LoadCaseOutput"/>. Used by tests to
     /// compare solver runs against reference output files.
     /// Note: this is distinct from <see cref="P1Parser"/>, which parses Microstran <c>.p1</c>

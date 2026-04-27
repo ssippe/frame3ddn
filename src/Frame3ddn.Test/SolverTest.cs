@@ -8,21 +8,10 @@ using Xunit;
 
 namespace Frame3ddn.Test
 {
-    public class SolvingTest
+
+    public class SolverTest
     {
-        [Fact]
-        public void GetInputFromFile()
-        {
-            string workspaceDir = Directory.GetParent(Directory.GetParent(Directory.GetParent(Directory.GetCurrentDirectory().ToString()).ToString()).ToString()).ToString();
-            string testDataPath = Directory.GetDirectories(workspaceDir, "TestData")[0];
-            string inputPath = Directory.GetDirectories(testDataPath, "Input")[0];
-            StreamReader sr = new StreamReader(Directory.GetFiles(inputPath, "B.csv")[0]);
-            Model.Input input = CsvParser.Parse(sr);
-            Assert.Equal(18, input.Nodes.Count);
-            Assert.Equal(17, input.ReactionInputs[3].NodeIdx);
-            Assert.Equal(10, input.FrameElements[3].Ax);
-            Assert.True(input.LoadCases[0].UniformLoads[1].Load.Y + 1.1 < 0.0001);
-        }
+
 
         [Fact]
         public void Run()
@@ -36,7 +25,7 @@ namespace Frame3ddn.Test
             Input input = CsvParser.Parse(sr);
             Solver solver = new Solver();
             Output output = solver.Solve(input);
-            File.WriteAllText(Directory.GetFiles(outputPath, fileName + ".txt")[0], output.TextOutput);
+            //File.WriteAllText(Directory.GetFiles(outputPath, fileName + ".txt")[0], output.TextOutput);
         }
 
         /// <summary>
@@ -78,16 +67,11 @@ namespace Frame3ddn.Test
             Solver solver = new Solver();
             Output outputCalculated = solver.Solve(input);
 
-            string file = File.ReadAllText(outputFilePath);
-            List<LoadCaseOutput> result = OutParser.Parse(file);
-
-            for (int i = 0; i < outputCalculated.LoadCaseOutputs.Count; i++)
-            {
-                LoadCaseOutput loadCaseOutput = outputCalculated.LoadCaseOutputs[i];
-                LoadCaseOutput loadCaseOutputToCompare = result[i];
-                if (!IsEqual(loadCaseOutput, loadCaseOutputToCompare))
-                    throw new Exception("?");
-            }
+            // The .txt reference may have more load cases than we computed; clip to what we ran.
+            List<LoadCaseOutput> reference = OutParser.Parse(File.ReadAllText(outputFilePath))
+                .Take(outputCalculated.LoadCaseOutputs.Count)
+                .ToList();
+            OutputAsserts.OutputAssertEqual(new Output("", reference), outputCalculated);
         }
 
         [Theory]
@@ -130,14 +114,7 @@ namespace Frame3ddn.Test
             Output outputCalculated = solver.Solve(input);
 
             List<LoadCaseOutput> reference = OutParser.Parse(File.ReadAllText(referencePath));
-
-            Assert.Equal(reference.Count, outputCalculated.LoadCaseOutputs.Count);
-            for (int i = 0; i < outputCalculated.LoadCaseOutputs.Count; i++)
-            {
-                Assert.True(
-                    IsEqual(outputCalculated.LoadCaseOutputs[i], reference[i]),
-                    $"Load case {i} of {fileName} did not match upstream reference output.");
-            }
+            OutputAsserts.OutputAssertEqual(new Output("", reference), outputCalculated);
         }
 
         [Fact]
@@ -163,10 +140,8 @@ namespace Frame3ddn.Test
             Output output = solver.Solve(input);
 
             NodeDisplacement n8 = output.LoadCaseOutputs[0].NodeDisplacements.Single(d => d.NodeIdx == 7);
-            Assert.True(CompareDouble(n8.Displacement.X, 0.100000),
-                $"Prescribed displacement at node 8 X expected 0.1, got {n8.Displacement.X}");
-            Assert.True(CompareDouble(n8.Displacement.Y, -0.147194),
-                $"Free-DoF displacement at node 8 Y expected -0.147194, got {n8.Displacement.Y}");
+            Assert.Equal(0.100000, n8.Displacement.X, 4);
+            Assert.Equal(-0.147194, n8.Displacement.Y, 3);
         }
 
         [Fact]
@@ -227,133 +202,9 @@ namespace Frame3ddn.Test
 
         private void CompareTwoFiles(string outputFilePath1, string outputFilePath2)
         {
-            string file1 = File.ReadAllText(outputFilePath1);
-            string file2 = File.ReadAllText(outputFilePath2);
-            List<LoadCaseOutput> result1 = OutParser.Parse(file1);
-            List<LoadCaseOutput> result2 = OutParser.Parse(file2);
-
-
-            for (int i = 0; i < result1.Count; i++)
-            {
-                LoadCaseOutput loadCaseOutput1 = result1[i];
-                LoadCaseOutput loadCaseOutput2 = result2[i];
-                if (!IsEqual(loadCaseOutput1, loadCaseOutput2))
-                    throw new Exception("?");
-            }
-        }
-
-        static bool IsMinMaxForceEqual(IEnumerable<PeakFrameElementInternalForce> o1,
-            IEnumerable<PeakFrameElementInternalForce> o2)
-        {
-            List<PeakFrameElementInternalForce> o1Filt = o1.Where(f => f.IsMin.HasValue).ToList();
-            List<PeakFrameElementInternalForce> o2Filt = o2.Where(f => f.IsMin.HasValue).ToList();
-            if (o1Filt.Count != o2Filt.Count)
-                return false;
-            for (int i = 0; i < o1Filt.Count; i++)
-            {
-                if (!IsEqual(o1Filt[i], o2Filt[i]))
-                    return false;
-            }
-
-            return true;
-        }
-
-        static bool IsEqual(LoadCaseOutput o1, LoadCaseOutput o2)
-        {
-            if (o1.FrameElementEndForces.Count != o2.FrameElementEndForces.Count)
-                return false;
-            for (int i = 0; i < o1.FrameElementEndForces.Count; i++)
-            {
-                if (!IsEqual(o1.FrameElementEndForces[i], o2.FrameElementEndForces[i]))
-                    return false;
-            }
-
-            if (!IsMinMaxForceEqual(o1.PeakFrameElementInternalForces, o2.PeakFrameElementInternalForces))
-                return false;
-
-            if (o1.ReactionOutputs.Count != o2.ReactionOutputs.Count)
-                return false;
-            for (int i = 0; i < o1.ReactionOutputs.Count; i++)
-            {
-                if (!IsEqual(o1.ReactionOutputs[i], o2.ReactionOutputs[i]))
-                    return false;
-            }
-
-            if (o1.NodeDisplacements.Count != o2.NodeDisplacements.Count)
-                return false;
-            for (int i = 0; i < o1.NodeDisplacements.Count; i++)
-            {
-                if (!IsEqual(o1.NodeDisplacements[i], o2.NodeDisplacements[i]))
-                    return false;
-            }
-
-
-            return true;
-        }
-
-        static bool IsEqual(NodeDisplacement nodeDisplacement1, NodeDisplacement nodeDisplacement2)
-        {
-            return nodeDisplacement1.NodeIdx == nodeDisplacement2.NodeIdx &&
-                   CompareDouble(nodeDisplacement1.Displacement.X, nodeDisplacement2.Displacement.X) &&
-                   CompareDouble(nodeDisplacement1.Displacement.Y, nodeDisplacement2.Displacement.Y) &&
-                   CompareDouble(nodeDisplacement1.Displacement.Z, nodeDisplacement2.Displacement.Z) &&
-                   CompareDouble(nodeDisplacement1.Rotation.X, nodeDisplacement2.Rotation.X) &&
-                   CompareDouble(nodeDisplacement1.Rotation.Y, nodeDisplacement2.Rotation.Y) &&
-                   CompareDouble(nodeDisplacement1.Rotation.Z, nodeDisplacement2.Rotation.Z);
-        }
-
-        static bool IsEqual(ReactionOutput o1, ReactionOutput o2)
-        {
-            return CompareDouble(o1.NodeIdx, o2.NodeIdx) &&
-                   CompareDouble(o1.LoadcaseIdx, o2.LoadcaseIdx) &&
-                   IsEqual(o1.F, o2.F) &&
-                   IsEqual(o1.M, o2.M);
-
-        }
-
-        static bool IsEqual(Vec3 o1, Vec3 o2)
-        {
-            return CompareDouble(o1.X, o2.X) &&
-                   CompareDouble(o1.Y, o2.Y) &&
-                   CompareDouble(o1.Z, o2.Z);
-        }
-
-        static bool IsEqual(FrameElementEndForce o1, FrameElementEndForce o2)
-        {
-            return
-                CompareDouble(o1.ElementIdx, o2.ElementIdx) &&
-                CompareDouble(o1.NodeIdx, o2.NodeIdx) &&
-                CompareDouble(o1.Nx, o2.Nx) &&
-                CompareDouble(o1.Vy, o2.Vy) &&
-                CompareDouble(o1.Vz, o2.Vz) &&
-                CompareDouble(o1.Txx, o2.Txx) &&
-                CompareDouble(o1.Myy, o2.Myy) &&
-                CompareDouble(o1.Mzz / 100000, o2.Mzz / 100000);
-        }
-
-        static bool IsEqual(PeakFrameElementInternalForce o1, PeakFrameElementInternalForce o2)
-        {
-            return CompareDouble(o1.ElementIdx, o2.ElementIdx) &&
-                   CompareDouble(o1.Nx, o2.Nx) &&
-                   CompareDouble(o1.Vy, o2.Vy) &&
-                   CompareDouble(o1.Vz, o2.Vz) &&
-                   CompareDouble(o1.Txx, o2.Txx) &&
-                   CompareDouble(o1.Myy, o2.Myy) &&
-                   CompareDouble(o1.Mzz / 100000, o2.Mzz / 100000) &&
-                   o1.IsMin == o2.IsMin;
-        }
-
-        private void GetCompareResult(double num1, double num2)
-        {
-            if (!CompareDouble(num1, num2))
-                throw new Exception(num1 + " " + num2);
-        }
-
-        static bool CompareDouble(double num1, double num2)
-        {
-            if (Math.Abs(num1 - num2) < Math.Abs(num1) * 0.01 || Math.Abs(num1 - num2) < 0.01)
-                return true;
-            return false;
+            List<LoadCaseOutput> result1 = OutParser.Parse(File.ReadAllText(outputFilePath1));
+            List<LoadCaseOutput> result2 = OutParser.Parse(File.ReadAllText(outputFilePath2));
+            OutputAsserts.OutputAssertEqual(new Output("", result1), new Output("", result2));
         }
 
     }

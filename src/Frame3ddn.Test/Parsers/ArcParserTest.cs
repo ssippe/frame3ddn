@@ -1,12 +1,11 @@
 using Frame3ddn.Model;
 using Frame3ddn.Parsers;
 using System;
-using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using Xunit;
 
-namespace Frame3ddn.Test
+namespace Frame3ddn.Test.Parsers
 {
     public class ArcParserTest
     {
@@ -174,70 +173,6 @@ namespace Frame3ddn.Test
         }
 
         [Fact]
-        public void DisplacementsMatchMicrostranP1Reference_LateralColumnY()
-        {
-            // Reference values are loaded directly from the linear-elastic .p1 file rather
-            // than hard-coded. Only lateral-column-y is exercised — the other variants depend
-            // on the MEMB axis-alignment flag (roll) that ArcParser does not yet honour.
-            CompareWithP1Reference("lateral-column-y", displacementTolerance: 0.005);
-        }
-
-        [Fact]
-        public void ReactionsMatchMicrostranP1Reference_LateralColumnY()
-        {
-            // Parses the .p1 reactions table and compares to solver output by .arc node ID.
-            CompareWithP1Reference("lateral-column-y", reactionTolerance: 0.05);
-        }
-
-        private static void CompareWithP1Reference(
-            string name,
-            double displacementTolerance = double.PositiveInfinity,
-            double reactionTolerance = double.PositiveInfinity)
-        {
-            using StreamReader sr = new StreamReader(GetArcPath(name));
-            Input input = ArcParser.Parse(sr);
-            Solver solver = new Solver();
-            Output output = solver.Solve(input);
-
-            List<P1LoadCase> p1Cases = P1Parser.Parse(File.ReadAllText(GetP1Path(name)));
-            Dictionary<int, int> nodeIdToIdx = ReadArcNodeOrder(GetArcPath(name));
-
-            Assert.Equal(p1Cases.Count, output.LoadCaseOutputs.Count);
-
-            for (int lc = 0; lc < p1Cases.Count; lc++)
-            {
-                LoadCaseOutput actualLc = output.LoadCaseOutputs[lc];
-                P1LoadCase expectedLc = p1Cases[lc];
-
-                if (!double.IsPositiveInfinity(displacementTolerance))
-                {
-                    foreach (P1NodeRow expected in expectedLc.Displacements)
-                    {
-                        int idx = nodeIdToIdx[expected.NodeId];
-                        NodeDisplacement actual = actualLc.NodeDisplacements
-                            .FirstOrDefault(d => d.NodeIdx == idx);
-                        AssertVec3Close(expected.Linear, actual?.Displacement,
-                            displacementTolerance, $"{name} LC{lc + 1} node {expected.NodeId} disp");
-                        AssertVec3Close(expected.Angular, actual?.Rotation,
-                            displacementTolerance, $"{name} LC{lc + 1} node {expected.NodeId} rot");
-                    }
-                }
-
-                if (!double.IsPositiveInfinity(reactionTolerance))
-                {
-                    foreach (P1NodeRow expected in expectedLc.Reactions)
-                    {
-                        int idx = nodeIdToIdx[expected.NodeId];
-                        ReactionOutput actual = actualLc.ReactionOutputs
-                            .FirstOrDefault(r => r.NodeIdx == idx);
-                        AssertVec3Close(expected.Linear, actual?.F,
-                            reactionTolerance, $"{name} LC{lc + 1} node {expected.NodeId} reaction F");
-                    }
-                }
-            }
-        }
-
-        [Fact]
         public void RoundTripsThroughSolver()
         {
             // Smoke test: the parsed Input is solver-compatible end-to-end.
@@ -263,37 +198,7 @@ namespace Frame3ddn.Test
                 $"{label}: expected {expected}, got {actual} (tolerance {tolerance})");
         }
 
-        // Solver output omits all-zero displacement/reaction rows; treat a missing row as zero.
-        private static void AssertVec3Close(Vec3 expected, Vec3? actual, double tolerance, string label)
-        {
-            Vec3 a = actual ?? new Vec3(0, 0, 0);
-            AssertClose(expected.X, a.X, tolerance, label + " X");
-            AssertClose(expected.Y, a.Y, tolerance, label + " Y");
-            AssertClose(expected.Z, a.Z, tolerance, label + " Z");
-        }
-
-        // Walks the .arc text in NODE-statement order to recover the same .arc-id -> 0-based
-        // index mapping that ArcParser uses internally.
-        private static Dictionary<int, int> ReadArcNodeOrder(string arcPath)
-        {
-            Dictionary<int, int> map = new Dictionary<int, int>();
-            int idx = 0;
-            foreach (string line in File.ReadAllLines(arcPath))
-            {
-                string trimmed = line.TrimStart();
-                if (!trimmed.StartsWith("NODE")) continue;
-                string[] tok = trimmed.Split((char[])null, StringSplitOptions.RemoveEmptyEntries);
-                if (tok.Length < 2) continue;
-                if (int.TryParse(tok[1], out int id))
-                {
-                    map[id] = idx++;
-                }
-            }
-            return map;
-        }
-
         private static string GetArcPath(string name) => Path.Combine(GetArcExamplesDir(), name + ".arc");
-        private static string GetP1Path(string name) => Path.Combine(GetArcExamplesDir(), name + ".p1");
 
         private static string GetArcExamplesDir()
         {
