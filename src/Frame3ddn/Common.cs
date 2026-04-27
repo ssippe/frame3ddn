@@ -1,7 +1,4 @@
 ﻿using System;
-using System.Globalization;
-using System.Runtime.CompilerServices;
-using Frame3ddn.Model;
 
 namespace Frame3ddn
 {
@@ -9,12 +6,6 @@ namespace Frame3ddn
     {
         public const int Zvert = 1;
 
-        public static bool IsZeroVector(Vec3Float vec3)
-        {
-            if (IsDoubleZero(vec3.X) && IsDoubleZero(vec3.Y) && IsDoubleZero(vec3.Z))
-                return true;
-            return false;
-        }
 
         public static bool IsDoubleZero(double num)
         {
@@ -25,7 +16,7 @@ namespace Frame3ddn
 
         public static T[] GetRow<T>(T[,] matrix, int row)
         {
-            var columns = matrix.GetLength(1);
+            int columns = matrix.GetLength(1);
             var array = new T[columns];
             for (int i = 0; i < columns; i++)
                 array[i] = matrix[row, i];
@@ -34,8 +25,8 @@ namespace Frame3ddn
 
         public static T[,] GetArray<T>(T[,,] matrix, int row)
         {
-            var columns1 = matrix.GetLength(1);
-            var columns2 = matrix.GetLength(2);
+            int columns1 = matrix.GetLength(1);
+            int columns2 = matrix.GetLength(2);
             var array = new T[columns1, columns2];
             for (int i = 0; i < columns1; i++)
                 for (int j = 0; j < columns2; j++)
@@ -97,6 +88,6 @@ namespace Frame3ddn
         /// (double)26974.05F==26974.05078125
         /// 26974.05F.ToDoubleExt()==26974.05
         /// </example>
-        public static double ToDoubleExt(this float f) => (double) (decimal) f;
+        public static double ToDoubleExt(this float f) => (double)(decimal)f;
     }
 }

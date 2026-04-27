@@ -14,7 +14,15 @@ namespace Frame3ddn.Parsers
     /// </summary>
     public static class ArcParser
     {
-        public static Input Parse(StreamReader sr)
+        /// <summary>
+        /// Parse a Microstran .arc file. Analysis flags (<paramref name="includeShearDeformation"/>,
+        /// <paramref name="includeGeometricStiffness"/>) are not carried by the .arc format —
+        /// they are properties of the analysis the caller wants to run, mirroring how upstream
+        /// frame3dd reads them as separate per-analysis values.
+        /// </summary>
+        public static Input Parse(StreamReader sr,
+            bool includeShearDeformation = false,
+            bool includeGeometricStiffness = false)
         {
             string title = null;
 
@@ -62,15 +70,15 @@ namespace Frame3ddn.Parsers
                     case "NODE":
                         {
                             int id = int.Parse(tok[1], CultureInfo.InvariantCulture);
-                            float x = float.Parse(tok[2], CultureInfo.InvariantCulture);
-                            float y = float.Parse(tok[3], CultureInfo.InvariantCulture);
-                            float z = float.Parse(tok[4], CultureInfo.InvariantCulture);
+                            double x = double.Parse(tok[2], CultureInfo.InvariantCulture);
+                            double y = double.Parse(tok[3], CultureInfo.InvariantCulture);
+                            double z = double.Parse(tok[4], CultureInfo.InvariantCulture);
                             string flags = tok.Length > 5 ? tok[5] : "000000";
 
                             int idx = nodes.Count;
                             nodeIdToIdx[id] = idx;
                             nodeIds.Add(id);
-                            nodes.Add(new Node(new Vec3Float(x, y, z), 0f));
+                            nodes.Add(new Node(new Vec3(x, y, z), 0f));
 
                             if (flags.Length >= 6 && flags.IndexOf('1') >= 0)
                             {
@@ -205,8 +213,8 @@ namespace Frame3ddn.Parsers
                 frameElements,
                 reactionInputs,
                 finalLoadCases,
-                includeShearDeformation: false,
-                includeGeometricStiffness: false,
+                includeShearDeformation: includeShearDeformation,
+                includeGeometricStiffness: includeGeometricStiffness,
                 exaggerateMeshDeformations: 0f,
                 zoomScale: 0f,
                 xAxisIncrementForInternalForces: -1f);   // skip internal-force sampling; .arc has no analogue
@@ -220,7 +228,7 @@ namespace Frame3ddn.Parsers
         /// roll = 0, so we compute the signed angle around local x that takes the default
         /// local Y to Microstran's desired local Y.
         /// </summary>
-        private static float ComputeRoll(Vec3Float p1, Vec3Float p2, string axisFlag,
+        private static float ComputeRoll(Vec3 p1, Vec3 p2, string axisFlag,
             List<Node> nodes, Dictionary<int, int> nodeIdToIdx)
         {
             (double dx, double dy, double dz) = (p2.X - p1.X, p2.Y - p1.Y, p2.Z - p1.Z);
@@ -271,13 +279,13 @@ namespace Frame3ddn.Parsers
             return (float)Math.Atan2(sin, cos);
         }
 
-        private static (double, double, double) ResolveThirdNode(string flag, Vec3Float p1, Vec3Float p2,
+        private static (double, double, double) ResolveThirdNode(string flag, Vec3 p1, Vec3 p2,
             List<Node> nodes, Dictionary<int, int> nodeIdToIdx)
         {
             if (!int.TryParse(flag, NumberStyles.Integer, CultureInfo.InvariantCulture, out int id))
                 return (0, 0, 1);   // unknown -- fall back to +Z; the projection step will sort out degeneracy
             if (!nodeIdToIdx.TryGetValue(id, out int idx)) return (0, 0, 1);
-            Vec3Float third = nodes[idx].Position;
+            Vec3 third = nodes[idx].Position;
             double mx = 0.5 * (p1.X + p2.X);
             double my = 0.5 * (p1.Y + p2.Y);
             double mz = 0.5 * (p1.Z + p2.Z);

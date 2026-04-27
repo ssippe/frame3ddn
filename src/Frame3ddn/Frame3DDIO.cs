@@ -8,7 +8,7 @@ namespace Frame3ddn
     {
 
 
-        public static void AssembleLoads(int nN, int nE, int nL, int DoF, List<Vec3Float> xyz, List<double> L, List<double> Le,
+        public static void AssembleLoads(int nN, int nE, int nL, int DoF, List<Vec3> xyz, List<double> L, List<double> Le,
             List<int> N1, List<int> N2,
             List<float> Ax, List<float> Asy, List<float> Asz, List<float> Iy, List<float> Iz, List<float> E,
             List<float> G, List<float> p,
@@ -444,7 +444,7 @@ namespace Frame3ddn
             return (nodeDisplacements, frameElementEndForces, reactionOutputs);
         }
 
-        public static List<PeakFrameElementInternalForce> GetInternalForces(int lc, int nl, string title, float dx, List<Vec3Float> xyz,
+        public static List<PeakFrameElementInternalForce> GetInternalForces(int lc, int nl, string title, float dx, List<Vec3> xyz,
             double[,] Q, int nN, int nE, List<double> L, List<int> J1, List<int> J2, List<float> Ax, List<float> Asy, List<float> Asz,
             List<float> Jx, List<float> Iy, List<float> Iz, List<float> E, List<float> G, List<float> p,
             List<float> d, float gX, float gY, float gZ, int nU, float[,] U, int nW, float[,] W, int nP, float[,] P,

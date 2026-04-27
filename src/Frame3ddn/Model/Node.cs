@@ -4,16 +4,17 @@ namespace Frame3ddn.Model
 {
     public class Node
     {
-        public Node(Vec3Float position, float radius)
+        public Node(Vec3 position, float radius)
         {
             Position = position;
             Radius = radius;
         }
 
         /// <summary>
-        /// Position [mm]
+        /// Position [mm]. Stored as <see cref="Vec3"/> (double) to match upstream
+        /// frame3dd's vec3 type and avoid catastrophic cancellation in coordTrans.
         /// </summary>
-        public Vec3Float Position { get; }
+        public Vec3 Position { get; }
 
         /// <summary>
         /// Radius [mm]
@@ -22,8 +23,10 @@ namespace Frame3ddn.Model
 
         public static Node Parse(string inputString)
         {
-            float[] data = System.Text.RegularExpressions.Regex.Split(inputString, @"\s{1,}").Select(float.Parse).ToArray();
-            return new Node(new Vec3Float(data[1], data[2], data[3]), data[4]);
+            string[] data = System.Text.RegularExpressions.Regex.Split(inputString, @"\s{1,}");
+            return new Node(
+                new Vec3(double.Parse(data[1]), double.Parse(data[2]), double.Parse(data[3])),
+                float.Parse(data[4]));
         }
     }
 }

@@ -24,7 +24,7 @@ namespace Frame3ddn
             IReadOnlyList<FrameElement> frameElements = input.FrameElements;
             int nN = input.Nodes.Count;
             List<float> rj = input.Nodes.Select(n => n.Radius).ToList();
-            List<Vec3Float> xyz = input.Nodes.Select(n => n.Position).ToList();
+            List<Vec3> xyz = input.Nodes.Select(n => n.Position).ToList();
             int DoF = 6 * nN;
             int nR = input.ReactionInputs.Count;
             double[] q = new double[DoF];
@@ -113,14 +113,61 @@ namespace Frame3ddn
             double[,] K = new double[DoF, DoF];
 
             ////These are not used
-            int[] nT = new int[nL];
             int[] nP = new int[nL];
-            double[,] FTemp = new double[nL, DoF];
-            double[,,] eqFTemp = new double[nL, nE, 12];
             int iter = 0;
             double tol = 1.0e-9;
             float[,,] P = new float[nL, 10 * nE, 5];
             ////
+
+            // Per-load-case thermal load count + per-element equivalent thermal nodal forces.
+            int[] nT = input.LoadCases.Select(l => l.TemperatureLoads.Count).ToArray();
+            double[,] FTemp = new double[nL, DoF];
+            double[,,] eqFTemp = new double[nL, nE, 12];
+            for (int lcIdx = 0; lcIdx < nL; lcIdx++)
+            {
+                foreach (TemperatureLoad tl in input.LoadCases[lcIdx].TemperatureLoads)
+                {
+                    int n = tl.ElementIdx;
+                    if (n < 0 || n >= nE)
+                        throw new Exception($"Temperature load references unknown element {n + 1} (load case {lcIdx + 1}).");
+                    double a = tl.Alpha;
+                    double hy = tl.Hy;
+                    double hz = tl.Hz;
+                    if (hy <= 0 || hz <= 0)
+                        throw new Exception($"Temperature load element {n + 1} (LC {lcIdx + 1}) requires positive hy and hz.");
+
+                    // Local end forces from the thermal expansion / gradient (frame3dd_io.c:1381–1388).
+                    double Nx2 = a * 0.25 * (tl.Typ + tl.Tym + tl.Tzp + tl.Tzm) * E[n] * Ax[n];
+                    double Nx1 = -Nx2;
+                    double My1 = (a / hz) * (tl.Tzm - tl.Tzp) * E[n] * Iy[n];
+                    double My2 = -My1;
+                    double Mz1 = (a / hy) * (tl.Typ - tl.Tym) * E[n] * Iz[n];
+                    double Mz2 = -Mz1;
+
+                    // Globalize via the same coord transform used for elastic / geometric K.
+                    double[] t = Coordtrans.coordTrans(xyz, L[n], N1[n], N2[n], p[n]);
+                    eqFTemp[lcIdx, n,  0] += Nx1 * t[0];
+                    eqFTemp[lcIdx, n,  1] += Nx1 * t[1];
+                    eqFTemp[lcIdx, n,  2] += Nx1 * t[2];
+                    eqFTemp[lcIdx, n,  3] += My1 * t[3] + Mz1 * t[6];
+                    eqFTemp[lcIdx, n,  4] += My1 * t[4] + Mz1 * t[7];
+                    eqFTemp[lcIdx, n,  5] += My1 * t[5] + Mz1 * t[8];
+                    eqFTemp[lcIdx, n,  6] += Nx2 * t[0];
+                    eqFTemp[lcIdx, n,  7] += Nx2 * t[1];
+                    eqFTemp[lcIdx, n,  8] += Nx2 * t[2];
+                    eqFTemp[lcIdx, n,  9] += My2 * t[3] + Mz2 * t[6];
+                    eqFTemp[lcIdx, n, 10] += My2 * t[4] + Mz2 * t[7];
+                    eqFTemp[lcIdx, n, 11] += My2 * t[5] + Mz2 * t[8];
+                }
+
+                // Scatter element-equivalent thermal forces into the global F_temp vector.
+                for (int n = 0; n < nE; n++)
+                {
+                    int n1 = N1[n], n2 = N2[n];
+                    for (int i = 0; i < 6; i++) FTemp[lcIdx, 6 * n1 + i]     += eqFTemp[lcIdx, n, i];
+                    for (int i = 6; i < 12; i++) FTemp[lcIdx, 6 * n2 - 6 + i] += eqFTemp[lcIdx, n, i];
+                }
+            }
 
             int[] nD = input.LoadCases.Select(l => l.PrescribedDisplacements.Count).ToArray();
             double[,] Dp = new double[nL, DoF];
@@ -177,9 +224,33 @@ namespace Frame3ddn
 
                 K = Frame3dd.AssembleK(DoF, nE, xyz, r, L, Le, N1, N2, Ax, Asy, Asz, Jx, Iy, Iz, E, G, p, shear, geom, Q);
 
-                //if (nT[lc] > 0){
-                //Aplly temperature loads only --Not implemented
-                //}
+                // First pass: temperature loads only (solve K * D_t = F_t with no prescribed displ).
+                if (nT[lc] > 0)
+                {
+                    double[] tempLoadTemp = Common.GetRow(FTemp, lc);
+                    (int ok, double rmsResid) tResult = Frame3dd.SolveSystem(K, dD, tempLoadTemp, dR, DoF, q, r, ok, rmsResid);
+                    ok = tResult.ok;
+                    rmsResid = tResult.rmsResid;
+
+                    for (int i = 0; i < DoF; i++) if (!Common.IsDoubleZero(q[i])) D[i] += dD[i];
+                    for (int i = 0; i < DoF; i++) if (!Common.IsDoubleZero(r[i])) R[i] += dR[i];
+
+                    if (geom)
+                    {
+                        // Thermal-induced Q feeds the geometric-stiffness contribution for the
+                        // mechanical-load assembly that follows.
+                        double[,] tempTArrayInit = Common.GetArray(eqFTemp, lc);
+                        double[,] tempMArrayInit = Common.GetArray(eqFMech, lc);
+                        Frame3dd.ElementEndForces(Q, nE, xyz, L, Le, N1, N2,
+                            Ax, Asy, Asz, Jx, Iy, Iz, E, G, p,
+                            tempTArrayInit, tempMArrayInit, D, shear, geom,
+                            axialStrainWarning);
+                        K = Frame3dd.AssembleK(DoF, nE, xyz, r, L, Le, N1, N2, Ax, Asy, Asz, Jx, Iy, Iz, E, G, p, shear, geom, Q);
+                    }
+
+                    // Reset the displacement increment before the mechanical-load solve below.
+                    for (int i = 0; i < DoF; i++) dD[i] = 0.0;
+                }
 
                 if (nF[lc] > 0 || nU[lc] > 0 || nW[lc] > 0 || nP[lc] > 0 || nD[lc] > 0 ||
                     gX[lc] != 0 || gY[lc] != 0 || gZ[lc] != 0)
@@ -231,22 +302,45 @@ namespace Frame3ddn
                 //if (geom && verbose)
                 //    fprintf(stdout, "\n Non-Linear Elastic Analysis ...\n");
 
+                /*  quasi Newton-Raphson iteration for geometric nonlinearity (mirrors main.c) */
                 if (geom)
                 {
-                    //Not implemented
+                    error = 1.0;
+                    ok = 0;
+                    iter = 0;
                 }
 
                 while (geom && error > tol && iter < 500 && ok >= 0)
                 {
-                    //Not implemented
+                    ++iter;
+
+                    // Reassemble K with current Q (now includes geometric stiffness contribution).
+                    K = Frame3dd.AssembleK(DoF, nE, xyz, r, L, Le, N1, N2, Ax, Asy, Asz, Jx, Iy, Iz, E, G, p, shear, geom, Q);
+
+                    // {dF}^(i) = {F} - [K({D}^(i))]*{D}^(i);  norm gives convergence error.
+                    error = Frame3dd.EquilibriumError(dF, F, K, D, DoF, q, r);
+
+                    // Solve [K] {dD} = {dF} for the next Newton increment.
+                    (int ok, double rmsResid) nrResult = Frame3dd.SolveSystem(K, dD, dF, dR, DoF, q, r, ok, rmsResid);
+                    ok = nrResult.ok;
+                    rmsResid = nrResult.rmsResid;
+                    if (ok < 0) break;  // K not positive definite — abort iteration
+
+                    // Increment displacements at free DoFs.
+                    for (int i = 0; i < DoF; i++)
+                        if (!Common.IsDoubleZero(q[i])) D[i] += dD[i];
+
+                    // Recompute element end forces for new D (feeds next iteration's geometric K).
+                    tempTArray = Common.GetArray(eqFTemp, lc);
+                    tempMArray = Common.GetArray(eqFMech, lc);
+                    Frame3dd.ElementEndForces(Q, nE, xyz, L, Le, N1, N2,
+                        Ax, Asy, Asz, Jx, Iy, Iz, E, G, p,
+                        tempTArray, tempMArray, D, shear, geom,
+                        axialStrainWarning);
                 }
 
-                //Not implemented
-                /*   strain limit failure ... */
-                //if (axial_strain_warning > 0 && ExitCode == 0) ExitCode = 182;
-                /*   strain limit _and_ buckling failure ... */
-                //if (axial_strain_warning > 0 && ExitCode == 181) ExitCode = 183;
-                //if (geom) compute_reaction_forces(R, F, K, D, DoF, r);
+                // Recompute reactions for the converged non-linear K and D.
+                if (geom) ComputeReactionForces(R, F, K, D, DoF, r);
 
                 if (writeMatrix != 0)/* write static stiffness matrix */
                 {
@@ -297,6 +391,25 @@ namespace Frame3ddn
 
 
 
+
+        /// <summary>
+        /// Recompute reactions <c>R[i] = -F[i] + sum_j K[i,j]*D[j]</c> at restrained DoFs.
+        /// Mirrors upstream <c>compute_reaction_forces</c> (frame3dd.c:658). Used after a
+        /// geometric-nonlinear solve where the reactions stored during the linear iterations
+        /// no longer reflect the converged stiffness matrix.
+        /// </summary>
+        private static void ComputeReactionForces(double[] R, double[] F, double[,] K, double[] D, int DoF, float[] r)
+        {
+            for (int i = 0; i < DoF; i++)
+            {
+                R[i] = 0;
+                if (!Common.IsDoubleZero(r[i]))
+                {
+                    R[i] = -F[i];
+                    for (int j = 0; j < DoF; j++) R[i] += K[i, j] * D[j];
+                }
+            }
+        }
 
         // ref main.c:265
         static int DoF(Input input) => input.Nodes.Count * 6;

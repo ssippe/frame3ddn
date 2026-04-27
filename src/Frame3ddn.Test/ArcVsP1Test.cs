@@ -18,15 +18,20 @@ namespace Frame3ddn.Test
     {
         // Per-fixture absolute tolerance. lateral-column.p1 is non-linear (P-Δ) so the moment
         // residual can be ~0.2 kNm; the others are linear-elastic and much tighter.
+        // lateral-column.p1 is from a Microstran *large-displacement* non-linear analysis;
+        // the others are linear-elastic. Our P-Δ geometric-stiffness path doesn't help on
+        // lateral-column because the load is purely transverse (T=0 → Kg=0); the residual
+        // there is flexural shortening which needs large-displacement analysis we don't
+        // implement, hence the looser tolerance.
         [Theory]
-        [InlineData("lateral-column",     0.30)]
-        [InlineData("lateral-column-rev", 0.05)]
-        [InlineData("lateral-column-x",   0.05)]
-        [InlineData("lateral-column-y",   0.05)]
-        public void OutputMatchesMicrostranP1Reference(string name, double absoluteTolerance)
+        [InlineData("lateral-column",     0.30, false)]
+        [InlineData("lateral-column-rev", 0.05, false)]
+        [InlineData("lateral-column-x",   0.05, false)]
+        [InlineData("lateral-column-y",   0.05, false)]
+        public void OutputMatchesMicrostranP1Reference(string name, double absoluteTolerance, bool geometricStiffness)
         {
             using StreamReader sr = new StreamReader(GetArcPath(name));
-            Input input = ArcParser.Parse(sr);
+            Input input = ArcParser.Parse(sr, includeGeometricStiffness: geometricStiffness);
             Solver solver = new Solver();
             Output actual = solver.Solve(input);
 

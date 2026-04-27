@@ -27,21 +27,27 @@ namespace Frame3ddn.Model
         /// Prescribed nodal displacements applied at restrained DoFs (global)
         /// </summary>
         public IReadOnlyList<PrescribedDisplacement> PrescribedDisplacements { get; }
+        /// <summary>
+        /// Per-element thermal loads (local)
+        /// </summary>
+        public IReadOnlyList<TemperatureLoad> TemperatureLoads { get; }
 
         public LoadCase(Vec3Float gravity,
             IReadOnlyList<NodeLoad> nodeLoads,
             IReadOnlyList<UniformLoad> uniformLoads,
             IReadOnlyList<TrapLoad> trapLoads,
-            IReadOnlyList<PrescribedDisplacement> prescribedDisplacements)
+            IReadOnlyList<PrescribedDisplacement> prescribedDisplacements,
+            IReadOnlyList<TemperatureLoad> temperatureLoads = null)
         {
             Gravity = gravity;
             NodeLoads = nodeLoads;
             UniformLoads = uniformLoads;
             TrapLoads = trapLoads;
             PrescribedDisplacements = prescribedDisplacements;
+            TemperatureLoads = temperatureLoads ?? new List<TemperatureLoad>();
         }
 
-        public static LoadCase Parse(string inputGravityString, List<NodeLoad> nodeLoads, List<UniformLoad> uniformLoads, List<TrapLoad> trapLoads, List<PrescribedDisplacement> prescribedDisplacements)
+        public static LoadCase Parse(string inputGravityString, List<NodeLoad> nodeLoads, List<UniformLoad> uniformLoads, List<TrapLoad> trapLoads, List<PrescribedDisplacement> prescribedDisplacements, List<TemperatureLoad> temperatureLoads = null)
         {
             string[] data = System.Text.RegularExpressions.Regex.Split(inputGravityString, @"\s{1,}");
             return new LoadCase(
@@ -49,7 +55,8 @@ namespace Frame3ddn.Model
                 nodeLoads,
                 uniformLoads,
                 trapLoads,
-                prescribedDisplacements
+                prescribedDisplacements,
+                temperatureLoads
             );
         }
 

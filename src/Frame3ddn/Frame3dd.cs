@@ -7,7 +7,7 @@ namespace Frame3ddn
 {
     class Frame3dd
     {
-        public static void ElasticK(double[,] k, List<Vec3Float> xyz, float[] r,
+        public static void ElasticK(double[,] k, List<Vec3> xyz, float[] r,
             double L, double Le,
             int n1, int n2,
             double Ax, double Asy, double Asz,
@@ -83,9 +83,76 @@ namespace Frame3ddn
             }
         }
 
+        /// <summary>
+        /// Geometric stiffness matrix in global coordinates. Adds the geometric stiffness
+        /// contribution (axial-force-dependent) onto the existing element stiffness <paramref name="k"/>,
+        /// matching upstream <c>geometric_K</c> in frame3dd.c. T is the element axial force
+        /// (compressive negative, per upstream convention <c>-Q[i][1]</c>).
+        /// </summary>
+        public static void GeometricK(double[,] k, List<Vec3> xyz, float[] r,
+            double L, double Le, int n1, int n2,
+            double Ax, double Asy, double Asz,
+            double J, double Iy, double Iz,
+            double E, double G, float p, double T,
+            bool shear)
+        {
+            double[] t = Coordtrans.coordTrans(xyz, L, n1, n2, p);
+            double[,] kg = new double[12, 12];
+            double Ksy, Ksz, Dsy, Dsz;
+
+            if (shear)
+            {
+                Ksy = 12.0 * E * Iz / (G * Asy * Le * Le);
+                Ksz = 12.0 * E * Iy / (G * Asz * Le * Le);
+                Dsy = (1 + Ksy) * (1 + Ksy);
+                Dsz = (1 + Ksz) * (1 + Ksz);
+            }
+            else
+            {
+                Ksy = Ksz = 0.0;
+                Dsy = Dsz = 1.0;
+            }
+
+            // axial DoFs left at 0 in upstream (commented out as // T/L)
+            kg[0, 0] = kg[6, 6] = 0.0;
+            kg[0, 6] = kg[6, 0] = 0.0;
+
+            kg[1, 1] = kg[7, 7] = T / L * (1.2 + 2.0 * Ksy + Ksy * Ksy) / Dsy;
+            kg[2, 2] = kg[8, 8] = T / L * (1.2 + 2.0 * Ksz + Ksz * Ksz) / Dsz;
+            kg[3, 3] = kg[9, 9] = T / L * J / Ax;
+            kg[4, 4] = kg[10, 10] = T * L * (2.0 / 15.0 + Ksz / 6.0 + Ksz * Ksz / 12.0) / Dsz;
+            kg[5, 5] = kg[11, 11] = T * L * (2.0 / 15.0 + Ksy / 6.0 + Ksy * Ksy / 12.0) / Dsy;
+
+            kg[4, 2] = kg[2, 4] = kg[10, 2] = kg[2, 10] = -T / 10.0 / Dsz;
+            kg[8, 4] = kg[4, 8] = kg[10, 8] = kg[8, 10] = T / 10.0 / Dsz;
+            kg[5, 1] = kg[1, 5] = kg[11, 1] = kg[1, 11] = T / 10.0 / Dsy;
+            kg[7, 5] = kg[5, 7] = kg[11, 7] = kg[7, 11] = -T / 10.0 / Dsy;
+
+            kg[3, 9] = kg[9, 3] = -kg[3, 3];
+
+            kg[7, 1] = kg[1, 7] = -T / L * (1.2 + 2.0 * Ksy + Ksy * Ksy) / Dsy;
+            kg[8, 2] = kg[2, 8] = -T / L * (1.2 + 2.0 * Ksz + Ksz * Ksz) / Dsz;
+
+            kg[10, 4] = kg[4, 10] = -T * L * (1.0 / 30.0 + Ksz / 6.0 + Ksz * Ksz / 12.0) / Dsz;
+            kg[11, 5] = kg[5, 11] = -T * L * (1.0 / 30.0 + Ksy / 6.0 + Ksy * Ksy / 12.0) / Dsy;
+
+            kg = Coordtrans.Atma(t, kg, r[n1], r[n2]);
+
+            // Enforce symmetry (mirrors upstream).
+            for (int i = 0; i < 12; i++)
+                for (int j = i + 1; j < 12; j++)
+                    if (kg[i, j] != kg[j, i])
+                        kg[i, j] = kg[j, i] = 0.5 * (kg[i, j] + kg[j, i]);
+
+            // Add geometric stiffness onto the existing elastic stiffness.
+            for (int i = 0; i < 12; i++)
+                for (int j = 0; j < 12; j++)
+                    k[i, j] += kg[i, j];
+        }
+
         public static double[,] AssembleK(
             int DoF, int nE,
-            List<Vec3Float> xyz, float[] r, List<double> L, List<double> Le,
+            List<Vec3> xyz, float[] r, List<double> L, List<double> Le,
             List<int> N1, List<int> N2,
             List<float> Ax, List<float> Asy, List<float> Asz,
             List<float> Jx, List<float> Iy, List<float> Iz,
@@ -121,7 +188,9 @@ namespace Frame3ddn
 
                 if (geom)
                 {
-                    throw new Exception("geom N/A");
+                    GeometricK(k, xyz, r, L[i], Le[i], N1[i], N2[i],
+                        Ax[i], Asy[i], Asz[i], Jx[i], Iy[i], Iz[i],
+                        E[i], G[i], p[i], -Q[i, 0], shear);
                 }
 
                 for (int l = 0; l < 12; l++)
@@ -177,7 +246,7 @@ namespace Frame3ddn
             return (Math.Sqrt(ss_dF) / Math.Sqrt(ss_F));	// convergence criterion
         }
 
-        public static void ElementEndForces(double[,] Q, int nE, List<Vec3Float> xyz, List<double> L, List<double> Le, List<int> N1, List<int> N2,
+        public static void ElementEndForces(double[,] Q, int nE, List<Vec3> xyz, List<double> L, List<double> Le, List<int> N1, List<int> N2,
             List<float> Ax, List<float> Asy, List<float> Asz, List<float> Jx, List<float> Iy, List<float> Iz, List<float> E, List<float> G, List<float> p,
             double[,] eqFTempArray, double[,] eqFMechArray, double[] D, bool shear, bool geom,
             int axialStrainWarning)
@@ -207,7 +276,7 @@ namespace Frame3ddn
             }
         }
 
-        private static void FrameElementForce(double[] s, List<Vec3Float> xyz, double L, double Le, int n1, int n2,
+        private static void FrameElementForce(double[] s, List<Vec3> xyz, double L, double Le, int n1, int n2,
             float Ax, float Asy, float Asz, float J, float Iy, float Iz, float E, float G, float p, double[] fT, double[] fM,
             double[] D, bool shear, bool geom, double axialStrain)//return s
         {

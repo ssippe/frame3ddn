@@ -12,7 +12,7 @@ namespace Frame3ddn.Writers
     {
         private const string Version = "20140514+";
         public static string InputDataToString(string title, int nN, int nE, int nL, int[] nD, int nR, List<int> nF, List<int> nU, List<int> nW, int[] nP, int[] nT,
-            List<Vec3Float> xyz, List<float> r, List<int> J1, List<int> J2, List<float> Ax, List<float> Asy, List<float> Asz, List<float> Jx, List<float> Iy, List<float> Iz, List<float> E, List<float> G, List<float> p,
+            List<Vec3> xyz, List<float> r, List<int> J1, List<int> J2, List<float> Ax, List<float> Asy, List<float> Asz, List<float> Jx, List<float> Iy, List<float> Iz, List<float> E, List<float> G, List<float> p,
             List<float> d, List<float> gX, List<float> gY, List<float> gZ,
             double[,] Fm, double[,] Dp, float[] R, float[,,] U, float[,,] W, float[,,] P, bool shear, bool geom)
         {

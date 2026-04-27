@@ -43,10 +43,6 @@ namespace Frame3ddn.Parsers
 
             bool includeShearDeformation = int.Parse(noComentInput[currentLine++]) != 0;
             bool includeGeometricStiffness = int.Parse(noComentInput[currentLine++]) != 0;
-            if (includeGeometricStiffness)
-            {
-                throw new Exception("Geometric stiffness is not supported.");
-            }
             float exaggerateMeshDeformations = float.Parse(noComentInput[currentLine++]);
             float zoomScale = float.Parse(noComentInput[currentLine++]);
             float xAxisIncrementForInternalForces = float.Parse(noComentInput[currentLine++]);
@@ -89,12 +85,10 @@ namespace Frame3ddn.Parsers
                 }
 
                 int temperatureLoadNum = int.Parse(noComentInput[currentLine++]);
-                if (temperatureLoadNum > 0)
-                {
-                    throw new Exception("Temperature load is not supported.");
-                }
+                List<TemperatureLoad> temperatureLoads = new List<TemperatureLoad>();
                 for (int j = currentLine; currentLine < j + temperatureLoadNum; currentLine++)
                 {
+                    temperatureLoads.Add(TemperatureLoad.Parse(noComentInput[currentLine]));
                 }
 
                 int prescribedDisplacementNum = int.Parse(noComentInput[currentLine++]);
@@ -104,7 +98,7 @@ namespace Frame3ddn.Parsers
                     prescribedDisplacements.Add(PrescribedDisplacement.Parse(noComentInput[currentLine]));
                 }
 
-                LoadCase loadCase = LoadCase.Parse(loadCaseGravityString, nodeLoads, uniformLoads, trapLoads, prescribedDisplacements);
+                LoadCase loadCase = LoadCase.Parse(loadCaseGravityString, nodeLoads, uniformLoads, trapLoads, prescribedDisplacements, temperatureLoads);
                 loadCases.Add(loadCase);
             }
 
