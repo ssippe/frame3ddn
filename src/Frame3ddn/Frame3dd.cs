@@ -149,6 +149,170 @@ namespace Frame3ddn
                     k[i, j] += kg[i, j];
         }
 
+        /// <summary>
+        /// Lumped element mass matrix in global coordinates. Mirrors upstream <c>lumped_M</c>
+        /// in frame3dd.c. Translational mass goes on the diagonal directly (rotationally
+        /// invariant); rotational inertia is projected onto the global axes via the direction
+        /// cosines from <see cref="CoordinateTransform.CoordTrans"/>, so no Atma call is needed.
+        /// </summary>
+        public static void LumpedM(double[,] m, List<Vec3> xyz, double L, int n1, int n2,
+            double Ax, double J, double Iy, double Iz, float p, double d, double EMs)
+        {
+            double[] t = CoordinateTransform.CoordTrans(xyz, L, n1, n2, p);
+
+            double trans = (d * Ax * L + EMs) / 2.0;       // translational mass at each node
+            double ry = d * Iy * L / 2.0;
+            double rz = d * Iz * L / 2.0;
+            double po = d * L * J / 2.0;                   // polar inertia (simple x-section)
+
+            for (int i = 0; i < 12; i++)
+                for (int j = 0; j < 12; j++)
+                    m[i, j] = 0.0;
+
+            m[0, 0] = m[1, 1] = m[2, 2] = m[6, 6] = m[7, 7] = m[8, 8] = trans;
+
+            // Rotational diagonal: project polar/y/z inertia onto global axes.
+            m[3, 3] = m[9, 9] = po * t[0] * t[0] + ry * t[3] * t[3] + rz * t[6] * t[6];
+            m[4, 4] = m[10, 10] = po * t[1] * t[1] + ry * t[4] * t[4] + rz * t[7] * t[7];
+            m[5, 5] = m[11, 11] = po * t[2] * t[2] + ry * t[5] * t[5] + rz * t[8] * t[8];
+
+            m[3, 4] = m[4, 3] = m[9, 10] = m[10, 9] = po * t[0] * t[1] + ry * t[3] * t[4] + rz * t[6] * t[7];
+            m[3, 5] = m[5, 3] = m[9, 11] = m[11, 9] = po * t[0] * t[2] + ry * t[3] * t[5] + rz * t[6] * t[8];
+            m[4, 5] = m[5, 4] = m[10, 11] = m[11, 10] = po * t[1] * t[2] + ry * t[4] * t[5] + rz * t[7] * t[8];
+        }
+
+        /// <summary>
+        /// Consistent element mass matrix in global coordinates. Mirrors upstream
+        /// <c>consistent_M</c> in frame3dd.c. Builds the standard 12×12 consistent mass matrix
+        /// in local element coords, then rotates to global via <see cref="CoordinateTransform.Atma"/>.
+        /// Shear deformations are not included (matching upstream).
+        /// </summary>
+        public static void ConsistentM(double[,] m, List<Vec3> xyz, float[] r, double L, int n1, int n2,
+            double Ax, double J, double Iy, double Iz, float p, double d, double EMs)
+        {
+            double[] t = CoordinateTransform.CoordTrans(xyz, L, n1, n2, p);
+
+            double mt = d * Ax * L;
+            double ry = d * Iy;
+            double rz = d * Iz;
+            double po = d * J * L;
+
+            for (int i = 0; i < 12; i++)
+                for (int j = 0; j < 12; j++)
+                    m[i, j] = 0.0;
+
+            m[0, 0] = m[6, 6] = mt / 3.0;
+            m[1, 1] = m[7, 7] = 13.0 * mt / 35.0 + 6.0 * rz / (5.0 * L);
+            m[2, 2] = m[8, 8] = 13.0 * mt / 35.0 + 6.0 * ry / (5.0 * L);
+            m[3, 3] = m[9, 9] = po / 3.0;
+            m[4, 4] = m[10, 10] = mt * L * L / 105.0 + 2.0 * L * ry / 15.0;
+            m[5, 5] = m[11, 11] = mt * L * L / 105.0 + 2.0 * L * rz / 15.0;
+
+            m[4, 2] = m[2, 4] = -11.0 * mt * L / 210.0 - ry / 10.0;
+            m[5, 1] = m[1, 5] = 11.0 * mt * L / 210.0 + rz / 10.0;
+            m[6, 0] = m[0, 6] = mt / 6.0;
+
+            m[7, 5] = m[5, 7] = 13.0 * mt * L / 420.0 - rz / 10.0;
+            m[8, 4] = m[4, 8] = -13.0 * mt * L / 420.0 + ry / 10.0;
+            m[9, 3] = m[3, 9] = po / 6.0;
+            m[10, 2] = m[2, 10] = 13.0 * mt * L / 420.0 - ry / 10.0;
+            m[11, 1] = m[1, 11] = -13.0 * mt * L / 420.0 + rz / 10.0;
+
+            m[10, 8] = m[8, 10] = 11.0 * mt * L / 210.0 + ry / 10.0;
+            m[11, 7] = m[7, 11] = -11.0 * mt * L / 210.0 - rz / 10.0;
+
+            m[7, 1] = m[1, 7] = 9.0 * mt / 70.0 - 6.0 * rz / (5.0 * L);
+            m[8, 2] = m[2, 8] = 9.0 * mt / 70.0 - 6.0 * ry / (5.0 * L);
+            m[10, 4] = m[4, 10] = -L * L * mt / 140.0 - ry * L / 30.0;
+            m[11, 5] = m[5, 11] = -L * L * mt / 140.0 - rz * L / 30.0;
+
+            // Add the lumped extra-mass contribution to the translational diagonal of each
+            // node (rotational inertia of extra beam mass is neglected, matching upstream).
+            for (int i = 0; i < 3; i++) m[i, i] += 0.5 * EMs;
+            for (int i = 6; i < 9; i++) m[i, i] += 0.5 * EMs;
+
+            double[,] mGlobal = CoordinateTransform.Atma(t, m, r[n1], r[n2]);
+
+            // Enforce symmetry — Atma can leave tiny asymmetries from accumulated rounding.
+            for (int i = 0; i < 12; i++)
+                for (int j = i + 1; j < 12; j++)
+                    if (mGlobal[i, j] != mGlobal[j, i])
+                        mGlobal[i, j] = mGlobal[j, i] = 0.5 * (mGlobal[i, j] + mGlobal[j, i]);
+
+            // Copy globalised values back into the caller's buffer (Atma allocates a new array).
+            for (int i = 0; i < 12; i++)
+                for (int j = 0; j < 12; j++)
+                    m[i, j] = mGlobal[i, j];
+        }
+
+        /// <summary>
+        /// Assembles the full system mass matrix. Mirrors upstream <c>assemble_M</c>.
+        /// <c>lump=true</c> selects the lumped mass matrix, <c>false</c> the consistent matrix.
+        /// </summary>
+        public static double[,] AssembleM(
+            int DoF, int nN, int nE,
+            List<Vec3> xyz, float[] r, List<double> L,
+            List<int> N1, List<int> N2,
+            List<float> Ax, List<float> Jx, List<float> Iy, List<float> Iz, List<float> p,
+            List<float> density, List<float> EMs,
+            List<float> NMs, List<float> NMx, List<float> NMy, List<float> NMz,
+            bool lump)
+        {
+            double[,] M = new double[DoF, DoF];
+            double[,] m = new double[12, 12];
+            int[,] ind = new int[12, nE];
+
+            for (int i = 0; i < nE; i++)
+            {
+                ind[0, i] = 6 * N1[i]; ind[6, i] = 6 * N2[i];
+                ind[1, i] = ind[0, i] + 1; ind[7, i] = ind[6, i] + 1;
+                ind[2, i] = ind[0, i] + 2; ind[8, i] = ind[6, i] + 2;
+                ind[3, i] = ind[0, i] + 3; ind[9, i] = ind[6, i] + 3;
+                ind[4, i] = ind[0, i] + 4; ind[10, i] = ind[6, i] + 4;
+                ind[5, i] = ind[0, i] + 5; ind[11, i] = ind[6, i] + 5;
+            }
+
+            for (int i = 0; i < nE; i++)
+            {
+                if (lump)
+                    LumpedM(m, xyz, L[i], N1[i], N2[i], Ax[i], Jx[i], Iy[i], Iz[i], p[i], density[i], EMs[i]);
+                else
+                    ConsistentM(m, xyz, r, L[i], N1[i], N2[i], Ax[i], Jx[i], Iy[i], Iz[i], p[i], density[i], EMs[i]);
+
+                for (int l = 0; l < 12; l++)
+                {
+                    int ii = ind[l, i];
+                    for (int ll = 0; ll < 12; ll++)
+                    {
+                        int jj = ind[ll, i];
+                        M[ii, jj] += m[l, ll];
+                    }
+                }
+            }
+
+            // Add per-node concentrated mass and rotational inertia.
+            for (int n = 0; n < nN; n++)
+            {
+                int b = 6 * n;
+                M[b + 0, b + 0] += NMs[n];
+                M[b + 1, b + 1] += NMs[n];
+                M[b + 2, b + 2] += NMs[n];
+                M[b + 3, b + 3] += NMx[n];
+                M[b + 4, b + 4] += NMy[n];
+                M[b + 5, b + 5] += NMz[n];
+            }
+
+            for (int i = 0; i < DoF; i++)
+            {
+                if (M[i, i] <= 0.0)
+                {
+                    Console.WriteLine($"  warning: Non pos-def mass matrix  M[{i}][{i}] = {M[i, i]}");
+                }
+            }
+
+            return M;
+        }
+
         public static double[,] AssembleK(
             int DoF, int nE,
             List<Vec3> xyz, float[] r, List<double> L, List<double> Le,
