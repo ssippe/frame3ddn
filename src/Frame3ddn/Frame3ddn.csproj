@@ -9,7 +9,6 @@
     <PackageLicenseExpression>GPL-3.0-or-later</PackageLicenseExpression>
     <RepositoryType>public</RepositoryType>
     <PackageTags>frame3dd, structual analysis</PackageTags>
-    <Copyright>copyright © Steelx 2020</Copyright>
     <PackageId>Frame3ddn</PackageId>
     <Version>2.0.0</Version>
     <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
