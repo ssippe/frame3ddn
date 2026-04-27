@@ -7,12 +7,13 @@ namespace Frame3ddn
         public const int Zvert = 1;
 
 
-        public static bool IsDoubleZero(double num)
-        {
-            if (Math.Round(num, 1) != 0.0)
-                return false;
-            return true;
-        }
+        /// <summary>
+        /// Strict equality with 0.0, mirroring upstream frame3dd's <c>A[i][j] == 0.0</c>
+        /// and <c>q[i]</c>/<c>r[i]</c> tests. Earlier the C# port rounded to one decimal
+        /// place, which false-positived non-zero stiffness-matrix entries during the
+        /// LDL skyline scan and produced wrong reactions on near-truss geometries.
+        /// </summary>
+        public static bool IsDoubleZero(double num) => num == 0.0;
 
         public static T[] GetRow<T>(T[,] matrix, int row)
         {
