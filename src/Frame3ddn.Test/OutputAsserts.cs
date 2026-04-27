@@ -26,6 +26,26 @@ namespace Frame3ddn.Test
         /// expected and actual still match row-for-row after filtering.
         /// </summary>
         public bool IgnoreZeroRows { get; set; }
+
+        /// <summary>
+        /// Skip the ModalResults comparison. Set when the reference has no modal section
+        /// (e.g. <c>_out.CSV</c>) or when the test fixture doesn't request modal analysis.
+        /// </summary>
+        public bool IgnoreModal { get; set; }
+
+        /// <summary>
+        /// Relative tolerance for modal-frequency comparison. Defaults to 1% — the same band
+        /// the dedicated cross-validation theory passes within after the static-K-feeds-modal
+        /// fix. Higher modes can drift more under Stodola/Subspace convergence quirks, so
+        /// only the lowest <see cref="ModalModesToCompare"/> are checked.
+        /// </summary>
+        public double ModalRelativeTolerance { get; set; } = 0.01;
+
+        /// <summary>
+        /// Number of modes (lowest-first) to compare. Defaults to <c>int.MaxValue</c> meaning
+        /// "every mode the reference reports". Set lower if upper modes are known to be loose.
+        /// </summary>
+        public int ModalModesToCompare { get; set; } = int.MaxValue;
     }
 
     /// <summary>
@@ -44,6 +64,37 @@ namespace Frame3ddn.Test
 
             for (int i = 0; i < expected.LoadCaseOutputs.Count; i++)
                 AssertLoadCaseEqual(expected.LoadCaseOutputs[i], actual.LoadCaseOutputs[i], i, options);
+
+            if (!options.IgnoreModal)
+                AssertModalEqual(expected.ModalResults, actual.ModalResults, options);
+        }
+
+        // Frequencies are pinned to the configured relative tolerance. Mode-shape values are
+        // intentionally NOT compared — they're defined only up to sign and may re-shuffle on
+        // degenerate eigenvalues, so an entry-by-entry diff produces unhelpful false-positive
+        // failures. Frequencies (and indirectly mode-shape correctness via mass-orthogonality)
+        // are sufficient to pin the modal pipeline against upstream.
+        private static void AssertModalEqual(
+            IReadOnlyList<ModalResult> expected, IReadOnlyList<ModalResult> actual, OutputAssertOptions o)
+        {
+            if (expected.Count == 0) return;            // nothing to compare against
+            int n = Math.Min(Math.Min(expected.Count, actual.Count), o.ModalModesToCompare);
+            if (actual.Count < expected.Count && actual.Count < o.ModalModesToCompare)
+                throw new Exception(
+                    $"ModalResults: expected {expected.Count} modes, actual has {actual.Count}");
+
+            for (int i = 0; i < n; i++)
+            {
+                double exp = expected[i].FrequencyHz;
+                double act = actual[i].FrequencyHz;
+                double diff = Math.Abs(exp - act);
+                double tol = Math.Max(Math.Abs(exp) * o.ModalRelativeTolerance, o.AbsoluteTolerance);
+                if (diff > tol)
+                    throw new Exception(
+                        $"ModalResults[{i}].FrequencyHz: expected {exp:f6} Hz, got {act:f6} Hz " +
+                        $"(rel.err={(exp != 0 ? diff / Math.Abs(exp) : double.NaN):p2}, " +
+                        $"allowed {o.ModalRelativeTolerance:p0})");
+            }
         }
 
         private static void AssertLoadCaseEqual(LoadCaseOutput expected, LoadCaseOutput actual, int lc, OutputAssertOptions o)

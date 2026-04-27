@@ -55,10 +55,20 @@ namespace Frame3ddn.Test
         {
             using StreamReader sr = new StreamReader(GetFrame3ddExamplePath(fileName + ".3dd"));
             Input input = ThreeDdInputParser.Parse(sr);
-            List<LoadCaseOutput> reference = OutOutputParser.Parse(
-                File.ReadAllText(GetFrame3ddExamplePath(fileName + ".out")));
+            string outText = File.ReadAllText(GetFrame3ddExamplePath(fileName + ".out"));
+            List<LoadCaseOutput> reference = OutOutputParser.Parse(outText);
+            // Pull modal results from the same .out so frequencies are cross-validated alongside
+            // the static sections. Empty list for fixtures without modal analysis (exA), and
+            // skipped for exD/exJ — these are unrestrained structures with rigid-body modes
+            // near 0 Hz where Subspace's seeding lands on slightly different near-zero
+            // eigenvalues than upstream's (see Frame3ddExamples_LowestModeMatchesUpstream).
+            bool isRigidBody = fileName == "exD" || fileName == "exJ";
+            List<ModalResult> referenceModal = isRigidBody
+                ? null
+                : OutOutputParser.ParseModalResults(outText);
 
-            CompareSolveAgainstReference(input, reference, fileName + ".3dd");
+            CompareSolveAgainstReference(input, reference, fileName + ".3dd",
+                referenceModal: referenceModal != null && referenceModal.Count > 0 ? referenceModal : null);
         }
 
         [Theory]
@@ -77,10 +87,13 @@ namespace Frame3ddn.Test
             // input now produces — clip to what we ran.
             using StreamReader sr = new StreamReader(GetTestCases2018Path(fileName + ".csv"));
             Input input = CsvInputParser.Parse(sr);
-            List<LoadCaseOutput> reference = OutOutputParser.Parse(
-                File.ReadAllText(GetTestCases2018Path(fileName + ".out")));
+            string outText = File.ReadAllText(GetTestCases2018Path(fileName + ".out"));
+            List<LoadCaseOutput> reference = OutOutputParser.Parse(outText);
+            List<ModalResult> referenceModal = OutOutputParser.ParseModalResults(outText);
 
-            CompareSolveAgainstReference(input, reference, fileName + ".2018", clipReference: true);
+            CompareSolveAgainstReference(input, reference, fileName + ".2018",
+                clipReference: true,
+                referenceModal: referenceModal.Count > 0 ? referenceModal : null);
         }
 
 
@@ -111,7 +124,8 @@ namespace Frame3ddn.Test
             List<LoadCaseOutput> reference,
             string snapshotName,
             bool ignoreZeroRows = false,
-            bool clipReference = false)
+            bool clipReference = false,
+            IReadOnlyList<ModalResult> referenceModal = null)
         {
             Output outputCalculated = new Solver().Solve(input);
 
@@ -125,11 +139,13 @@ namespace Frame3ddn.Test
             // exH/exJ omit it in .out, others include it; _out.CSV always has it. Skip the
             // section only when the reference itself doesn't supply it.
             bool referenceHasPeak = reference.Any(lc => lc.PeakFrameElementInternalForces.Count > 0);
-            OutputAsserts.OutputAssertEqual(new Output("", reference), outputCalculated,
+            Output expectedOutput = new Output("", reference, referenceModal);
+            OutputAsserts.OutputAssertEqual(expectedOutput, outputCalculated,
                 new OutputAssertOptions
                 {
                     IgnorePeakForces = !referenceHasPeak,
                     IgnoreZeroRows = ignoreZeroRows,
+                    IgnoreModal = referenceModal == null,
                 });
         }
 
