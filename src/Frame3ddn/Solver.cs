@@ -112,12 +112,14 @@ namespace Frame3ddn
             double[,] Q = new double[nE, 12];
             double[,] K = new double[DoF, DoF];
 
-            ////These are not used
-            int[] nP = new int[nL];
             int iter = 0;
             double tol = 1.0e-9;
-            float[,,] P = new float[nL, 10 * nE, 5];
-            ////
+
+            // Per-load-case internal concentrated point loads. Stored in P[lc, i, 0..4] =
+            // (element_idx, Px, Py, Pz, x_along_element) for use by GetInternalForces. The
+            // equivalent nodal forces are computed below and scattered into eqFMech/FMech.
+            int[] nP = input.LoadCases.Select(l => l.InternalConcentratedLoads.Count).ToArray();
+            float[,,] P = new float[nL, Math.Max(1, 10 * nE), 5];
 
             // Per-load-case thermal load count + per-element equivalent thermal nodal forces.
             int[] nT = input.LoadCases.Select(l => l.TemperatureLoads.Count).ToArray();
@@ -198,6 +200,75 @@ namespace Frame3ddn
 
             Frame3ddIO.AssembleLoads(nN, nE, nL, DoF, xyz, L, Le, N1, N2, Ax, Asy, Asz, Iy, Iz, E, G, p, d, gX, gY, gZ, shear, nF, nU, nW, FMech, eqFMech,
                 U, W, loadCases);
+
+            // Add internal concentrated point loads to eqFMech / FMech (frame3dd_io.c:1268-1340).
+            for (int lcIdx = 0; lcIdx < nL; lcIdx++)
+            {
+                int pIdx = 0;
+                foreach (InternalConcentratedLoad icl in input.LoadCases[lcIdx].InternalConcentratedLoads)
+                {
+                    int n = icl.ElementIdx;
+                    if (n < 0 || n >= nE)
+                        throw new Exception($"Internal concentrated load element {n + 1} out of range (LC {lcIdx + 1}).");
+                    double Px = icl.Load.X, Py = icl.Load.Y, Pz = icl.Load.Z;
+                    double a = icl.X;
+                    double Ln = L[n];
+                    double b = Ln - a;
+                    if (a < 0 || a > Ln || b < 0)
+                        throw new Exception($"Internal concentrated load location {a} out of range [0, {Ln}] (LC {lcIdx + 1}, element {n + 1}).");
+
+                    double Ksy, Ksz;
+                    if (shear)
+                    {
+                        Ksy = 12.0 * E[n] * Iz[n] / (G[n] * Asy[n] * Le[n] * Le[n]);
+                        Ksz = 12.0 * E[n] * Iy[n] / (G[n] * Asz[n] * Le[n] * Le[n]);
+                    }
+                    else
+                    {
+                        Ksy = Ksz = 0.0;
+                    }
+
+                    P[lcIdx, pIdx, 0] = n;
+                    P[lcIdx, pIdx, 1] = (float)Px;
+                    P[lcIdx, pIdx, 2] = (float)Py;
+                    P[lcIdx, pIdx, 3] = (float)Pz;
+                    P[lcIdx, pIdx, 4] = (float)a;
+                    pIdx++;
+
+                    // Local end forces from the upstream point-load distribution formulas.
+                    double Nx1 = Px * a / Ln;
+                    double Nx2 = Px * b / Ln;
+                    double Vy1 = (1.0 / (1.0 + Ksz)) * Py * b * b * (3.0 * a + b) / (Ln * Ln * Ln) + (Ksz / (1.0 + Ksz)) * Py * b / Ln;
+                    double Vy2 = (1.0 / (1.0 + Ksz)) * Py * a * a * (3.0 * b + a) / (Ln * Ln * Ln) + (Ksz / (1.0 + Ksz)) * Py * a / Ln;
+                    double Vz1 = (1.0 / (1.0 + Ksy)) * Pz * b * b * (3.0 * a + b) / (Ln * Ln * Ln) + (Ksy / (1.0 + Ksy)) * Pz * b / Ln;
+                    double Vz2 = (1.0 / (1.0 + Ksy)) * Pz * a * a * (3.0 * b + a) / (Ln * Ln * Ln) + (Ksy / (1.0 + Ksy)) * Pz * a / Ln;
+                    double Mx1 = 0.0, Mx2 = 0.0;
+                    double My1 = -(1.0 / (1.0 + Ksy)) * Pz * a * b * b / (Ln * Ln) - (Ksy / (1.0 + Ksy)) * Pz * a * b / (2.0 * Ln);
+                    double My2 =  (1.0 / (1.0 + Ksy)) * Pz * a * a * b / (Ln * Ln) + (Ksy / (1.0 + Ksy)) * Pz * a * b / (2.0 * Ln);
+                    double Mz1 =  (1.0 / (1.0 + Ksz)) * Py * a * b * b / (Ln * Ln) + (Ksz / (1.0 + Ksz)) * Py * a * b / (2.0 * Ln);
+                    double Mz2 = -(1.0 / (1.0 + Ksz)) * Py * a * a * b / (Ln * Ln) - (Ksz / (1.0 + Ksz)) * Py * a * b / (2.0 * Ln);
+
+                    double[] tCoord = Coordtrans.coordTrans(xyz, Ln, N1[n], N2[n], p[n]);
+                    double[] dEq = new double[12];
+                    dEq[0]  = Nx1 * tCoord[0] + Vy1 * tCoord[3] + Vz1 * tCoord[6];
+                    dEq[1]  = Nx1 * tCoord[1] + Vy1 * tCoord[4] + Vz1 * tCoord[7];
+                    dEq[2]  = Nx1 * tCoord[2] + Vy1 * tCoord[5] + Vz1 * tCoord[8];
+                    dEq[3]  = Mx1 * tCoord[0] + My1 * tCoord[3] + Mz1 * tCoord[6];
+                    dEq[4]  = Mx1 * tCoord[1] + My1 * tCoord[4] + Mz1 * tCoord[7];
+                    dEq[5]  = Mx1 * tCoord[2] + My1 * tCoord[5] + Mz1 * tCoord[8];
+                    dEq[6]  = Nx2 * tCoord[0] + Vy2 * tCoord[3] + Vz2 * tCoord[6];
+                    dEq[7]  = Nx2 * tCoord[1] + Vy2 * tCoord[4] + Vz2 * tCoord[7];
+                    dEq[8]  = Nx2 * tCoord[2] + Vy2 * tCoord[5] + Vz2 * tCoord[8];
+                    dEq[9]  = Mx2 * tCoord[0] + My2 * tCoord[3] + Mz2 * tCoord[6];
+                    dEq[10] = Mx2 * tCoord[1] + My2 * tCoord[4] + Mz2 * tCoord[7];
+                    dEq[11] = Mx2 * tCoord[2] + My2 * tCoord[5] + Mz2 * tCoord[8];
+
+                    for (int i = 0; i < 12; i++) eqFMech[lcIdx, n, i] += dEq[i];
+                    int n1Idx = N1[n], n2Idx = N2[n];
+                    for (int i = 0; i < 6;  i++) FMech[lcIdx, 6 * n1Idx + i]      += dEq[i];
+                    for (int i = 6; i < 12; i++) FMech[lcIdx, 6 * n2Idx - 6 + i]  += dEq[i];
+                }
+            }
 
             //ReadMassData()--Not implemented
             //ReadCondensationData()--Not implemented

@@ -76,12 +76,10 @@ namespace Frame3ddn.Parsers
                 }
 
                 int internalConcentratedLoadNum = int.Parse(noComentInput[currentLine++]);
-                if (internalConcentratedLoadNum > 0)
-                {
-                    throw new Exception("Internal concentrated load is not supported.");
-                }
+                List<InternalConcentratedLoad> internalConcentratedLoads = new List<InternalConcentratedLoad>();
                 for (int j = currentLine; currentLine < j + internalConcentratedLoadNum; currentLine++)
                 {
+                    internalConcentratedLoads.Add(InternalConcentratedLoad.Parse(noComentInput[currentLine]));
                 }
 
                 int temperatureLoadNum = int.Parse(noComentInput[currentLine++]);
@@ -98,48 +96,40 @@ namespace Frame3ddn.Parsers
                     prescribedDisplacements.Add(PrescribedDisplacement.Parse(noComentInput[currentLine]));
                 }
 
-                LoadCase loadCase = LoadCase.Parse(loadCaseGravityString, nodeLoads, uniformLoads, trapLoads, prescribedDisplacements, temperatureLoads);
+                LoadCase loadCase = LoadCase.Parse(loadCaseGravityString, nodeLoads, uniformLoads, trapLoads, prescribedDisplacements, temperatureLoads, internalConcentratedLoads);
                 loadCases.Add(loadCase);
             }
 
+            // Dynamic-analysis section: not used by the static solver, but consume the rows so
+            // parsing reaches end-of-file. Layout (frame3dd_io.c):
+            //   nM (#modes), method, mass-type, tolerance, shift, exaggerate    [nM>0 → 5 params]
+            //   nI (#nodes with extra inertia)   followed by nI rows
+            //   nX (#elements with extra mass)   followed by nX rows
+            //   nA (#modes to animate)           followed by 1 row of mode IDs (only if nA>0)
+            //   pan rate
+            //   nC (#condensed nodes)            followed by nC rows
+            // Any of these may be missing if the file ends early; ArgumentOutOfRangeException
+            // and FormatException are both treated as end-of-data.
             try
             {
-                if (int.Parse(noComentInput[currentLine]) > 0)
-                {
-                    throw new Exception("Dynamic analysis data is not supported.");
-                }
+                int nM = int.Parse(noComentInput[currentLine++]);
+                if (nM > 0) currentLine += 5;       // method, mass-type, tolerance, shift, exaggerate
 
-                currentLine += 6;
-                if (int.Parse(noComentInput[currentLine++]) > 0)
-                {
-                    throw new Exception("Extra node inertia data is not supported.");
-                }
+                int nI = int.Parse(noComentInput[currentLine++]);
+                currentLine += nI;                  // extra node inertia rows
 
-                if (int.Parse(noComentInput[currentLine++]) > 0)
-                {
-                    throw new Exception("Element with extra mass is not supported.");
-                }
+                int nX = int.Parse(noComentInput[currentLine++]);
+                currentLine += nX;                  // extra element mass rows
 
-                if (int.Parse(noComentInput[currentLine]) > 0)
-                {
-                    throw new Exception("Mode shape animation data is not supported.");
-                }
+                int nA = int.Parse(noComentInput[currentLine++]);
+                if (nA > 0) currentLine += 1;       // mode list line
+                currentLine += 1;                   // pan rate
 
-                currentLine += 3;
-                if (int.Parse(noComentInput[currentLine]) > 0)
-                {
-                    throw new Exception("Condensed node is not supported.");
-                }
+                int nC = int.Parse(noComentInput[currentLine++]);
+                currentLine += nC;                  // condensed-node rows
             }
-            catch (ArgumentOutOfRangeException)
-            {
-                //Incomplete data will be ignored
-            }
-            catch (Exception e)
-            {
-                Console.WriteLine("A");
-                throw e;
-            }
+            catch (ArgumentOutOfRangeException) { /* file ended early — ignore */ }
+            catch (FormatException)              { /* hit a non-numeric row — ignore */ }
 
             return new Input(title, nodes, frameElements, reactionInputs, loadCases, includeShearDeformation, includeGeometricStiffness,
                 exaggerateMeshDeformations, zoomScale, xAxisIncrementForInternalForces);

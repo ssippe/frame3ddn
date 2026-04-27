@@ -31,13 +31,18 @@ namespace Frame3ddn.Model
         /// Per-element thermal loads (local)
         /// </summary>
         public IReadOnlyList<TemperatureLoad> TemperatureLoads { get; }
+        /// <summary>
+        /// Concentrated point loads applied along the local x-axis of frame elements.
+        /// </summary>
+        public IReadOnlyList<InternalConcentratedLoad> InternalConcentratedLoads { get; }
 
         public LoadCase(Vec3Float gravity,
             IReadOnlyList<NodeLoad> nodeLoads,
             IReadOnlyList<UniformLoad> uniformLoads,
             IReadOnlyList<TrapLoad> trapLoads,
             IReadOnlyList<PrescribedDisplacement> prescribedDisplacements,
-            IReadOnlyList<TemperatureLoad> temperatureLoads = null)
+            IReadOnlyList<TemperatureLoad> temperatureLoads = null,
+            IReadOnlyList<InternalConcentratedLoad> internalConcentratedLoads = null)
         {
             Gravity = gravity;
             NodeLoads = nodeLoads;
@@ -45,9 +50,10 @@ namespace Frame3ddn.Model
             TrapLoads = trapLoads;
             PrescribedDisplacements = prescribedDisplacements;
             TemperatureLoads = temperatureLoads ?? new List<TemperatureLoad>();
+            InternalConcentratedLoads = internalConcentratedLoads ?? new List<InternalConcentratedLoad>();
         }
 
-        public static LoadCase Parse(string inputGravityString, List<NodeLoad> nodeLoads, List<UniformLoad> uniformLoads, List<TrapLoad> trapLoads, List<PrescribedDisplacement> prescribedDisplacements, List<TemperatureLoad> temperatureLoads = null)
+        public static LoadCase Parse(string inputGravityString, List<NodeLoad> nodeLoads, List<UniformLoad> uniformLoads, List<TrapLoad> trapLoads, List<PrescribedDisplacement> prescribedDisplacements, List<TemperatureLoad> temperatureLoads = null, List<InternalConcentratedLoad> internalConcentratedLoads = null)
         {
             string[] data = System.Text.RegularExpressions.Regex.Split(inputGravityString, @"\s{1,}");
             return new LoadCase(
@@ -56,7 +62,8 @@ namespace Frame3ddn.Model
                 uniformLoads,
                 trapLoads,
                 prescribedDisplacements,
-                temperatureLoads
+                temperatureLoads,
+                internalConcentratedLoads
             );
         }
 

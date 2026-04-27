@@ -20,6 +20,24 @@ namespace Frame3ddn.Test.Parsers
             Assert.True(input.LoadCases[0].UniformLoads[1].Load.Y + 1.1 < 0.0001);
         }
 
+        [Theory]
+        [InlineData("exA")]
+        [InlineData("exB")]
+        [InlineData("exC")]
+        [InlineData("exD")]
+        [InlineData("exE")]
+        [InlineData("exF")]
+        [InlineData("exG")]
+        [InlineData("exH")]
+        [InlineData("exI")]
+        [InlineData("exJ")]
+        public void UpstreamExampleParse(string fileName)
+        {
+            string inputPath = SolverTest.GetUpstreamPath("Input", fileName + ".csv");
+            using StreamReader sr = new StreamReader(inputPath);
+            CsvParser.Parse(sr);
+        }
+
     }
 }
 

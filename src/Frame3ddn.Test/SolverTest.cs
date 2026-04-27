@@ -1,5 +1,6 @@
 ﻿using Frame3ddn.Model;
 using Frame3ddn.Parsers;
+using Frame3ddn.Writers;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -74,23 +75,7 @@ namespace Frame3ddn.Test
             OutputAsserts.OutputAssertEqual(new Output("", reference), outputCalculated);
         }
 
-        [Theory]
-        [InlineData("exA")]
-        [InlineData("exB")]
-        [InlineData("exC")]
-        [InlineData("exD")]
-        [InlineData("exE")]
-        [InlineData("exF")]
-        [InlineData("exG")]
-        [InlineData("exH")]
-        [InlineData("exI")]
-        [InlineData("exJ")]
-        public void UpstreamExampleParse(string fileName)
-        {
-            string inputPath = GetUpstreamPath("Input", fileName + ".csv");
-            using StreamReader sr = new StreamReader(inputPath);
-            CsvParser.Parse(sr);
-        }
+
 
         [Theory]
         [InlineData("exA")]
@@ -114,6 +99,21 @@ namespace Frame3ddn.Test
             Output outputCalculated = solver.Solve(input);
 
             List<LoadCaseOutput> reference = OutParser.Parse(File.ReadAllText(referencePath));
+
+            // When debugging, drop expected/actual .out files into a per-run timestamp dir
+            // (TestResults/yyyyMMdd-HHmmss/SolverTest/) so they can be diffed by hand.
+            if (DebugSnapshot.Enabled)
+            {
+                string classDir = DebugSnapshot.GetClassDir(nameof(SolverTest));
+                string actualOutSection = OutWriter.OutputDataToString(outputCalculated.LoadCaseOutputs.ToList());
+                int outputStart = outputCalculated.TextOutput.IndexOf(actualOutSection, StringComparison.Ordinal);
+                string preamble = outputStart >= 0 ? outputCalculated.TextOutput.Substring(0, outputStart) : "";
+                DebugSnapshot.WriteText(classDir, fileName + ".expected.out",
+                    preamble + OutWriter.OutputDataToString(reference));
+                DebugSnapshot.WriteText(classDir, fileName + ".actual.out",
+                    preamble + actualOutSection);
+            }
+
             // The upstream-committed .out files are inconsistent w.r.t. the PEAK section
             // (exA/exD/exH/exJ omit it, others have it). Skip that section here — the test
             // is checking displacements, element end forces, and reactions, which are
@@ -168,7 +168,7 @@ namespace Frame3ddn.Test
             Assert.Contains("restrained coordinates", ex.Message);
         }
 
-        private static string GetUpstreamPath(params string[] segments)
+        public static string GetUpstreamPath(params string[] segments)
         {
             string workspaceDir = Directory.GetParent(Directory.GetParent(Directory.GetParent(Directory.GetCurrentDirectory().ToString()).ToString()).ToString()).ToString();
             string testDataPath = Directory.GetDirectories(workspaceDir, "TestData")[0];
