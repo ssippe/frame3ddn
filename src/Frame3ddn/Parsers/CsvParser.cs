@@ -11,13 +11,19 @@ namespace Frame3ddn.Parsers
     /// </summary>
     public static class CsvParser
     {
-        public static Input Parse(StreamReader sr)
+        public static Input Parse(StreamReader sr) => ParseLines(GetNoCommentInputCsv(sr));
+
+        /// <summary>
+        /// Shared parse body — once the input has been preprocessed to one-record-per-line
+        /// whitespace-delimited form, both <c>.csv</c> and <c>.3dd</c> inputs follow the same
+        /// section sequence.
+        /// </summary>
+        internal static Input ParseLines(List<string> noComentInput)
         {
             List<Node> nodes = new List<Node>();
             List<FrameElement> frameElements = new List<FrameElement>();
             List<ReactionInput> reactionInputs = new List<ReactionInput>();
             List<LoadCase> loadCases = new List<LoadCase>();
-            List<string> noComentInput = GetNoCommentInputCsv(sr);
             int currentLine = 0;
 
 

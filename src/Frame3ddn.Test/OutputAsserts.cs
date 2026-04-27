@@ -18,6 +18,14 @@ namespace Frame3ddn.Test
         public bool IgnoreFrameElementEndForces { get; set; }
         /// <summary>Skip the PeakFrameElementInternalForces section.</summary>
         public bool IgnorePeakForces { get; set; }
+        /// <summary>
+        /// Drop rows whose vector fields are entirely zero before comparing displacement and
+        /// reaction tables. Useful when the reference (e.g. <c>_out.CSV</c>) emits a row per
+        /// node — including unrestrained nodes with no displacement or reaction — while the
+        /// solver only emits non-trivial rows. The filter is applied to both sides so that
+        /// expected and actual still match row-for-row after filtering.
+        /// </summary>
+        public bool IgnoreZeroRows { get; set; }
     }
 
     /// <summary>
@@ -51,14 +59,28 @@ namespace Frame3ddn.Test
             if (!o.IgnorePeakForces)
                 AssertMinMaxForcesEqual(expected.PeakFrameElementInternalForces, actual.PeakFrameElementInternalForces, lc, o);
 
-            AssertCountEqual(expected.ReactionOutputs.Count, actual.ReactionOutputs.Count, $"LC{lc} ReactionOutputs");
-            for (int i = 0; i < expected.ReactionOutputs.Count; i++)
-                AssertEqual(expected.ReactionOutputs[i], actual.ReactionOutputs[i], $"LC{lc} reaction[{i}]", o);
+            List<ReactionOutput> expReactions = o.IgnoreZeroRows
+                ? expected.ReactionOutputs.Where(r => !IsZeroVec(r.F) || !IsZeroVec(r.M)).ToList()
+                : expected.ReactionOutputs.ToList();
+            List<ReactionOutput> actReactions = o.IgnoreZeroRows
+                ? actual.ReactionOutputs.Where(r => !IsZeroVec(r.F) || !IsZeroVec(r.M)).ToList()
+                : actual.ReactionOutputs.ToList();
+            AssertCountEqual(expReactions.Count, actReactions.Count, $"LC{lc} ReactionOutputs");
+            for (int i = 0; i < expReactions.Count; i++)
+                AssertEqual(expReactions[i], actReactions[i], $"LC{lc} reaction[{i}]", o);
 
-            AssertCountEqual(expected.NodeDisplacements.Count, actual.NodeDisplacements.Count, $"LC{lc} NodeDisplacements");
-            for (int i = 0; i < expected.NodeDisplacements.Count; i++)
-                AssertEqual(expected.NodeDisplacements[i], actual.NodeDisplacements[i], $"LC{lc} displacement[{i}]", o);
+            List<NodeDisplacement> expDisps = o.IgnoreZeroRows
+                ? expected.NodeDisplacements.Where(d => !IsZeroVec(d.Displacement) || !IsZeroVec(d.Rotation)).ToList()
+                : expected.NodeDisplacements.ToList();
+            List<NodeDisplacement> actDisps = o.IgnoreZeroRows
+                ? actual.NodeDisplacements.Where(d => !IsZeroVec(d.Displacement) || !IsZeroVec(d.Rotation)).ToList()
+                : actual.NodeDisplacements.ToList();
+            AssertCountEqual(expDisps.Count, actDisps.Count, $"LC{lc} NodeDisplacements");
+            for (int i = 0; i < expDisps.Count; i++)
+                AssertEqual(expDisps[i], actDisps[i], $"LC{lc} displacement[{i}]", o);
         }
+
+        private static bool IsZeroVec(Vec3 v) => v.X == 0.0 && v.Y == 0.0 && v.Z == 0.0;
 
         private static void AssertMinMaxForcesEqual(
             IEnumerable<PeakFrameElementInternalForce> expected,

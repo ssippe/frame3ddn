@@ -88,8 +88,21 @@ EXAMPLE LINES
             var Elmnt = Int32.Parse(splits[col++]) - 1;
             var Node = Int32.Parse(splits[col++]) - 1;
             string nxstring = splits[col++];
-            var nx = double.Parse(nxstring.Substring(0, nxstring.Length - 1)); //N
-            var nxType = GetNxType(nxstring);
+            // .out files annotate the axial force with a 't' or 'c' suffix (tension/compression);
+            // _out.CSV files don't. Strip it only if present.
+            char nxLast = nxstring[nxstring.Length - 1];
+            double nx;
+            string nxType;
+            if (nxLast == 't' || nxLast == 'c')
+            {
+                nx = double.Parse(nxstring.Substring(0, nxstring.Length - 1));
+                nxType = GetNxType(nxstring);
+            }
+            else
+            {
+                nx = double.Parse(nxstring);
+                nxType = "";
+            }
             var vy = double.Parse(splits[col++]); //N
             var vz = double.Parse(splits[col++]); //N
             var txx = double.Parse(splits[col++]); //Nmm -> Nm

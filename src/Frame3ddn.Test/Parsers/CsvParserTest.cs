@@ -33,11 +33,18 @@ namespace Frame3ddn.Test.Parsers
         [InlineData("exJ")]
         public void UpstreamExampleParse(string fileName)
         {
-            string inputPath = SolverTest.GetUpstreamPath("Input", fileName + ".csv");
+            string inputPath = GetExamplePath(fileName + ".csv");
             using StreamReader sr = new StreamReader(inputPath);
             CsvParser.Parse(sr);
         }
 
+        private static string GetExamplePath(string fileName)
+        {
+            string workspaceDir = Directory.GetParent(Directory.GetParent(Directory.GetParent(
+                Directory.GetCurrentDirectory().ToString()).ToString()).ToString()).ToString();
+            string testDataPath = Directory.GetDirectories(workspaceDir, "TestData")[0];
+            return Path.Combine(testDataPath, "frame3dd-examples", fileName);
+        }
     }
 }
 

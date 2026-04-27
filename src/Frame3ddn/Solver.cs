@@ -228,7 +228,9 @@ namespace Frame3ddn
                         Ksy = Ksz = 0.0;
                     }
 
-                    P[lcIdx, pIdx, 0] = n;
+                    // GetInternalForces expects the element id at P[n, 0] to be 1-based
+                    // (mirrors upstream's `(int)P[n][1] == m+1` check); store n+1.
+                    P[lcIdx, pIdx, 0] = n + 1;
                     P[lcIdx, pIdx, 1] = (float)Px;
                     P[lcIdx, pIdx, 2] = (float)Py;
                     P[lcIdx, pIdx, 3] = (float)Pz;
