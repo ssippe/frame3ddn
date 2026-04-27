@@ -8,19 +8,19 @@ namespace Frame3ddn.Parsers
 {
     /// <summary>
     /// Parses the upstream frame3dd <c>_out.CSV</c> result file format. Structurally similar
-    /// to the plain <c>.out</c> format that <see cref="OutParser"/> handles — same section
+    /// to the plain <c>.out</c> format that <see cref="OutOutputParser"/> handles — same section
     /// titles, same column order, same per-LC layout — but with comma separators and quoted
     /// section headers. We preprocess to <c>.out</c>-compatible form (strip <c>"</c>, replace
-    /// <c>,</c> with space) and delegate to <see cref="OutParser.Parse"/>.
+    /// <c>,</c> with space) and delegate to <see cref="OutOutputParser.Parse"/>.
     /// </summary>
-    public static class OutCsvParser
+    public static class CsvOutputParser
     {
         public static List<LoadCaseOutput> Parse(string text)
         {
             // Some upstream _out.CSV files duplicate the PEAK section per load case (exC,
             // exE, exF, exG, exI all contain the same PEAK rows twice for a single LC).
             // De-duplicate by (ElementIdx, IsMin) so we get one row per element-extremum.
-            return OutParser.Parse(NormalizeCsv(text))
+            return OutOutputParser.Parse(NormalizeCsv(text))
                 .Select(lc => new LoadCaseOutput(
                     lc.RmsRelativeEquilibriumError,
                     lc.NodeDisplacements,

@@ -9,7 +9,7 @@ namespace Frame3ddn.Parsers
     /// Parses the upstream frame3dd CSV input format into <see cref="Input"/>.
     /// The CSV layout matches the <c>examples/exX.csv</c> files in the upstream repo.
     /// </summary>
-    public static class CsvParser
+    public static class CsvInputParser
     {
         public static Input Parse(StreamReader sr) => ParseLines(GetNoCommentInputCsv(sr));
 
@@ -135,7 +135,7 @@ namespace Frame3ddn.Parsers
                 currentLine += nC;                  // condensed-node rows
             }
             catch (ArgumentOutOfRangeException) { /* file ended early — ignore */ }
-            catch (FormatException)              { /* hit a non-numeric row — ignore */ }
+            catch (FormatException) { /* hit a non-numeric row — ignore */ }
 
             return new Input(title, nodes, frameElements, reactionInputs, loadCases, includeShearDeformation, includeGeometricStiffness,
                 exaggerateMeshDeformations, zoomScale, xAxisIncrementForInternalForces);

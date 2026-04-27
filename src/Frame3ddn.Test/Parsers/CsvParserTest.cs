@@ -22,7 +22,7 @@ namespace Frame3ddn.Test.Parsers
         {
             string inputPath = GetExamplePath(fileName + ".csv");
             using StreamReader sr = new StreamReader(inputPath);
-            CsvParser.Parse(sr);
+            CsvInputParser.Parse(sr);
         }
 
         private static string GetExamplePath(string fileName)

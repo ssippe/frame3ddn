@@ -11,7 +11,7 @@ namespace Frame3ddn.Test
 {
     /// <summary>
     /// Solves each .arc fixture and compares the result against the corresponding
-    /// Microstran .p1 reference report (parsed with <see cref="P1Parser"/>) using
+    /// Microstran .p1 reference report (parsed with <see cref="P1OutputParser"/>) using
     /// <see cref="OutputAsserts.OutputAssertEqual"/>.
     /// </summary>
     public class MircostranArcTests
@@ -24,20 +24,20 @@ namespace Frame3ddn.Test
         // there is flexural shortening which needs large-displacement analysis we don't
         // implement, hence the looser tolerance.
         [Theory]
-        [InlineData("lateral-column",     0.30, false)]
+        [InlineData("lateral-column", 0.30, false)]
         [InlineData("lateral-column-rev", 0.05, false)]
-        [InlineData("lateral-column-x",   0.05, false)]
-        [InlineData("lateral-column-y",   0.05, false)]
+        [InlineData("lateral-column-x", 0.05, false)]
+        [InlineData("lateral-column-y", 0.05, false)]
         public void OutputMatchesMicrostranP1Reference(string name, double absoluteTolerance, bool geometricStiffness)
         {
             using StreamReader sr = new StreamReader(GetArcPath(name));
-            Input input = ArcParser.Parse(sr, includeGeometricStiffness: geometricStiffness);
+            Input input = ArcInputParser.Parse(sr, includeGeometricStiffness: geometricStiffness);
             Solver solver = new Solver();
             Output actual = solver.Solve(input);
 
             Dictionary<int, int> nodeIdToIdx = ReadArcNodeOrder(GetArcPath(name));
             Output expected = BuildExpectedFromP1(
-                P1Parser.Parse(File.ReadAllText(GetP1Path(name))),
+                P1OutputParser.Parse(File.ReadAllText(GetP1Path(name))),
                 nodeIdToIdx);
 
             // Write both sides to TestResults/ so they can be diffed by hand. The solver's

@@ -13,10 +13,10 @@ namespace Frame3ddn.Parsers
     /// <c>== N O D E   D I S P L A C E M E N T S ==</c> and
     /// <c>== S U P P O R T   R E A C T I O N S ==</c>; other sections (member forces,
     /// loading summaries, etc.) are ignored.
-    /// Note: this is distinct from <see cref="OutParser"/>, which parses the upstream
+    /// Note: this is distinct from <see cref="OutOutputParser"/>, which parses the upstream
     /// frame3dd C program's <c>.out</c> output.
     /// </summary>
-    public static class P1Parser
+    public static class P1OutputParser
     {
         public static List<P1LoadCase> Parse(string text)
         {

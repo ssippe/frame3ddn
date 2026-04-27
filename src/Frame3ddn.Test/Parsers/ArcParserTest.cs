@@ -20,7 +20,7 @@ namespace Frame3ddn.Test.Parsers
         public void ParsesUpstreamArcFixture(string name)
         {
             using StreamReader sr = new StreamReader(GetArcPath(name));
-            Input input = ArcParser.Parse(sr);
+            Input input = ArcInputParser.Parse(sr);
 
             Assert.NotNull(input.Title);
             Assert.NotEmpty(input.Nodes);
@@ -32,7 +32,7 @@ namespace Frame3ddn.Test.Parsers
         public void ParsesLateralColumn()
         {
             using StreamReader sr = new StreamReader(GetArcPath("lateral-column"));
-            Input input = ArcParser.Parse(sr);
+            Input input = ArcInputParser.Parse(sr);
 
             Assert.Equal(2, input.Nodes.Count);
             Assert.Equal(0f, input.Nodes[0].Position.X);
@@ -78,7 +78,7 @@ namespace Frame3ddn.Test.Parsers
             // truss.arc nodes 1..12 are dense, but member IDs are sparse (101, 102, 201, ...).
             // Verify the parser maps via .arc IDs correctly.
             using StreamReader sr = new StreamReader(GetArcPath("truss"));
-            Input input = ArcParser.Parse(sr);
+            Input input = ArcInputParser.Parse(sr);
 
             Assert.Equal(12, input.Nodes.Count);
             Assert.Equal(22, input.FrameElements.Count);
@@ -90,7 +90,7 @@ namespace Frame3ddn.Test.Parsers
         public void HandlesGravityLoadCase()
         {
             using StreamReader sr = new StreamReader(GetArcPath("testcase3"));
-            Input input = ArcParser.Parse(sr);
+            Input input = ArcInputParser.Parse(sr);
 
             // testcase3 has CASE 1 Gravity, CASE 2 Nodal load, CASE 3 COMB (combination, parsed as empty).
             Assert.Equal(3, input.LoadCases.Count);
@@ -117,7 +117,7 @@ namespace Frame3ddn.Test.Parsers
         public void SolvesArcFixture(string name)
         {
             using StreamReader sr = new StreamReader(GetArcPath(name));
-            Input input = ArcParser.Parse(sr);
+            Input input = ArcInputParser.Parse(sr);
 
             Solver solver = new Solver();
             Output output = solver.Solve(input);
@@ -153,7 +153,7 @@ namespace Frame3ddn.Test.Parsers
             // For statically determinate cantilevers, ΣF_react = -ΣF_applied (Newton's 3rd law).
             // Applied loads come from the parsed .arc itself rather than being hard-coded.
             using StreamReader sr = new StreamReader(GetArcPath(name));
-            Input input = ArcParser.Parse(sr);
+            Input input = ArcInputParser.Parse(sr);
 
             Solver solver = new Solver();
             Output output = solver.Solve(input);
@@ -177,7 +177,7 @@ namespace Frame3ddn.Test.Parsers
         {
             // Smoke test: the parsed Input is solver-compatible end-to-end.
             using StreamReader sr = new StreamReader(GetArcPath("lateral-column"));
-            Input input = ArcParser.Parse(sr);
+            Input input = ArcInputParser.Parse(sr);
 
             Solver solver = new Solver();
             Output output = solver.Solve(input);

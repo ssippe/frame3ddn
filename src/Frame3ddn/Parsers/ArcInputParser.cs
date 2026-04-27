@@ -12,7 +12,7 @@ namespace Frame3ddn.Parsers
     /// upstream-frame3dd/src/microstran/FORMAT.txt and the test fixtures in
     /// upstream-frame3dd/test (lateral-column.arc, truss.arc, etc.).
     /// </summary>
-    public static class ArcParser
+    public static class ArcInputParser
     {
         /// <summary>
         /// Parse a Microstran .arc file. Analysis flags (<paramref name="includeShearDeformation"/>,

@@ -31,8 +31,8 @@ namespace Frame3ddn.Test
         public void Frame3ddExamplesCsv(string fileName)
         {
             using StreamReader sr = new StreamReader(GetFrame3ddExamplePath(fileName + ".csv"));
-            Input input = CsvParser.Parse(sr);
-            List<LoadCaseOutput> reference = OutCsvParser.Parse(
+            Input input = CsvInputParser.Parse(sr);
+            List<LoadCaseOutput> reference = CsvOutputParser.Parse(
                 File.ReadAllText(GetFrame3ddExamplePath(fileName + "_out.CSV")));
 
             // _out.CSV emits a row per node for both the displacement and reaction tables,
@@ -54,8 +54,8 @@ namespace Frame3ddn.Test
         public void Frame3ddExamples3dd(string fileName)
         {
             using StreamReader sr = new StreamReader(GetFrame3ddExamplePath(fileName + ".3dd"));
-            Input input = ThreeDdParser.Parse(sr);
-            List<LoadCaseOutput> reference = OutParser.Parse(
+            Input input = ThreeDdInputParser.Parse(sr);
+            List<LoadCaseOutput> reference = OutOutputParser.Parse(
                 File.ReadAllText(GetFrame3ddExamplePath(fileName + ".out")));
 
             CompareSolveAgainstReference(input, reference, fileName + ".3dd");
@@ -76,8 +76,8 @@ namespace Frame3ddn.Test
             // binary on those modified inputs and may carry more load cases than the (trimmed)
             // input now produces — clip to what we ran.
             using StreamReader sr = new StreamReader(GetTestCases2018Path(fileName + ".csv"));
-            Input input = CsvParser.Parse(sr);
-            List<LoadCaseOutput> reference = OutParser.Parse(
+            Input input = CsvInputParser.Parse(sr);
+            List<LoadCaseOutput> reference = OutOutputParser.Parse(
                 File.ReadAllText(GetTestCases2018Path(fileName + ".out")));
 
             CompareSolveAgainstReference(input, reference, fileName + ".2018", clipReference: true);

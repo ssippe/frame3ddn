@@ -11,10 +11,10 @@ namespace Frame3ddn.Parsers
     /// format <see cref="Writers.OutWriter.OutputDataToString"/> emits — typically <c>.out</c> or
     /// <c>.txt</c> files) into a list of <see cref="LoadCaseOutput"/>. Used by tests to
     /// compare solver runs against reference output files.
-    /// Note: this is distinct from <see cref="P1Parser"/>, which parses Microstran <c>.p1</c>
+    /// Note: this is distinct from <see cref="P1OutputParser"/>, which parses Microstran <c>.p1</c>
     /// reports.
     /// </summary>
-    public static class OutParser
+    public static class OutOutputParser
     {
         public static List<LoadCaseOutput> Parse(string text)
         {

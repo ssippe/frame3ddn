@@ -9,11 +9,11 @@ namespace Frame3ddn.Parsers
     /// Parses the legacy whitespace-delimited frame3dd input format (typically <c>.3dd</c>
     /// files). Records carry the same data as the CSV format — only the field separator
     /// differs (whitespace instead of commas) — so the per-record parsing reuses
-    /// <see cref="CsvParser.ParseLines"/>.
+    /// <see cref="CsvInputParser.ParseLines"/>.
     /// </summary>
-    public static class ThreeDdParser
+    public static class ThreeDdInputParser
     {
-        public static Input Parse(StreamReader sr) => CsvParser.ParseLines(GetNoCommentInput(sr));
+        public static Input Parse(StreamReader sr) => CsvInputParser.ParseLines(GetNoCommentInput(sr));
 
         private static List<string> GetNoCommentInput(StreamReader sr)
         {
