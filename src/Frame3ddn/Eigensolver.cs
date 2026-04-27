@@ -211,8 +211,13 @@ namespace Frame3ddn
 
                 LdlDcmp(Kw, n, dDiag, v, dCol, reduce: false, solve: true);
 
+                // Iterative refinement of the solve. Capped at 30 iterations — for an
+                // ill-conditioned K each refinement only halves the residual, and the
+                // unbounded loop in upstream relies on natural convergence which can take
+                // hundreds of iterations on larger systems and dominate the runtime.
                 double rms = 1.0;
-                while (LdlMprove(Kw, n, dDiag, v, dCol, ref rms)) { }
+                for (int it = 0; it < 30; it++)
+                    if (!LdlMprove(Kw, n, dDiag, v, dCol, ref rms)) break;
 
                 for (int i = 0; i < n; i++) dynMatrix[i, j] = dCol[i];
             }
@@ -265,6 +270,7 @@ namespace Frame3ddn
 
                 double rqOld;
                 int modeIter = 0;
+                bool converged;
                 do
                 {
                     // v = D u
@@ -290,12 +296,22 @@ namespace Frame3ddn
                     iter++;
                     modeIter++;
 
-                    if (modeIter > 1000)
-                        throw new InvalidOperationException(
-                            $"Stodola: iteration limit exceeded for mode {k + 1} " +
-                            $"(rel. error = {Math.Abs(rq - rqOld) / rq:e3} > {tolerance:e3})");
+                    converged = Math.Abs(rq - rqOld) / rq <= tolerance;
+                    if (!converged && modeIter > 1000)
+                    {
+                        // Mode didn't converge to the requested tolerance — use the current
+                        // best estimate and continue with subsequent modes. Upstream aborts
+                        // the whole run; we keep the partial results so the caller still gets
+                        // the converged lower modes (which the caller typically asks for more
+                        // of than it actually needs, expecting some of the higher computed
+                        // modes to be loose).
+                        Console.WriteLine(
+                            $"  warning: Stodola mode {k + 1} did not converge in {modeIter} iterations " +
+                            $"(rel. error = {Math.Abs(rq - rqOld) / rq:e3} > {tolerance:e3}) — using current estimate");
+                        break;
+                    }
                 }
-                while (Math.Abs(rq - rqOld) / rq > tolerance);
+                while (!converged);
 
                 for (int i = 0; i < n; i++) V[i, k] = v[i];
                 eigenvalues[k] = rq > shift ? rq - shift : shift - rq;

@@ -456,10 +456,120 @@ namespace Frame3ddn
                 //...
             }
 
+            List<ModalResult> modalResults = ComputeModalAnalysis(
+                input.DynamicAnalysis, DoF, nN, nE, xyz, rj, L, Le, N1, N2,
+                Ax, Asy, Asz, Jx, Iy, Iz, E, G, p, d, r, shear);
+
             var outText = outputText1 + OutWriter.OutputDataToString(loadCaseOutputs);
 
-            Output output = new Output(outText, loadCaseOutputs);
+            Output output = new Output(outText, loadCaseOutputs, modalResults);
             return output;
+        }
+
+        /// <summary>
+        /// Modal-analysis pipeline: assemble M, mask restrained DoFs in K and M (matching
+        /// upstream main.c lines 657-670), call Stodola, convert eigenvalues to Hz. Builds
+        /// a fresh linear K (no geometric stiffness contribution) for the modal problem so
+        /// that geometric corrections from the last static load case don't leak in.
+        /// </summary>
+        private static List<ModalResult> ComputeModalAnalysis(
+            DynamicAnalysisInput dyn,
+            int DoF, int nN, int nE,
+            List<Vec3> xyz, List<float> rj, List<double> L, List<double> Le,
+            List<int> N1, List<int> N2,
+            List<float> Ax, List<float> Asy, List<float> Asz,
+            List<float> Jx, List<float> Iy, List<float> Iz,
+            List<float> E, List<float> G, List<float> p,
+            List<float> density, float[] r, bool shear)
+        {
+            if (dyn.ModesCount < 1) return new List<ModalResult>();
+
+            int nM = dyn.ModesCount;
+            float[] rjArr = rj.ToArray();
+
+            // Build per-node and per-element extra-mass arrays from the parsed dynamic input.
+            List<float> NMs = new List<float>(new float[nN]);
+            List<float> NMx = new List<float>(new float[nN]);
+            List<float> NMy = new List<float>(new float[nN]);
+            List<float> NMz = new List<float>(new float[nN]);
+            foreach (NodeInertia ni in dyn.ExtraNodeInertia)
+            {
+                NMs[ni.NodeIdx] = (float)ni.Mass;
+                NMx[ni.NodeIdx] = (float)ni.Ixx;
+                NMy[ni.NodeIdx] = (float)ni.Iyy;
+                NMz[ni.NodeIdx] = (float)ni.Izz;
+            }
+            List<float> EMs = new List<float>(new float[nE]);
+            foreach (ElementMass em in dyn.ExtraElementMass)
+                EMs[em.ElementIdx] = (float)em.Mass;
+
+            bool lump = dyn.MassType == 1;
+            double[,] M = Frame3dd.AssembleM(
+                DoF, nN, nE, xyz, rjArr, L, N1, N2,
+                Ax, Jx, Iy, Iz, p, density, EMs, NMs, NMx, NMy, NMz, lump);
+
+            // Linear K (geom=false): zeroed Q so the geometric-stiffness branch isn't reached.
+            double[,] zeroQ = new double[nE, 12];
+            double[,] Km = Frame3dd.AssembleK(
+                DoF, nE, xyz, rjArr, L, Le, N1, N2,
+                Ax, Asy, Asz, Jx, Iy, Iz, E, G, p, shear, geom: false, zeroQ);
+
+            // Restrained-DoF mask: huge K diagonal pushes those modes well above the real ones.
+            double traceK = 0.0, traceM = 0.0;
+            for (int i = 0; i < DoF; i++)
+            {
+                if (r[i] != 1)
+                {
+                    traceK += Km[i, i];
+                    traceM += M[i, i];
+                }
+            }
+            for (int i = 0; i < DoF; i++)
+            {
+                if (r[i] == 1)
+                {
+                    Km[i, i] = traceK * 1.0e4;
+                    M[i, i] = traceM;
+                    for (int j = i + 1; j < DoF; j++)
+                    {
+                        Km[j, i] = Km[i, j] = 0.0;
+                        M[j, i] = M[i, j] = 0.0;
+                    }
+                }
+            }
+
+            // Compute extra modes for convergence robustness — Bathe's heuristic.
+            int nMCalc = (nM + 8) < (2 * nM) ? nM + 8 : 2 * nM;
+            if (nMCalc > DoF) nMCalc = DoF;
+
+            double tol = dyn.Tolerance > 0 ? dyn.Tolerance : 1e-9;
+            double[] eigs;
+            double[,] V;
+            try
+            {
+                (eigs, V, _) = Eigensolver.Stodola(Km, M, DoF, nMCalc, tol, dyn.Shift);
+            }
+            catch (InvalidOperationException ex)
+            {
+                // Stodola's mode-by-mode inverse iteration with Gram–Schmidt purging can fail
+                // to converge for the higher requested modes when the seeding heuristic is
+                // weak — upstream aborts the whole run; we degrade gracefully and skip modal
+                // results so the static-solve output is still returned.
+                Console.WriteLine($"  warning: modal analysis did not converge — {ex.Message}");
+                return new List<ModalResult>();
+            }
+
+            int kept = nM < nMCalc ? nM : nMCalc;
+            List<ModalResult> results = new List<ModalResult>(kept);
+            for (int k = 0; k < kept; k++)
+            {
+                double omegaSq = eigs[k];
+                double f = omegaSq > 0 ? Math.Sqrt(omegaSq) / (2.0 * Math.PI) : 0.0;
+                double[] shape = new double[DoF];
+                for (int i = 0; i < DoF; i++) shape[i] = V[i, k];
+                results.Add(new ModalResult(k, f, omegaSq, shape));
+            }
+            return results;
         }
 
 
