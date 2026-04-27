@@ -62,17 +62,13 @@ namespace Frame3ddn.Test.Parsers
 
         // Cross-validation: solve through C# (Subspace iteration, the upstream default for
         // every shipped example) and compare the lowest mode frequency to upstream's
-        // reported value within a 15% band — generous enough to absorb the small uniform
-        // offset we currently see on lower-frequency modes (likely a subtle K/M assembly
-        // difference vs upstream that is most visible on the softest modes; higher modes
-        // typically match within 1%).
+        // reported value within a 1% band. Modal now uses the static loop's converged K,
+        // matching upstream's main.c — this carries geometric-stiffness softening for
+        // gravity-loaded structures (geom=true on every example except exD, exJ).
         //
         // Excluded:
         //   • exD, exJ — unrestrained structures with rigid-body modes near 0 Hz; relative
         //     comparison is meaningless when both values are at the numerical noise floor.
-        //   • exI — Subspace's seeding heuristic on the symmetric triangular tower converges
-        //     to a higher mode than upstream's lowest. Both Stodola and Subspace miss it,
-        //     suggesting a structural difference in K/M assembly worth a deeper dig.
         [Theory]
         [InlineData("exB")]
         [InlineData("exC")]
@@ -80,6 +76,7 @@ namespace Frame3ddn.Test.Parsers
         [InlineData("exF")]
         [InlineData("exG")]
         [InlineData("exH")]
+        [InlineData("exI")]
         public void Frame3ddExamples_LowestModeMatchesUpstream(string fileName)
         {
             string upstreamText = File.ReadAllText(GetExamplePath(fileName + ".out"));
@@ -98,8 +95,8 @@ namespace Frame3ddn.Test.Parsers
                 double relErr = System.Math.Abs(csharpLowestHz - upstreamLowestHz) / upstreamLowestHz;
                 string csharpAll = string.Join(", ", output.ModalResults.Select(m => m.FrequencyHz.ToString("f4")));
                 string upstreamAll = string.Join(", ", upstreamModes.Select(m => m.FrequencyHz.ToString("f4")));
-                Assert.True(relErr < 0.15,
-                    $"{fileName}: C#={csharpAll} Hz | upstream={upstreamAll} Hz | rel.err={relErr:p2} (allowed 15%)");
+                Assert.True(relErr < 0.01,
+                    $"{fileName}: C#={csharpAll} Hz | upstream={upstreamAll} Hz | rel.err={relErr:p2} (allowed 1%)");
             }
         }
 

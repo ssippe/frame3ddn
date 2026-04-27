@@ -456,9 +456,13 @@ namespace Frame3ddn
                 //...
             }
 
+            // Pass the static-loop's converged K (which carries geometric-stiffness
+            // contributions from the final load case when geom=true) into modal so the
+            // eigensolver sees the same K upstream uses. With geom=false the K is just
+            // the linear elastic K — same in both cases.
             List<ModalResult> modalResults = ComputeModalAnalysis(
-                input.DynamicAnalysis, DoF, nN, nE, xyz, rj, L, Le, N1, N2,
-                Ax, Asy, Asz, Jx, Iy, Iz, E, G, p, d, r, shear);
+                input.DynamicAnalysis, DoF, nN, nE, xyz, rj, L, N1, N2,
+                Ax, Jx, Iy, Iz, p, d, r, K);
 
             double modalTol = input.DynamicAnalysis.Tolerance > 0 ? input.DynamicAnalysis.Tolerance : 1e-9;
             var outText = outputText1
@@ -471,19 +475,21 @@ namespace Frame3ddn
 
         /// <summary>
         /// Modal-analysis pipeline: assemble M, mask restrained DoFs in K and M (matching
-        /// upstream main.c lines 657-670), call Stodola, convert eigenvalues to Hz. Builds
-        /// a fresh linear K (no geometric stiffness contribution) for the modal problem so
-        /// that geometric corrections from the last static load case don't leak in.
+        /// upstream main.c lines 657-670), call Stodola/Subspace, convert eigenvalues to Hz.
+        /// <paramref name="staticK"/> is the converged stiffness from the static load-case
+        /// loop — for <c>geom=true</c> inputs this carries the axial-force-induced
+        /// geometric-stiffness contribution that softens columns in compression and shifts
+        /// modal frequencies downward. Upstream's <c>main.c</c> passes whatever K was last
+        /// assembled into <c>subspace()</c>; matching that gives 5–50% lower frequencies on
+        /// gravity-loaded towers and frames.
         /// </summary>
         private static List<ModalResult> ComputeModalAnalysis(
             DynamicAnalysisInput dyn,
             int DoF, int nN, int nE,
-            List<Vec3> xyz, List<float> rj, List<double> L, List<double> Le,
+            List<Vec3> xyz, List<float> rj, List<double> L,
             List<int> N1, List<int> N2,
-            List<float> Ax, List<float> Asy, List<float> Asz,
-            List<float> Jx, List<float> Iy, List<float> Iz,
-            List<float> E, List<float> G, List<float> p,
-            List<float> density, float[] r, bool shear)
+            List<float> Ax, List<float> Jx, List<float> Iy, List<float> Iz, List<float> p,
+            List<float> density, float[] r, double[,] staticK)
         {
             if (dyn.ModesCount < 1) return new List<ModalResult>();
 
@@ -511,11 +517,12 @@ namespace Frame3ddn
                 DoF, nN, nE, xyz, rjArr, L, N1, N2,
                 Ax, Jx, Iy, Iz, p, density, EMs, NMs, NMx, NMy, NMz, lump);
 
-            // Linear K (geom=false): zeroed Q so the geometric-stiffness branch isn't reached.
-            double[,] zeroQ = new double[nE, 12];
-            double[,] Km = Frame3dd.AssembleK(
-                DoF, nE, xyz, rjArr, L, Le, N1, N2,
-                Ax, Asy, Asz, Jx, Iy, Iz, E, G, p, shear, geom: false, zeroQ);
+            // Copy the static-loop K so the masking we apply below doesn't leak back into
+            // the caller's matrix.
+            double[,] Km = new double[DoF, DoF];
+            for (int i = 0; i < DoF; i++)
+                for (int j = 0; j < DoF; j++)
+                    Km[i, j] = staticK[i, j];
 
             // Restrained-DoF mask: huge K diagonal pushes those modes well above the real ones.
             double traceK = 0.0, traceM = 0.0;
