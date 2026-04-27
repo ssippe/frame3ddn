@@ -38,7 +38,7 @@ namespace Frame3ddn
             {
                 for (int n = 0; n < nE; n++)
                 {
-                    double[] t = Coordtrans.coordTrans(xyz, L[n], N1[n], N2[n], p[n]);
+                    double[] t = CoordinateTransform.CoordTrans(xyz, L[n], N1[n], N2[n], p[n]);
 
                     eqFMech[lc, n, 0] = d[n] * Ax[n] * L[n] * gX[lc] / 2.0;
                     eqFMech[lc, n, 1] = d[n] * Ax[n] * L[n] * gY[lc] / 2.0;
@@ -104,7 +104,7 @@ namespace Frame3ddn
                     Mz1 = U[lc, i, 2] * Le[n] * Le[n] / 12.0;
                     Mz2 = -Mz1;
 
-                    double[] t = Coordtrans.coordTrans(xyz, L[n], N1[n], N2[n], p[n]); //
+                    double[] t = CoordinateTransform.CoordTrans(xyz, L[n], N1[n], N2[n], p[n]); //
 
                     eqFMech[lc, n, 0] += (Nx1 * t[0] + Vy1 * t[3] + Vz1 * t[6]);
                     eqFMech[lc, n, 1] += (Nx1 * t[1] + Vy1 * t[4] + Vz1 * t[7]);
@@ -268,7 +268,7 @@ namespace Frame3ddn
 
                     n1 = N1[n]; n2 = N2[n];
 
-                    double[] t = Coordtrans.coordTrans(xyz, Ln, n1, n2, p[n]);
+                    double[] t = CoordinateTransform.CoordTrans(xyz, Ln, n1, n2, p[n]);
 
                     /* {F} = [T]'{Q} */
                     eqFMech[lc, n, 0] += (Nx1 * t[0] + Vy1 * t[3] + Vz1 * t[6]);
@@ -514,7 +514,7 @@ namespace Frame3ddn
                 x[nx] = L[m];
                 dxnx = x[nx] - x[nx - 1];
 
-                double[] t = Coordtrans.coordTrans(xyz, L[m], n1, n2, p[m]);
+                double[] t = CoordinateTransform.CoordTrans(xyz, L[m], n1, n2, p[m]);
 
                 wxg = d[m] * Ax[m] * (t[0] * gX + t[1] * gY + t[2] * gZ);
                 wyg = d[m] * Ax[m] * (t[3] * gX + t[4] * gY + t[5] * gZ);

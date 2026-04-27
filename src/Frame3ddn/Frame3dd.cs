@@ -1,7 +1,6 @@
-﻿using System;
+﻿using Frame3ddn.Model;
+using System;
 using System.Collections.Generic;
-using System.Text;
-using Frame3ddn.Model;
 
 namespace Frame3ddn
 {
@@ -18,7 +17,7 @@ namespace Frame3ddn
             double Ksy, Ksz;       /* shear deformatn coefficients	*/
             int i, j;
 
-            double[] t = Coordtrans.coordTrans(xyz, L, n1, n2, p);
+            double[] t = CoordinateTransform.CoordTrans(xyz, L, n1, n2, p);
 
             for (i = 0; i < 12; i++)
                 for (j = 0; j < 12; j++)
@@ -56,7 +55,7 @@ namespace Frame3ddn
             k[10, 4] = k[4, 10] = (2.0 - Ksz) * E * Iy / (Le * (1.0 + Ksz));
             k[11, 5] = k[5, 11] = (2.0 - Ksy) * E * Iz / (Le * (1.0 + Ksy));
 
-            k = Coordtrans.Atma(t, k, r[n1], r[n2]);
+            k = CoordinateTransform.Atma(t, k, r[n1], r[n2]);
 
             for (i = 0; i < 12; i++)
             {
@@ -96,7 +95,7 @@ namespace Frame3ddn
             double E, double G, float p, double T,
             bool shear)
         {
-            double[] t = Coordtrans.coordTrans(xyz, L, n1, n2, p);
+            double[] t = CoordinateTransform.CoordTrans(xyz, L, n1, n2, p);
             double[,] kg = new double[12, 12];
             double Ksy, Ksz, Dsy, Dsz;
 
@@ -136,7 +135,7 @@ namespace Frame3ddn
             kg[10, 4] = kg[4, 10] = -T * L * (1.0 / 30.0 + Ksz / 6.0 + Ksz * Ksz / 12.0) / Dsz;
             kg[11, 5] = kg[5, 11] = -T * L * (1.0 / 30.0 + Ksy / 6.0 + Ksy * Ksy / 12.0) / Dsy;
 
-            kg = Coordtrans.Atma(t, kg, r[n1], r[n2]);
+            kg = CoordinateTransform.Atma(t, kg, r[n1], r[n2]);
 
             // Enforce symmetry (mirrors upstream).
             for (int i = 0; i < 12; i++)
@@ -165,8 +164,8 @@ namespace Frame3ddn
             int ii, jj, ll;
 
             for (int i = 0; i < DoF; i++)
-            for (int j = 0; j < DoF; j++)
-                K[i, j] = 0.0;
+                for (int j = 0; j < DoF; j++)
+                    K[i, j] = 0.0;
 
             double[,] k = new double[12, 12];
             int[,] ind = new int[12, nE];
@@ -288,7 +287,7 @@ namespace Frame3ddn
             double f1 = 0, f2 = 0, f3 = 0, f4 = 0, f5 = 0, f6 = 0,
                 f7 = 0, f8 = 0, f9 = 0, f10 = 0, f11 = 0, f12 = 0;
 
-            double[] t = Coordtrans.coordTrans(xyz, L, n1, n2, p);
+            double[] t = CoordinateTransform.CoordTrans(xyz, L, n1, n2, p);
 
             n1 = 6 * n1; n2 = 6 * n2;
 

@@ -48,7 +48,7 @@ namespace Frame3ddn
             int nE = input.FrameElements.Count;
 
             List<double> L = input.FrameElements.Select(f =>
-                    Coordtrans.CalculateSQDistance(input.Nodes[f.NodeIdx1].Position, input.Nodes[f.NodeIdx2].Position))
+                        CoordinateTransform.CalculateSQDistance(input.Nodes[f.NodeIdx1].Position, input.Nodes[f.NodeIdx2].Position))
                 .ToList();
 
             List<double> Le = new List<double>();
@@ -147,17 +147,17 @@ namespace Frame3ddn
                     double Mz2 = -Mz1;
 
                     // Globalize via the same coord transform used for elastic / geometric K.
-                    double[] t = Coordtrans.coordTrans(xyz, L[n], N1[n], N2[n], p[n]);
-                    eqFTemp[lcIdx, n,  0] += Nx1 * t[0];
-                    eqFTemp[lcIdx, n,  1] += Nx1 * t[1];
-                    eqFTemp[lcIdx, n,  2] += Nx1 * t[2];
-                    eqFTemp[lcIdx, n,  3] += My1 * t[3] + Mz1 * t[6];
-                    eqFTemp[lcIdx, n,  4] += My1 * t[4] + Mz1 * t[7];
-                    eqFTemp[lcIdx, n,  5] += My1 * t[5] + Mz1 * t[8];
-                    eqFTemp[lcIdx, n,  6] += Nx2 * t[0];
-                    eqFTemp[lcIdx, n,  7] += Nx2 * t[1];
-                    eqFTemp[lcIdx, n,  8] += Nx2 * t[2];
-                    eqFTemp[lcIdx, n,  9] += My2 * t[3] + Mz2 * t[6];
+                    double[] t = CoordinateTransform.CoordTrans(xyz, L[n], N1[n], N2[n], p[n]);
+                    eqFTemp[lcIdx, n, 0] += Nx1 * t[0];
+                    eqFTemp[lcIdx, n, 1] += Nx1 * t[1];
+                    eqFTemp[lcIdx, n, 2] += Nx1 * t[2];
+                    eqFTemp[lcIdx, n, 3] += My1 * t[3] + Mz1 * t[6];
+                    eqFTemp[lcIdx, n, 4] += My1 * t[4] + Mz1 * t[7];
+                    eqFTemp[lcIdx, n, 5] += My1 * t[5] + Mz1 * t[8];
+                    eqFTemp[lcIdx, n, 6] += Nx2 * t[0];
+                    eqFTemp[lcIdx, n, 7] += Nx2 * t[1];
+                    eqFTemp[lcIdx, n, 8] += Nx2 * t[2];
+                    eqFTemp[lcIdx, n, 9] += My2 * t[3] + Mz2 * t[6];
                     eqFTemp[lcIdx, n, 10] += My2 * t[4] + Mz2 * t[7];
                     eqFTemp[lcIdx, n, 11] += My2 * t[5] + Mz2 * t[8];
                 }
@@ -166,7 +166,7 @@ namespace Frame3ddn
                 for (int n = 0; n < nE; n++)
                 {
                     int n1 = N1[n], n2 = N2[n];
-                    for (int i = 0; i < 6; i++) FTemp[lcIdx, 6 * n1 + i]     += eqFTemp[lcIdx, n, i];
+                    for (int i = 0; i < 6; i++) FTemp[lcIdx, 6 * n1 + i] += eqFTemp[lcIdx, n, i];
                     for (int i = 6; i < 12; i++) FTemp[lcIdx, 6 * n2 - 6 + i] += eqFTemp[lcIdx, n, i];
                 }
             }
@@ -246,29 +246,29 @@ namespace Frame3ddn
                     double Vz2 = (1.0 / (1.0 + Ksy)) * Pz * a * a * (3.0 * b + a) / (Ln * Ln * Ln) + (Ksy / (1.0 + Ksy)) * Pz * a / Ln;
                     double Mx1 = 0.0, Mx2 = 0.0;
                     double My1 = -(1.0 / (1.0 + Ksy)) * Pz * a * b * b / (Ln * Ln) - (Ksy / (1.0 + Ksy)) * Pz * a * b / (2.0 * Ln);
-                    double My2 =  (1.0 / (1.0 + Ksy)) * Pz * a * a * b / (Ln * Ln) + (Ksy / (1.0 + Ksy)) * Pz * a * b / (2.0 * Ln);
-                    double Mz1 =  (1.0 / (1.0 + Ksz)) * Py * a * b * b / (Ln * Ln) + (Ksz / (1.0 + Ksz)) * Py * a * b / (2.0 * Ln);
+                    double My2 = (1.0 / (1.0 + Ksy)) * Pz * a * a * b / (Ln * Ln) + (Ksy / (1.0 + Ksy)) * Pz * a * b / (2.0 * Ln);
+                    double Mz1 = (1.0 / (1.0 + Ksz)) * Py * a * b * b / (Ln * Ln) + (Ksz / (1.0 + Ksz)) * Py * a * b / (2.0 * Ln);
                     double Mz2 = -(1.0 / (1.0 + Ksz)) * Py * a * a * b / (Ln * Ln) - (Ksz / (1.0 + Ksz)) * Py * a * b / (2.0 * Ln);
 
-                    double[] tCoord = Coordtrans.coordTrans(xyz, Ln, N1[n], N2[n], p[n]);
+                    double[] tCoord = CoordinateTransform.CoordTrans(xyz, Ln, N1[n], N2[n], p[n]);
                     double[] dEq = new double[12];
-                    dEq[0]  = Nx1 * tCoord[0] + Vy1 * tCoord[3] + Vz1 * tCoord[6];
-                    dEq[1]  = Nx1 * tCoord[1] + Vy1 * tCoord[4] + Vz1 * tCoord[7];
-                    dEq[2]  = Nx1 * tCoord[2] + Vy1 * tCoord[5] + Vz1 * tCoord[8];
-                    dEq[3]  = Mx1 * tCoord[0] + My1 * tCoord[3] + Mz1 * tCoord[6];
-                    dEq[4]  = Mx1 * tCoord[1] + My1 * tCoord[4] + Mz1 * tCoord[7];
-                    dEq[5]  = Mx1 * tCoord[2] + My1 * tCoord[5] + Mz1 * tCoord[8];
-                    dEq[6]  = Nx2 * tCoord[0] + Vy2 * tCoord[3] + Vz2 * tCoord[6];
-                    dEq[7]  = Nx2 * tCoord[1] + Vy2 * tCoord[4] + Vz2 * tCoord[7];
-                    dEq[8]  = Nx2 * tCoord[2] + Vy2 * tCoord[5] + Vz2 * tCoord[8];
-                    dEq[9]  = Mx2 * tCoord[0] + My2 * tCoord[3] + Mz2 * tCoord[6];
+                    dEq[0] = Nx1 * tCoord[0] + Vy1 * tCoord[3] + Vz1 * tCoord[6];
+                    dEq[1] = Nx1 * tCoord[1] + Vy1 * tCoord[4] + Vz1 * tCoord[7];
+                    dEq[2] = Nx1 * tCoord[2] + Vy1 * tCoord[5] + Vz1 * tCoord[8];
+                    dEq[3] = Mx1 * tCoord[0] + My1 * tCoord[3] + Mz1 * tCoord[6];
+                    dEq[4] = Mx1 * tCoord[1] + My1 * tCoord[4] + Mz1 * tCoord[7];
+                    dEq[5] = Mx1 * tCoord[2] + My1 * tCoord[5] + Mz1 * tCoord[8];
+                    dEq[6] = Nx2 * tCoord[0] + Vy2 * tCoord[3] + Vz2 * tCoord[6];
+                    dEq[7] = Nx2 * tCoord[1] + Vy2 * tCoord[4] + Vz2 * tCoord[7];
+                    dEq[8] = Nx2 * tCoord[2] + Vy2 * tCoord[5] + Vz2 * tCoord[8];
+                    dEq[9] = Mx2 * tCoord[0] + My2 * tCoord[3] + Mz2 * tCoord[6];
                     dEq[10] = Mx2 * tCoord[1] + My2 * tCoord[4] + Mz2 * tCoord[7];
                     dEq[11] = Mx2 * tCoord[2] + My2 * tCoord[5] + Mz2 * tCoord[8];
 
                     for (int i = 0; i < 12; i++) eqFMech[lcIdx, n, i] += dEq[i];
                     int n1Idx = N1[n], n2Idx = N2[n];
-                    for (int i = 0; i < 6;  i++) FMech[lcIdx, 6 * n1Idx + i]      += dEq[i];
-                    for (int i = 6; i < 12; i++) FMech[lcIdx, 6 * n2Idx - 6 + i]  += dEq[i];
+                    for (int i = 0; i < 6; i++) FMech[lcIdx, 6 * n1Idx + i] += dEq[i];
+                    for (int i = 6; i < 12; i++) FMech[lcIdx, 6 * n2Idx - 6 + i] += dEq[i];
                 }
             }
 

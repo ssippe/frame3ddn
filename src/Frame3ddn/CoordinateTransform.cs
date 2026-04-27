@@ -1,13 +1,12 @@
-﻿using System;
+﻿using Frame3ddn.Model;
+using System;
 using System.Collections.Generic;
-using System.Linq;
-using Frame3ddn.Model;
 
 namespace Frame3ddn
 {
-    public class Coordtrans
+    public class CoordinateTransform
     {
-        public static double[] coordTrans(List<Vec3> xyz, double L, int n1, int n2, float p)
+        public static double[] CoordTrans(List<Vec3> xyz, double L, int n1, int n2, float p)
         {
             double[] t = new double[9];
             double Cx, Cy, Cz, den, Cp, Sp;
