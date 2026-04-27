@@ -1,4 +1,4 @@
-﻿namespace Frame3ddn
+﻿namespace Frame3ddn.Model
 {
     public class FrameElement
     {

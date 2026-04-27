@@ -23,26 +23,33 @@ namespace Frame3ddn.Model
         /// Trapezoidally-distributed element loads (local)
         /// </summary>
         public IReadOnlyList<TrapLoad> TrapLoads { get; }
+        /// <summary>
+        /// Prescribed nodal displacements applied at restrained DoFs (global)
+        /// </summary>
+        public IReadOnlyList<PrescribedDisplacement> PrescribedDisplacements { get; }
 
         public LoadCase(Vec3Float gravity,
             IReadOnlyList<NodeLoad> nodeLoads,
             IReadOnlyList<UniformLoad> uniformLoads,
-            IReadOnlyList<TrapLoad> trapLoads)
+            IReadOnlyList<TrapLoad> trapLoads,
+            IReadOnlyList<PrescribedDisplacement> prescribedDisplacements)
         {
             Gravity = gravity;
             NodeLoads = nodeLoads;
             UniformLoads = uniformLoads;
             TrapLoads = trapLoads;
+            PrescribedDisplacements = prescribedDisplacements;
         }
 
-        public static LoadCase Parse(string inputGravityString, List<NodeLoad> nodeLoads, List<UniformLoad> uniformLoads, List<TrapLoad> trapLoads)
+        public static LoadCase Parse(string inputGravityString, List<NodeLoad> nodeLoads, List<UniformLoad> uniformLoads, List<TrapLoad> trapLoads, List<PrescribedDisplacement> prescribedDisplacements)
         {
             string[] data = System.Text.RegularExpressions.Regex.Split(inputGravityString, @"\s{1,}");
             return new LoadCase(
                 new Vec3Float(float.Parse(data[0]), float.Parse(data[1]), float.Parse(data[2])),
                 nodeLoads,
                 uniformLoads,
-                trapLoads
+                trapLoads,
+                prescribedDisplacements
             );
         }
 

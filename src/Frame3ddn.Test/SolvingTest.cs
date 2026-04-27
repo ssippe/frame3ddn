@@ -1,11 +1,9 @@
+﻿using Frame3ddn.Model;
+using Frame3ddn.Parsers;
 using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using System.Security.Cryptography;
-using System.Text;
-using System.Text.RegularExpressions;
-using Frame3ddn.Model;
 using Xunit;
 
 namespace Frame3ddn.Test
@@ -19,7 +17,7 @@ namespace Frame3ddn.Test
             string testDataPath = Directory.GetDirectories(workspaceDir, "TestData")[0];
             string inputPath = Directory.GetDirectories(testDataPath, "Input")[0];
             StreamReader sr = new StreamReader(Directory.GetFiles(inputPath, "B.csv")[0]);
-            Model.Input input = Input.Parse(sr);
+            Model.Input input = CsvParser.Parse(sr);
             Assert.Equal(18, input.Nodes.Count);
             Assert.Equal(17, input.ReactionInputs[3].NodeIdx);
             Assert.Equal(10, input.FrameElements[3].Ax);
@@ -35,7 +33,7 @@ namespace Frame3ddn.Test
             string inputPath = Directory.GetDirectories(testDataPath, "Input")[0];
             string outputPath = Directory.GetDirectories(testDataPath, "Output")[0];
             StreamReader sr = new StreamReader(Directory.GetFiles(inputPath, fileName + ".csv")[0]);
-            Input input = Input.Parse(sr);
+            Input input = CsvParser.Parse(sr);
             Solver solver = new Solver();
             Output output = solver.Solve(input);
             File.WriteAllText(Directory.GetFiles(outputPath, fileName + ".txt")[0], output.TextOutput);
@@ -54,7 +52,7 @@ namespace Frame3ddn.Test
             string outputFromCProgramPath = Directory.GetDirectories(testDataPath, "OutputFromCProgram")[0];
 
             DirectoryInfo inputDirectoryInfo = new DirectoryInfo(inputPath);
-            FileInfo[] Files = inputDirectoryInfo.GetFiles("*.csv"); 
+            FileInfo[] Files = inputDirectoryInfo.GetFiles("*.csv");
             List<string> fileNameList = new List<string>();
             foreach (FileInfo file in Files)
             {
@@ -62,12 +60,12 @@ namespace Frame3ddn.Test
                 fileNameList.Add(filename);
             }
 
-            for(int i = 0; i < fileNameList.Count; i ++)
+            for (int i = 0; i < fileNameList.Count; i++)
             {
                 string fileName = fileNameList[i];
                 Compare(
                     Directory.GetFiles(inputPath, fileName + ".csv")[0],
-                    Directory.GetFiles(outputFromCProgramPath, fileName +".txt")[0]
+                    Directory.GetFiles(outputFromCProgramPath, fileName + ".txt")[0]
                 );
                 System.Diagnostics.Debug.WriteLine("finished comparing file: " + i + " " + fileName);
             }
@@ -76,20 +74,126 @@ namespace Frame3ddn.Test
         private void Compare(string inputFilePath, string outputFilePath)
         {
             StreamReader sr = new StreamReader(inputFilePath);
-            Input input = Input.Parse(sr);
+            Input input = CsvParser.Parse(sr);
             Solver solver = new Solver();
             Output outputCalculated = solver.Solve(input);
 
             string file = File.ReadAllText(outputFilePath);
-            var result = ParseLines(file);
+            List<LoadCaseOutput> result = OutParser.Parse(file);
 
             for (int i = 0; i < outputCalculated.LoadCaseOutputs.Count; i++)
             {
-                var loadCaseOutput = outputCalculated.LoadCaseOutputs[i];
-                var loadCaseOutputToCompare = result[i];
+                LoadCaseOutput loadCaseOutput = outputCalculated.LoadCaseOutputs[i];
+                LoadCaseOutput loadCaseOutputToCompare = result[i];
                 if (!IsEqual(loadCaseOutput, loadCaseOutputToCompare))
-                    throw new Exception("?");                
+                    throw new Exception("?");
             }
+        }
+
+        [Theory]
+        [InlineData("exA")]
+        [InlineData("exB")]
+        [InlineData("exC")]
+        [InlineData("exD")]
+        [InlineData("exE")]
+        [InlineData("exF")]
+        [InlineData("exG")]
+        [InlineData("exH")]
+        [InlineData("exI")]
+        [InlineData("exJ")]
+        public void UpstreamExampleParse(string fileName)
+        {
+            string inputPath = GetUpstreamPath("Input", fileName + ".csv");
+            using StreamReader sr = new StreamReader(inputPath);
+            CsvParser.Parse(sr);
+        }
+
+        [Theory]
+        [InlineData("exA")]
+        [InlineData("exB")]
+        [InlineData("exC")]
+        [InlineData("exD")]
+        [InlineData("exE")]
+        [InlineData("exF")]
+        [InlineData("exG")]
+        [InlineData("exH")]
+        [InlineData("exI")]
+        [InlineData("exJ")]
+        public void UpstreamExampleSolveAndCompare(string fileName)
+        {
+            string inputPath = GetUpstreamPath("Input", fileName + ".csv");
+            string referencePath = GetUpstreamPath("OutputFromCProgram", fileName + ".out");
+
+            using StreamReader sr = new StreamReader(inputPath);
+            Input input = CsvParser.Parse(sr);
+            Solver solver = new Solver();
+            Output outputCalculated = solver.Solve(input);
+
+            List<LoadCaseOutput> reference = OutParser.Parse(File.ReadAllText(referencePath));
+
+            Assert.Equal(reference.Count, outputCalculated.LoadCaseOutputs.Count);
+            for (int i = 0; i < outputCalculated.LoadCaseOutputs.Count; i++)
+            {
+                Assert.True(
+                    IsEqual(outputCalculated.LoadCaseOutputs[i], reference[i]),
+                    $"Load case {i} of {fileName} did not match upstream reference output.");
+            }
+        }
+
+        [Fact]
+        public void PrescribedDisplacementAppliedAtRestrainedDoF()
+        {
+            // exA LC1 prescribes Dx = 0.1 in at node 8 (a restrained X DoF).
+            // This test verifies the prescribed-displacement parser + solver wiring:
+            // the prescribed value must appear as the computed displacement at that DoF,
+            // and the free-DoF displacement at the same node must match upstream.
+            // Reference: upstream exA.out, load case 1, node 8 row.
+            string inputPath = GetUpstreamPath("Input", "exA_lc1.csv");
+
+            using StreamReader sr = new StreamReader(inputPath);
+            Input input = CsvParser.Parse(sr);
+
+            Assert.Single(input.LoadCases);
+            Assert.Single(input.LoadCases[0].PrescribedDisplacements);
+            PrescribedDisplacement pd = input.LoadCases[0].PrescribedDisplacements[0];
+            Assert.Equal(7, pd.NodeIdx);
+            Assert.Equal(0.1, pd.Displacement.X);
+
+            Solver solver = new Solver();
+            Output output = solver.Solve(input);
+
+            NodeDisplacement n8 = output.LoadCaseOutputs[0].NodeDisplacements.Single(d => d.NodeIdx == 7);
+            Assert.True(CompareDouble(n8.Displacement.X, 0.100000),
+                $"Prescribed displacement at node 8 X expected 0.1, got {n8.Displacement.X}");
+            Assert.True(CompareDouble(n8.Displacement.Y, -0.147194),
+                $"Free-DoF displacement at node 8 Y expected -0.147194, got {n8.Displacement.Y}");
+        }
+
+        [Fact]
+        public void PrescribedDisplacementValidatesAgainstFreeDoF()
+        {
+            // The upstream solver requires prescribed displacements to be applied only at
+            // restrained DoFs. Construct a load case that prescribes a displacement at a
+            // free DoF (node 8 Mz) and confirm the C# port rejects it.
+            string baseInput = File.ReadAllText(GetUpstreamPath("Input", "exA_lc1.csv"));
+            // Replace the prescribed-disp row with a non-zero Mz value at node 8 (Mz is free per reactions table).
+            string mutated = baseInput.Replace("8,0.1,0,0,0,0,0", "8,0,0,0,0,0,0.05");
+
+            byte[] bytes = System.Text.Encoding.UTF8.GetBytes(mutated);
+            using StreamReader srr = new StreamReader(new MemoryStream(bytes));
+            Input input = CsvParser.Parse(srr);
+
+            Solver solver = new Solver();
+            Exception ex = Assert.Throws<Exception>(() => solver.Solve(input));
+            Assert.Contains("restrained coordinates", ex.Message);
+        }
+
+        private static string GetUpstreamPath(params string[] segments)
+        {
+            string workspaceDir = Directory.GetParent(Directory.GetParent(Directory.GetParent(Directory.GetCurrentDirectory().ToString()).ToString()).ToString()).ToString();
+            string testDataPath = Directory.GetDirectories(workspaceDir, "TestData")[0];
+            string upstreamPath = Path.Combine(testDataPath, "UpstreamExamples");
+            return Path.Combine(new[] { upstreamPath }.Concat(segments).ToArray());
         }
 
         [Fact]
@@ -125,24 +229,24 @@ namespace Frame3ddn.Test
         {
             string file1 = File.ReadAllText(outputFilePath1);
             string file2 = File.ReadAllText(outputFilePath2);
-            var result1 = ParseLines(file1);
-            var result2 = ParseLines(file2);
+            List<LoadCaseOutput> result1 = OutParser.Parse(file1);
+            List<LoadCaseOutput> result2 = OutParser.Parse(file2);
 
-            
+
             for (int i = 0; i < result1.Count; i++)
             {
-                var loadCaseOutput1 = result1[i];
-                var loadCaseOutput2 = result2[i];
+                LoadCaseOutput loadCaseOutput1 = result1[i];
+                LoadCaseOutput loadCaseOutput2 = result2[i];
                 if (!IsEqual(loadCaseOutput1, loadCaseOutput2))
-                    throw new Exception("?");                
+                    throw new Exception("?");
             }
         }
 
         static bool IsMinMaxForceEqual(IEnumerable<PeakFrameElementInternalForce> o1,
             IEnumerable<PeakFrameElementInternalForce> o2)
         {
-            var o1Filt = o1.Where(f => f.IsMin.HasValue).ToList();
-            var o2Filt = o2.Where(f => f.IsMin.HasValue).ToList();
+            List<PeakFrameElementInternalForce> o1Filt = o1.Where(f => f.IsMin.HasValue).ToList();
+            List<PeakFrameElementInternalForce> o2Filt = o2.Where(f => f.IsMin.HasValue).ToList();
             if (o1Filt.Count != o2Filt.Count)
                 return false;
             for (int i = 0; i < o1Filt.Count; i++)
@@ -161,11 +265,11 @@ namespace Frame3ddn.Test
             for (int i = 0; i < o1.FrameElementEndForces.Count; i++)
             {
                 if (!IsEqual(o1.FrameElementEndForces[i], o2.FrameElementEndForces[i]))
-                    return false;                
+                    return false;
             }
 
             if (!IsMinMaxForceEqual(o1.PeakFrameElementInternalForces, o2.PeakFrameElementInternalForces))
-                return false;            
+                return false;
 
             if (o1.ReactionOutputs.Count != o2.ReactionOutputs.Count)
                 return false;
@@ -204,7 +308,7 @@ namespace Frame3ddn.Test
                    CompareDouble(o1.LoadcaseIdx, o2.LoadcaseIdx) &&
                    IsEqual(o1.F, o2.F) &&
                    IsEqual(o1.M, o2.M);
-            
+
         }
 
         static bool IsEqual(Vec3 o1, Vec3 o2)
@@ -252,93 +356,8 @@ namespace Frame3ddn.Test
             return false;
         }
 
-        private string ReadUntil(StringReader reader, Func<string, bool> stop)
-        {
-            string currentLine;
-            while (true)
-            {
-                currentLine = reader.ReadLine();
-                if (currentLine == null)
-                    return null;
-                if (stop(currentLine))
-                    return currentLine;
-            }
-        }
-
-        private List<LoadCaseOutput> ParseLines(string frame3DDoutput)
-        {
-            
-            List<LoadCaseOutput> outputLines = new List<LoadCaseOutput>();
-            var reader = new StringReader(frame3DDoutput);
-            while (true)
-            {
-                string currentLine = ReadUntil(reader, (s) => s.StartsWith("L O A D   C A S E"));
-                var forceLines = new List<PeakFrameElementInternalForce>();
-                var displacementLines = new List<NodeDisplacement>();
-                var reactionLines = new List<ReactionOutput>();
-                var frameElementEndForceLines = new List<FrameElementEndForce>();
-
-                if (currentLine == null)
-                    return outputLines;
-                int loadCaseIdx =
-                    int.Parse(Regex.Match(currentLine, @"L O A D   C A S E\s*(\d+)\s*O F\s*(\d+)").Groups[1].Value) - 1;
-                
-                // node displacements
-                if (ReadUntil(reader,
-                    s => s.StartsWith("N O D E   D I S P L A C E M E N T S  					(global)")) == null)
-                    break;
-                if (reader.ReadLine() == null) //skip headers
-                    break;
-                while (true)
-                {
-                    var resultLine = NodeDisplacement.FromLine(reader.ReadLine(), loadCaseIdx);
-                    if (resultLine == null)
-                        break;
-                    displacementLines.Add(resultLine);
-                }
-                
-                // frame element end forces
-                if (ReadUntil(reader,
-                        s => s.Contains("Elmnt")) == null)
-                    break;
-                while (true)
-                {
-                    var resultLine = FrameElementEndForce.FromLine(reader.ReadLine(), loadCaseIdx);
-                    if (resultLine == null)
-                        break;
-                    frameElementEndForceLines.Add(resultLine);
-                }
-                
-                // reactions                
-                if (ReadUntil(reader,
-                    s => s.Contains("Node")) == null)
-                    break;
-                while (true)
-                {
-                    var resultLine = ReactionOutput.FromLine(reader.ReadLine(), loadCaseIdx);
-                    if (resultLine == null)
-                        break;
-                    reactionLines.Add(resultLine);
-                }
-                
-                // internal forces
-                if (ReadUntil(reader,
-                    s => s.StartsWith("P E A K   F R A M E   E L E M E N T   I N T E R N A L   F O R C E S")) == null)
-                    break;
-                if (reader.ReadLine() == null) //skip headers
-                    break;
-                while (true)
-                {
-                    var resultLine = PeakFrameElementInternalForce.FromLine(reader.ReadLine(), loadCaseIdx);
-                    if (resultLine == null)
-                        break;
-                    forceLines.Add(resultLine);
-                }
-
-                outputLines.Add(new LoadCaseOutput(0, displacementLines, frameElementEndForceLines, reactionLines,
-                    forceLines));
-            }
-            return outputLines;
-        }
     }
 }
+
+
+

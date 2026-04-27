@@ -1,10 +1,8 @@
-﻿using System;
+﻿using Frame3ddn.Model;
+using Frame3ddn.Writers;
+using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Runtime.CompilerServices;
-using System.Security.Cryptography.X509Certificates;
-using System.Text;
-using Frame3ddn.Model;
 
 namespace Frame3ddn
 {
@@ -26,12 +24,12 @@ namespace Frame3ddn
             IReadOnlyList<FrameElement> frameElements = input.FrameElements;
             int nN = input.Nodes.Count;
             List<float> rj = input.Nodes.Select(n => n.Radius).ToList();
-            List<Vec3Float> xyz = input.Nodes.Select(n => n.Position).ToList(); 
+            List<Vec3Float> xyz = input.Nodes.Select(n => n.Position).ToList();
             int DoF = 6 * nN;
             int nR = input.ReactionInputs.Count;
             double[] q = new double[DoF];
             float[] r = new float[DoF];
-            for (int i = 0; i < nR; i++) 
+            for (int i = 0; i < nR; i++)
             {
                 int j = input.ReactionInputs[i].NodeIdx;  //This index number is decreased by 1 when importing
                 r[j * 6 + 0] = input.ReactionInputs[i].Force.X;
@@ -44,25 +42,25 @@ namespace Frame3ddn
 
             for (int i = 0; i < DoF; i++)
             {
-                q[i] = (r[i] == (double) 1) ? 0 : 1;
+                q[i] = (r[i] == (double)1) ? 0 : 1;
             }
 
-            int nE = input.FrameElements.Count; 
+            int nE = input.FrameElements.Count;
 
             List<double> L = input.FrameElements.Select(f =>
                     Coordtrans.CalculateSQDistance(input.Nodes[f.NodeIdx1].Position, input.Nodes[f.NodeIdx2].Position))
                 .ToList();
 
-            List<double> Le = new List<double>(); 
-            for (int i = 0; i < L.Count; i++) 
+            List<double> Le = new List<double>();
+            for (int i = 0; i < L.Count; i++)
             {
                 Le.Add(L[i] - input.Nodes[input.FrameElements[i].NodeIdx1].Radius -
                        input.Nodes[input.FrameElements[i].NodeIdx2].Radius);
             }
 
-            List<int> N1 = input.FrameElements.Select(f => f.NodeIdx1).ToList(); 
-            List<int> N2 = input.FrameElements.Select(f => f.NodeIdx2).ToList(); 
-            List<float> Ax = input.FrameElements.Select(f => f.Ax).ToList(); 
+            List<int> N1 = input.FrameElements.Select(f => f.NodeIdx1).ToList();
+            List<int> N2 = input.FrameElements.Select(f => f.NodeIdx2).ToList();
+            List<float> Ax = input.FrameElements.Select(f => f.Ax).ToList();
             List<float> Asy = input.FrameElements.Select(f => f.Asy).ToList();
             List<float> Asz = input.FrameElements.Select(f => f.Asz).ToList();
             List<float> Jx = input.FrameElements.Select(f => f.Jx).ToList();
@@ -70,17 +68,17 @@ namespace Frame3ddn
             List<float> Iz = input.FrameElements.Select(f => f.Iz).ToList();
             List<float> E = input.FrameElements.Select(f => f.E).ToList();
             List<float> G = input.FrameElements.Select(f => f.G).ToList();
-            List<float> p = input.FrameElements.Select(f => f.Roll).ToList(); 
+            List<float> p = input.FrameElements.Select(f => f.Roll).ToList();
             List<float> d = input.FrameElements.Select(f => f.Density).ToList();
             int nL = input.LoadCases.Count;
-            List<float> gX = input.LoadCases.Select(l => l.Gravity.X).ToList(); 
-            List<float> gY = input.LoadCases.Select(l => l.Gravity.Y).ToList(); 
-            List<float> gZ = input.LoadCases.Select(l => l.Gravity.Z).ToList(); 
+            List<float> gX = input.LoadCases.Select(l => l.Gravity.X).ToList();
+            List<float> gY = input.LoadCases.Select(l => l.Gravity.Y).ToList();
+            List<float> gZ = input.LoadCases.Select(l => l.Gravity.Z).ToList();
             List<int> nF = input.LoadCases.Select(l => l.NodeLoads.Count).ToList();
             List<int> nU = input.LoadCases.Select(l => l.UniformLoads.Count).ToList();
             List<int> nW = input.LoadCases.Select(l => l.TrapLoads.Count).ToList();
             float[,,] U = new float[nL, nE, 4];
-            for (int i = 0; i < nL; i ++)
+            for (int i = 0; i < nL; i++)
             {
                 for (int j = 0; j < nE; j++)
                 {
@@ -91,7 +89,7 @@ namespace Frame3ddn
                     U[i, j, 0] = -1;
                 }
             }
-            float[,,] W = new float[nL, nE*10, 13];
+            float[,,] W = new float[nL, nE * 10, 13];
             for (int i = 0; i < nL; i++)
             {
                 for (int j = 0; j < nE * 10; j++)
@@ -117,14 +115,37 @@ namespace Frame3ddn
             ////These are not used
             int[] nT = new int[nL];
             int[] nP = new int[nL];
-            int[] nD = new int[nL];
-            double[,] FTemp = new double[nL,DoF];
-            double[,,] eqFTemp = new double[nL,nE,12];
+            double[,] FTemp = new double[nL, DoF];
+            double[,,] eqFTemp = new double[nL, nE, 12];
             int iter = 0;
             double tol = 1.0e-9;
-            float[,,] P = new float[nL,10*nE,5];
-            double[,] Dp = new double[nL, DoF];
+            float[,,] P = new float[nL, 10 * nE, 5];
             ////
+
+            int[] nD = input.LoadCases.Select(l => l.PrescribedDisplacements.Count).ToArray();
+            double[,] Dp = new double[nL, DoF];
+            for (int lc = 0; lc < nL; lc++)
+            {
+                foreach (PrescribedDisplacement pd in input.LoadCases[lc].PrescribedDisplacements)
+                {
+                    int j = pd.NodeIdx;
+                    double[] values =
+                    {
+                        pd.Displacement.X, pd.Displacement.Y, pd.Displacement.Z,
+                        pd.Rotation.X,     pd.Rotation.Y,     pd.Rotation.Z
+                    };
+                    for (int k = 0; k < 6; k++)
+                    {
+                        int dof = j * 6 + k;
+                        if (Common.IsDoubleZero(r[dof]) && values[k] != 0.0)
+                        {
+                            throw new Exception(
+                                $"Initial displacements can be prescribed only at restrained coordinates. Load case {lc + 1}, node {j + 1}, dof {k + 1}.");
+                        }
+                        Dp[lc, dof] = values[k];
+                    }
+                }
+            }
 
             IReadOnlyList<LoadCase> loadCases = input.LoadCases;
 
@@ -134,7 +155,7 @@ namespace Frame3ddn
             //ReadMassData()--Not implemented
             //ReadCondensationData()--Not implemented
 
-            string outputText = Frame3ddIO.InputDataToString(title, nN, nE, nL, nD, nR, nF, nU, nW, nP, nT,
+            string outputText1 = OutWriter.InputDataToString(title, nN, nE, nL, nD, nR, nF, nU, nW, nP, nT,
                 xyz, rj, N1, N2, Ax, Asy, Asz, Jx, Iy, Iz, E, G, p,
                 d, gX, gY, gZ,
                 FMech, Dp, r, U, W, P, shear, geom);
@@ -169,7 +190,7 @@ namespace Frame3ddn
                 }
 
                 double[] tempLoadMech = Common.GetRow(FMech, lc);
-                var solveSystemResult = Frame3dd.SolveSystem(K, dD, tempLoadMech, dR, DoF, q, r, ok, rmsResid);
+                (int ok, double rmsResid) solveSystemResult = Frame3dd.SolveSystem(K, dD, tempLoadMech, dR, DoF, q, r, ok, rmsResid);
                 ok = solveSystemResult.ok;
                 rmsResid = solveSystemResult.rmsResid;
                 for (int i = 0; i < DoF; i++)
@@ -235,7 +256,7 @@ namespace Frame3ddn
                 //if (verbose && ok >= 0)
                 //    evaluate(error, rms_resid, tol, geom);
 
-                var staticResults = Frame3ddIO.GetStaticResults(nN, nE, nL, lc, DoF, N1, N2, F, D, R, r, Q, error, ok, axialSign);
+                (List<NodeDisplacement> nodeDisplacements, List<FrameElementEndForce> frameElementEndForces, List<ReactionOutput> reactionOutputs) staticResults = Frame3ddIO.GetStaticResults(nN, nE, nL, lc, DoF, N1, N2, F, D, R, r, Q, error, ok, axialSign);
 
                 ////Not implemented
                 //if (filetype == 1)
@@ -268,13 +289,13 @@ namespace Frame3ddn
                 //...
             }
 
-            outputText += Frame3ddIO.OutputDataToString(loadCaseOutputs);
+            var outText = outputText1 + OutWriter.OutputDataToString(loadCaseOutputs);
 
-            Output output = new Output(outputText, loadCaseOutputs);
+            Output output = new Output(outText, loadCaseOutputs);
             return output;
         }
 
-        
+
 
 
         // ref main.c:265

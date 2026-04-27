@@ -17,6 +17,6 @@
     <FileVersion>1.0.15.0</FileVersion>
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
     <NoWarn>1701;1702;1591</NoWarn>
-    <WarningsAsErrors/>
+    <WarningsAsErrors />
   </PropertyGroup>  
 </Project>
