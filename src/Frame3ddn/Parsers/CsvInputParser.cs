@@ -1,6 +1,7 @@
 using Frame3ddn.Model;
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.IO;
 
 namespace Frame3ddn.Parsers
@@ -106,39 +107,169 @@ namespace Frame3ddn.Parsers
                 loadCases.Add(loadCase);
             }
 
-            // Dynamic-analysis section: not used by the static solver, but consume the rows so
-            // parsing reaches end-of-file. Layout (frame3dd_io.c):
-            //   nM (#modes), method, mass-type, tolerance, shift, exaggerate    [nM>0 → 5 params]
-            //   nI (#nodes with extra inertia)   followed by nI rows
-            //   nX (#elements with extra mass)   followed by nX rows
-            //   nA (#modes to animate)           followed by 1 row of mode IDs (only if nA>0)
-            //   pan rate
-            //   nC (#condensed nodes)            followed by nC rows
-            // Any of these may be missing if the file ends early; ArgumentOutOfRangeException
-            // and FormatException are both treated as end-of-data.
-            try
-            {
-                int nM = int.Parse(noComentInput[currentLine++]);
-                if (nM > 0) currentLine += 5;       // method, mass-type, tolerance, shift, exaggerate
-
-                int nI = int.Parse(noComentInput[currentLine++]);
-                currentLine += nI;                  // extra node inertia rows
-
-                int nX = int.Parse(noComentInput[currentLine++]);
-                currentLine += nX;                  // extra element mass rows
-
-                int nA = int.Parse(noComentInput[currentLine++]);
-                if (nA > 0) currentLine += 1;       // mode list line
-                currentLine += 1;                   // pan rate
-
-                int nC = int.Parse(noComentInput[currentLine++]);
-                currentLine += nC;                  // condensed-node rows
-            }
-            catch (ArgumentOutOfRangeException) { /* file ended early — ignore */ }
-            catch (FormatException) { /* hit a non-numeric row — ignore */ }
+            DynamicAnalysisInput dynamicAnalysis = ParseDynamicAnalysis(noComentInput, currentLine);
 
             return new Input(title, nodes, frameElements, reactionInputs, loadCases, includeShearDeformation, includeGeometricStiffness,
-                exaggerateMeshDeformations, zoomScale, xAxisIncrementForInternalForces);
+                exaggerateMeshDeformations, zoomScale, xAxisIncrementForInternalForces, dynamicAnalysis);
+        }
+
+        /// <summary>
+        /// Parses the trailing modal-analysis + matrix-condensation section. Mirrors upstream
+        /// <c>read_mass_data</c> + <c>read_condensation_data</c> in <c>frame3dd_io.c</c>.
+        /// Reads tokens across line boundaries (matching fscanf semantics) so that records that
+        /// span multiple CSV rows — e.g. animated-mode lists — parse correctly.
+        /// </summary>
+        /// <remarks>
+        /// Falls back to <see cref="DynamicAnalysisInput.None"/> if the section is missing or
+        /// truncated. Any malformed mid-record content surfaces as a <see cref="FormatException"/>
+        /// rather than being silently swallowed — the upstream files in the repo all parse
+        /// cleanly, so a parse failure indicates a genuine problem worth reporting.
+        /// </remarks>
+        private static DynamicAnalysisInput ParseDynamicAnalysis(List<string> lines, int startLine)
+        {
+            TokenReader tokens = new TokenReader(lines, startLine);
+
+            // No dynamic section, or modes count is zero: nothing to do.
+            if (!tokens.TryReadInt(out int modesCount) || modesCount < 1)
+            {
+                return DynamicAnalysisInput.None;
+            }
+
+            int method = tokens.ReadInt();
+            int massType = tokens.ReadInt();
+            double tolerance = tokens.ReadDouble();
+            double shift = tokens.ReadDouble();
+            double exagg = tokens.ReadDouble();
+
+            int nI = tokens.ReadInt();
+            List<NodeInertia> extraInertia = new List<NodeInertia>(nI);
+            for (int i = 0; i < nI; i++)
+            {
+                int nodeIdx = tokens.ReadInt() - 1;
+                double mass = tokens.ReadDouble();
+                double ixx = tokens.ReadDouble();
+                double iyy = tokens.ReadDouble();
+                double izz = tokens.ReadDouble();
+                extraInertia.Add(new NodeInertia(nodeIdx, mass, ixx, iyy, izz));
+            }
+
+            int nX = tokens.ReadInt();
+            List<ElementMass> extraMass = new List<ElementMass>(nX);
+            for (int i = 0; i < nX; i++)
+            {
+                int elemIdx = tokens.ReadInt() - 1;
+                double mass = tokens.ReadDouble();
+                extraMass.Add(new ElementMass(elemIdx, mass));
+            }
+
+            int nA = tokens.ReadInt();
+            List<int> animatedModes = new List<int>(nA);
+            for (int i = 0; i < nA; i++)
+            {
+                animatedModes.Add(tokens.ReadInt());
+            }
+
+            double panRate = tokens.ReadDouble();
+
+            int condensationMethod = 0;
+            List<CondensedNode> condensedNodes = new List<CondensedNode>();
+            List<int> condensedModes = new List<int>();
+
+            // Condensation block is optional — many files end after the pan rate.
+            if (tokens.TryReadInt(out int cm))
+            {
+                condensationMethod = cm;
+                if (cm > 0)
+                {
+                    int nC = tokens.ReadInt();
+                    int totalDofs = 0;
+                    for (int i = 0; i < nC; i++)
+                    {
+                        int nodeIdx = tokens.ReadInt() - 1;
+                        bool[] dof = new bool[6];
+                        for (int j = 0; j < 6; j++)
+                        {
+                            int flag = tokens.ReadInt();
+                            dof[j] = flag != 0;
+                            if (dof[j]) totalDofs++;
+                        }
+                        condensedNodes.Add(new CondensedNode(nodeIdx, dof));
+                    }
+                    // Mode list (only meaningful for Cmethod == 3 / dynamic) — but upstream
+                    // always reads it when Cdof > 0. Tolerate truncation.
+                    for (int i = 0; i < totalDofs; i++)
+                    {
+                        if (!tokens.TryReadInt(out int m)) break;
+                        condensedModes.Add(m);
+                    }
+                }
+            }
+
+            return new DynamicAnalysisInput(modesCount, method, massType, tolerance, shift, exagg,
+                extraInertia, extraMass, animatedModes, panRate,
+                condensationMethod, condensedNodes, condensedModes);
+        }
+
+        /// <summary>
+        /// Reads whitespace-separated tokens across multiple preprocessed input lines.
+        /// Matches the line-agnostic semantics of upstream's <c>fscanf</c> calls.
+        /// </summary>
+        private sealed class TokenReader
+        {
+            private readonly List<string> _lines;
+            private int _lineIdx;
+            private string[] _currentTokens;
+            private int _tokenIdx;
+
+            public TokenReader(List<string> lines, int startLineIdx)
+            {
+                _lines = lines;
+                _lineIdx = startLineIdx;
+                _currentTokens = Array.Empty<string>();
+                _tokenIdx = 0;
+            }
+
+            public bool TryReadToken(out string token)
+            {
+                while (_tokenIdx >= _currentTokens.Length)
+                {
+                    if (_lineIdx >= _lines.Count)
+                    {
+                        token = null;
+                        return false;
+                    }
+                    _currentTokens = _lines[_lineIdx++].Split(new[] { ' ' }, StringSplitOptions.RemoveEmptyEntries);
+                    _tokenIdx = 0;
+                }
+                token = _currentTokens[_tokenIdx++];
+                return true;
+            }
+
+            public bool TryReadInt(out int value)
+            {
+                if (TryReadToken(out string t) && int.TryParse(t, NumberStyles.Integer, CultureInfo.InvariantCulture, out value))
+                    return true;
+                value = 0;
+                return false;
+            }
+
+            public int ReadInt()
+            {
+                if (!TryReadToken(out string t))
+                    throw new FormatException("Unexpected end of input in dynamic-analysis section");
+                if (!int.TryParse(t, NumberStyles.Integer, CultureInfo.InvariantCulture, out int v))
+                    throw new FormatException($"Expected integer in dynamic-analysis section, got '{t}'");
+                return v;
+            }
+
+            public double ReadDouble()
+            {
+                if (!TryReadToken(out string t))
+                    throw new FormatException("Unexpected end of input in dynamic-analysis section");
+                if (!double.TryParse(t, NumberStyles.Float, CultureInfo.InvariantCulture, out double v))
+                    throw new FormatException($"Expected number in dynamic-analysis section, got '{t}'");
+                return v;
+            }
         }
 
         private static List<string> GetNoCommentInputCsv(StreamReader sr)

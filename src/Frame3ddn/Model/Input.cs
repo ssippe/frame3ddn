@@ -16,10 +16,18 @@ namespace Frame3ddn.Model
         public IReadOnlyList<FrameElement> FrameElements { get; }
         public IReadOnlyList<LoadCase> LoadCases { get; }
 
+        /// <summary>
+        /// Modal-analysis configuration parsed from the trailing dynamic-analysis section of
+        /// the input file. Always non-null; defaults to <see cref="DynamicAnalysisInput.None"/>
+        /// when no modal analysis is requested.
+        /// </summary>
+        public DynamicAnalysisInput DynamicAnalysis { get; }
+
         public Input(string title, IReadOnlyList<Node> nodes, IReadOnlyList<FrameElement> frameElements,
             IReadOnlyList<ReactionInput> reactionInputs, IReadOnlyList<LoadCase> loadCases,
             bool includeShearDeformation, bool includeGeometricStiffness, float exaggerateMeshDeformations,
-            float zoomScale, float xAxisIncrementForInternalForces)
+            float zoomScale, float xAxisIncrementForInternalForces,
+            DynamicAnalysisInput dynamicAnalysis = null)
         {
             Title = title;
             Nodes = nodes;
@@ -31,6 +39,7 @@ namespace Frame3ddn.Model
             ExaggerateMeshDeformations = exaggerateMeshDeformations;
             ZoomScale = zoomScale;
             XAxisIncrementForInternalForces = xAxisIncrementForInternalForces;
+            DynamicAnalysis = dynamicAnalysis ?? DynamicAnalysisInput.None;
         }
     }
 }
