@@ -1,16 +1,16 @@
-﻿using System;
+﻿using Frame3ddn.Core;
+using Frame3ddn.Model;
+using System;
 using System.Linq;
 using System.Text;
-using Frame3ddn.Core;
-using Frame3ddn.Model;
 
-namespace Frame3ddn
+namespace Frame3ddn.Writers
 {
     public static class InputCsvWriter
     {
         public static string GetCsv(Input input, string fileStamp)
         {
-            var textFile = new StringBuilder();
+            StringBuilder textFile = new StringBuilder();
             textFile.AppendLine(CreateHeader(fileStamp));
             textFile.AppendLine(CreateNodes(input));
             textFile.AppendLine(CreateReactions(input));
@@ -36,7 +36,7 @@ namespace Frame3ddn
 
         private static string CreateLoads(Input input)
         {
-            var sb = new StringBuilder();
+            StringBuilder sb = new StringBuilder();
 
             sb.AppendLine($@",,,,,,,,,,,,
 ,,,,,,,,,,,,
@@ -68,7 +68,7 @@ namespace Frame3ddn
 
         private static string CreateLoadTrapezoid(LoadCase loadCase)
         {
-            var sb = new StringBuilder();
+            StringBuilder sb = new StringBuilder();
             /*
                 # Trapezoidally distributed loading,,,,,,,,,,,,
                 nW,,,,,# number of trapezoidally-distributed element loads (local),,,,,,,
@@ -130,7 +130,7 @@ namespace Frame3ddn
 
         private static string CreateLoadUniform(LoadCase loadCase)
         {
-            var sb = new StringBuilder();
+            StringBuilder sb = new StringBuilder();
             var loadCount = 0;
 
 #if false
@@ -178,7 +178,7 @@ nF                   # number of loaded nodes (global)
 #endif
             if (loadCase.NodeLoads?.Any() != true)
                 return @"0, ,,,,# number of loaded nodes,,,,,,,";
-            var sb = new StringBuilder();
+            StringBuilder sb = new StringBuilder();
             sb.Append($@"{loadCase.NodeLoads.Count}, ,,,,# number of loaded nodes,,,,,,,
 # nodeIdx, X-load, Y-load, Z-load, X-mom, Y-mom, Z-mom
 # , N, N, N, N.mm, N.mm, N.mm
@@ -233,7 +233,7 @@ nF                   # number of loaded nodes (global)
 
 
             //Pa = N/m^2 we want N/mm^2 = Pa * 10e6 = MPa
-            var sb = new StringBuilder();
+            StringBuilder sb = new StringBuilder();
             sb.AppendLine($@"
 
 # frame element data 
@@ -273,7 +273,7 @@ nF                   # number of loaded nodes (global)
 
         private static string CreateNodes(Input input)
         {
-            var sb = new StringBuilder();
+            StringBuilder sb = new StringBuilder();
             sb.AppendLine($@"###### Nodes ######
 {input.Nodes.Count},,,,, # number of nodes
 #.node,X-coord,Y-coord,Z-coord,radius
@@ -294,7 +294,7 @@ nF                   # number of loaded nodes (global)
         private static string CreateReactions(Input input)
         {
             var reactions = input.ReactionInputs;
-            var sb = new StringBuilder();
+            StringBuilder sb = new StringBuilder();
             sb.AppendLine(
                 $@"
 

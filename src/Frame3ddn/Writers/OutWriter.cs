@@ -164,7 +164,7 @@ namespace Frame3ddn.Writers
 
                 txt.AppendLine("N O D E   D I S P L A C E M E N T S  					(global)");
                 txt.AppendLine("  Node    X-dsp       Y-dsp       Z-dsp       X-rot       Y-rot       Z-rot");
-                foreach (var nodeDisplacement in loadCaseOutput.NodeDisplacements)
+                foreach (NodeDisplacement nodeDisplacement in loadCaseOutput.NodeDisplacements)
                 {
                     txt.AppendLine($" {(nodeDisplacement.NodeIdx + 1).Format(5)}" +
                                    $" {nodeDisplacement.Displacement.X.Format(11.6)}" +
@@ -177,7 +177,7 @@ namespace Frame3ddn.Writers
 
                 txt.AppendLine("F R A M E   E L E M E N T   E N D   F O R C E S				(local)");
                 txt.AppendLine("  Elmnt  Node       Nx          Vy         Vz        Txx        Myy        Mzz");
-                foreach (var frameElementEndForce in loadCaseOutput.FrameElementEndForces)
+                foreach (FrameElementEndForce frameElementEndForce in loadCaseOutput.FrameElementEndForces)
                 {
                     txt.AppendLine($" {(frameElementEndForce.ElementIdx + 1).Format(5)}" +
                                    $" {(frameElementEndForce.NodeIdx + 1).Format(5)}" +
@@ -192,7 +192,7 @@ namespace Frame3ddn.Writers
 
                 txt.AppendLine("R E A C T I O N S							(global)");
                 txt.AppendLine("  Node        Fx          Fy          Fz         Mxx         Myy         Mzz");
-                foreach (var reactionOutput in loadCaseOutput.ReactionOutputs)
+                foreach (ReactionOutput reactionOutput in loadCaseOutput.ReactionOutputs)
                 {
                     txt.AppendLine($" {(reactionOutput.NodeIdx + 1).Format(5)}" +
                                    $" {reactionOutput.F.X.Format(11.3)}" +
@@ -209,7 +209,7 @@ namespace Frame3ddn.Writers
                 txt.AppendLine("P E A K   F R A M E   E L E M E N T   I N T E R N A L   F O R C E S(local)");
                 txt.AppendLine("  Elmnt   .         Nx          Vy         Vz        Txx        Myy        Mzz");
                 if (loadCaseOutput.PeakFrameElementInternalForces != null)
-                    foreach (var peakFrameElementInternalForce in loadCaseOutput.PeakFrameElementInternalForces.Where(f => f.IsMin.HasValue))
+                    foreach (PeakFrameElementInternalForce peakFrameElementInternalForce in loadCaseOutput.PeakFrameElementInternalForces.Where(f => f.IsMin.HasValue))
                     {
                         string minMax = peakFrameElementInternalForce.IsMin.Value ? "min" : "max";
                         txt.AppendLine($" {(peakFrameElementInternalForce.ElementIdx + 1).Format(5)}   {minMax} " +
@@ -226,6 +226,73 @@ namespace Frame3ddn.Writers
 
 
             return txt.ToString();
+        }
+
+        //Simple output for testing only.
+        public static void ExportOutput(Output output, string outputPath)
+        {
+            File.WriteAllText(outputPath, "");
+            int nL = output.LoadCaseOutputs.Count;
+            for (int i = 0; i < nL; i++)
+            {
+                LoadCaseOutput loadCaseOutput = output.LoadCaseOutputs[i];
+                StringBuilder csv = new StringBuilder();
+                string newLine;
+                csv.AppendLine("------------------Load case " + (i + 1) + "------------------");
+
+                csv.AppendLine("* Node displacements");
+                newLine = string.Format("{0},{1},{2},{3},{4},{5},{6}",
+                    "Node", "X-dsp", "Y-dsp", "z-dsp", "X-rot", "Y-rot", "Z-rot");
+                csv.AppendLine(newLine);
+                foreach (NodeDisplacement nodeDisplacement in loadCaseOutput.NodeDisplacements)
+                {
+                    newLine = string.Format("{0},{1},{2},{3},{4},{5},{6}",
+                        nodeDisplacement.NodeIdx + 1, nodeDisplacement.Displacement.X, nodeDisplacement.Displacement.Y, nodeDisplacement.Displacement.Z,
+                        nodeDisplacement.Rotation.X, nodeDisplacement.Rotation.Y, nodeDisplacement.Rotation.Z);
+                    csv.AppendLine(newLine);
+                }
+
+                csv.AppendLine("* Frame Element End Force");
+                newLine = string.Format("{0},{1},{2},{3},{4},{5},{6},{7}",
+                    "Elmnt", "Node", "Nx", "Vy", "Vz", "Txx", "Myy", "Mzz");
+                csv.AppendLine(newLine);
+                foreach (FrameElementEndForce frameElementEndForce in loadCaseOutput.FrameElementEndForces)
+                {
+                    newLine = string.Format("{0},{1},{2},{3},{4},{5},{6},{7}",
+                        frameElementEndForce.ElementIdx + 1, frameElementEndForce.NodeIdx + 1, frameElementEndForce.Nx + frameElementEndForce.NxType,
+                        frameElementEndForce.Vy, frameElementEndForce.Vz, frameElementEndForce.Txx, frameElementEndForce.Myy, frameElementEndForce.Mzz);
+                    csv.AppendLine(newLine);
+                }
+
+                csv.AppendLine("* Reactions");
+                newLine = string.Format("{0},{1},{2},{3},{4},{5},{6}",
+                    "Node", "Fx", "Fy", "Fz", "Mxx", "Myy", "Mzz");
+                csv.AppendLine(newLine);
+                foreach (ReactionOutput reactionOutput in loadCaseOutput.ReactionOutputs)
+                {
+                    newLine = string.Format("{0},{1},{2},{3},{4},{5},{6}",
+                        reactionOutput.NodeIdx + 1, reactionOutput.F.X, reactionOutput.F.Y, reactionOutput.F.Z,
+                        reactionOutput.M.X, reactionOutput.M.Y, reactionOutput.M.Z);
+                    csv.AppendLine(newLine);
+                }
+                csv.AppendLine("RMS Relative Equilibrium Error: " + loadCaseOutput.RmsRelativeEquilibriumError);
+
+                csv.AppendLine("* Peak Frame Element Internal Forces");
+                newLine = string.Format("{0},{1},{2},{3},{4},{5},{6},{7}",
+                    "Elmnt", ".", "Nx", "Vy", "Vz", "Txx", "Myy", "Mzz");
+                csv.AppendLine(newLine);
+                if (loadCaseOutput.PeakFrameElementInternalForces != null)
+                    foreach (PeakFrameElementInternalForce peakFrameElementInternalForce in loadCaseOutput.PeakFrameElementInternalForces.Where(f => f.IsMin.HasValue))
+                    {
+                        newLine = string.Format("{0},{1},{2},{3},{4},{5},{6},{7}",
+                            peakFrameElementInternalForce.ElementIdx + 1, peakFrameElementInternalForce.IsMin.Value ? "min" : "max",
+                            peakFrameElementInternalForce.Nx, peakFrameElementInternalForce.Vy, peakFrameElementInternalForce.Vz,
+                            peakFrameElementInternalForce.Txx, peakFrameElementInternalForce.Myy, peakFrameElementInternalForce.Mzz);
+                        csv.AppendLine(newLine);
+                    }
+                File.AppendAllText(outputPath, csv.ToString());
+
+            }
         }
     }
 }
