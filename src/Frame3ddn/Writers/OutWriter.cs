@@ -1,6 +1,7 @@
 using Frame3ddn.Model;
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Text;
@@ -151,6 +152,59 @@ namespace Frame3ddn.Writers
         }
 
 
+
+        /// <summary>
+        /// Renders the modal-analysis section of the upstream <c>.out</c> format. Includes
+        /// the section header, convergence tolerance, mass-matrix type, and a per-mode block
+        /// with frequency, period, and the mass-normalised mode shape rendered as one row
+        /// per node × 6 DoFs. Returns an empty string when no modal results are available.
+        /// </summary>
+        /// <remarks>
+        /// The "Total Mass" / "Structural Mass" / "Nodal Masses" / "modal participation factor"
+        /// rows from upstream are intentionally omitted in this version — they require the
+        /// system mass matrix to be carried into <see cref="Output"/>, which would force a
+        /// breaking change to the public API.
+        /// </remarks>
+        public static string ModalResultsToString(
+            IReadOnlyList<ModalResult> modalResults,
+            int nodeCount,
+            double convergenceTolerance,
+            int massType)
+        {
+            if (modalResults == null || modalResults.Count == 0) return string.Empty;
+
+            CultureInfo inv = CultureInfo.InvariantCulture;
+            StringBuilder txt = new StringBuilder();
+
+            txt.AppendLine("M O D A L   A N A L Y S I S   R E S U L T S");
+            txt.AppendLine($"  Use {(massType == 1 ? "lumped" : "consistent")} mass matrix.");
+            txt.AppendLine("N A T U R A L   F R E Q U E N C I E S   & ");
+            txt.AppendLine("M A S S   N O R M A L I Z E D   M O D E   S H A P E S ");
+            txt.AppendLine($" convergence tolerance: {convergenceTolerance.ToString("0.000e+00", inv)} ");
+
+            foreach (ModalResult mode in modalResults)
+            {
+                double f = mode.FrequencyHz;
+                double t = f > 0 ? 1.0 / f : 0.0;
+                txt.AppendLine($"  MODE {(mode.ModeIndex + 1).ToString().PadLeft(5)}:   " +
+                               $"f= {f.ToString("F6", inv)} Hz,  T= {t.ToString("F6", inv)} sec");
+                txt.AppendLine("  Node    X-dsp       Y-dsp       Z-dsp       X-rot       Y-rot       Z-rot");
+                for (int n = 0; n < nodeCount; n++)
+                {
+                    int b = 6 * n;
+                    txt.AppendLine(
+                        $" {(n + 1).ToString().PadLeft(5)}" +
+                        $" {mode.ModeShape[b + 0].ToString("0.000e+00", inv).PadLeft(11)}" +
+                        $" {mode.ModeShape[b + 1].ToString("0.000e+00", inv).PadLeft(11)}" +
+                        $" {mode.ModeShape[b + 2].ToString("0.000e+00", inv).PadLeft(11)}" +
+                        $" {mode.ModeShape[b + 3].ToString("0.000e+00", inv).PadLeft(11)}" +
+                        $" {mode.ModeShape[b + 4].ToString("0.000e+00", inv).PadLeft(11)}" +
+                        $" {mode.ModeShape[b + 5].ToString("0.000e+00", inv).PadLeft(11)}");
+                }
+            }
+
+            return txt.ToString();
+        }
 
         public static string OutputDataToString(List<LoadCaseOutput> loadCaseOutputs)
         {

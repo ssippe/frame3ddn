@@ -79,6 +79,50 @@ namespace Frame3ddn.Test
             }
         }
 
+        // OutWriter renders the modal section so that downstream consumers (and our own
+        // OutParser) can read C# results with the same format as upstream's .out files.
+        [Fact]
+        public void ExB_OutputTextContainsModalSectionWithFrequencyLine()
+        {
+            using (StreamReader sr = new StreamReader(GetExamplePath("exB.csv")))
+            {
+                Input input = CsvInputParser.Parse(sr);
+                Output output = new Solver().Solve(input);
+
+                string text = output.TextOutput;
+                Assert.Contains("M O D A L   A N A L Y S I S   R E S U L T S", text);
+                Assert.Contains("N A T U R A L   F R E Q U E N C I E S", text);
+                Assert.Contains("Use consistent mass matrix.", text);  // exB has MassType=0
+                Assert.Contains("convergence tolerance: 1.000e-09", text);
+
+                // Each MODE line names its index and reports both f and T. Match the lowest
+                // mode by structure rather than its exact frequency — Stodola's convergence
+                // doesn't always reproduce upstream's value to 6 decimals.
+                Assert.Matches(@"MODE\s+1:\s+f=\s*\d+\.\d+ Hz,\s+T=\s*\d+\.\d+ sec", text);
+
+                // 6 MODE lines, one per requested mode (lowest first).
+                int modeLineCount = System.Text.RegularExpressions.Regex.Matches(
+                    text, @"^\s+MODE\s+\d+:",
+                    System.Text.RegularExpressions.RegexOptions.Multiline).Count;
+                Assert.Equal(6, modeLineCount);
+            }
+        }
+
+        // Empty modal results means no modal section is rendered — keeps unrelated outputs
+        // (like exA which doesn't request modal analysis) byte-identical to before.
+        [Fact]
+        public void ExA_OutputTextOmitsModalSectionWhenNoModesRequested()
+        {
+            using (StreamReader sr = new StreamReader(GetExamplePath("exA.csv")))
+            {
+                Input input = CsvInputParser.Parse(sr);
+                Output output = new Solver().Solve(input);
+
+                Assert.DoesNotContain("M O D A L   A N A L Y S I S", output.TextOutput);
+                Assert.DoesNotContain("N A T U R A L   F R E Q U E N C I E S", output.TextOutput);
+            }
+        }
+
         private static string GetExamplePath(string fileName)
         {
             string workspaceDir = Directory.GetParent(Directory.GetParent(Directory.GetParent(

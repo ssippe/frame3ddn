@@ -460,7 +460,10 @@ namespace Frame3ddn
                 input.DynamicAnalysis, DoF, nN, nE, xyz, rj, L, Le, N1, N2,
                 Ax, Asy, Asz, Jx, Iy, Iz, E, G, p, d, r, shear);
 
-            var outText = outputText1 + OutWriter.OutputDataToString(loadCaseOutputs);
+            double modalTol = input.DynamicAnalysis.Tolerance > 0 ? input.DynamicAnalysis.Tolerance : 1e-9;
+            var outText = outputText1
+                          + OutWriter.OutputDataToString(loadCaseOutputs)
+                          + OutWriter.ModalResultsToString(modalResults, nN, modalTol, input.DynamicAnalysis.MassType);
 
             Output output = new Output(outText, loadCaseOutputs, modalResults);
             return output;
