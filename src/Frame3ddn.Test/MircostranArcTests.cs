@@ -14,7 +14,7 @@ namespace Frame3ddn.Test
     /// Microstran .p1 reference report (parsed with <see cref="P1Parser"/>) using
     /// <see cref="OutputAsserts.OutputAssertEqual"/>.
     /// </summary>
-    public class ArcVsP1Test
+    public class MircostranArcTests
     {
         // Per-fixture absolute tolerance. lateral-column.p1 is non-linear (P-Δ) so the moment
         // residual can be ~0.2 kNm; the others are linear-elastic and much tighter.
