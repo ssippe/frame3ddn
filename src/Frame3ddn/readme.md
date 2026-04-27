@@ -1,5 +1,5 @@
 # frame3ddn
-[![NuGet version (Frame3ddn)](https://img.shields.io/nuget/v/Frame3ddn.svg?style=flat-square)](https://www.nuget.org/packages/Frame3ddn/)
+ * Nuget is not maintained (I've lost my login).
 ![Build Status](https://github.com/ssippe/frame3ddn/workflows/.NET/badge.svg)
 
 Incomplete c# implementation of frame3dd. 
@@ -128,11 +128,5 @@ Plus dedicated tests for the modal pipeline:
 Plus parser-level tests in `CsvParserTest`, `ArcParserTest`, and `DynamicAnalysisInputTest`,
 and a Microstran-reference comparison `ArcVsP1Test` for the lateral-column variants.
  
- # Steps to publish
- * Update package version and release note in project property.
- * commit and tag in git with the version name
- * Change configuration from debug to release, then right click on the project and pack.
- * Run the following command line from the folder that contains Frame3ddn.[version].nupkg
-   >`nuget push Frame3ddn.[version].nupkg [API key] -Source https://api.nuget.org/v3/index.json`
- * It will take around 30 mins. Login https://www.nuget.org/ to check status in Manage Packages.
+
 
