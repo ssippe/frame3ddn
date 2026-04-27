@@ -1,8 +1,6 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <TargetFramework>netstandard2.0</TargetFramework>
-    <Company>Steelx</Company>
-    <Authors>Steelx</Authors>
+    <TargetFramework>netstandard2.0</TargetFramework>    
     <Description>A library for static structural analysis of 2D and 3D frames and trusses. This is an incomplete C# version of Frame3DD (sourced from http://frame3dd.sourceforge.net/).</Description>
     <PackageProjectUrl>https://github.com/ssippe/frame3ddn</PackageProjectUrl>
     <RepositoryUrl>https://github.com/ssippe/frame3ddn</RepositoryUrl>
