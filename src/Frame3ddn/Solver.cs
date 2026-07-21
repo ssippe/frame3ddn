@@ -238,8 +238,8 @@ namespace Frame3ddn
                     pIdx++;
 
                     // Local end forces from the upstream point-load distribution formulas.
-                    double Nx1 = Px * a / Ln;
-                    double Nx2 = Px * b / Ln;
+                    double Nx1 = Px * b / Ln;
+                    double Nx2 = Px * a / Ln;
                     double Vy1 = (1.0 / (1.0 + Ksz)) * Py * b * b * (3.0 * a + b) / (Ln * Ln * Ln) + (Ksz / (1.0 + Ksz)) * Py * b / Ln;
                     double Vy2 = (1.0 / (1.0 + Ksz)) * Py * a * a * (3.0 * b + a) / (Ln * Ln * Ln) + (Ksz / (1.0 + Ksz)) * Py * a / Ln;
                     double Vz1 = (1.0 / (1.0 + Ksy)) * Pz * b * b * (3.0 * a + b) / (Ln * Ln * Ln) + (Ksy / (1.0 + Ksy)) * Pz * b / Ln;
