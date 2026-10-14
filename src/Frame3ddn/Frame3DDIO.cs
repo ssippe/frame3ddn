@@ -1,6 +1,7 @@
 ﻿using Frame3ddn.Model;
 using System;
 using System.Collections.Generic;
+using System.Linq;
 
 namespace Frame3ddn
 {
@@ -295,6 +296,95 @@ namespace Frame3ddn
                     for (int i = 6; i < 12; i++) FMech[lc, 6 * n2 - 6 + i] += eqFMech[lc, n, i];
                 }
             }
+        }
+
+        /// <summary>
+        /// Adds the equivalent nodal forces of interior concentrated point loads to eqFMech / FMech
+        /// and records each load in P[lc, i, 0..4] = (element id 1-based, Px, Py, Pz, a) for
+        /// GetInternalForces (frame3dd_io.c:1268-1340).
+        /// </summary>
+        public static void AssembleInternalConcentratedLoads(int nE, List<Vec3> xyz, List<double> L, List<double> Le,
+            List<int> N1, List<int> N2, List<float> Asy, List<float> Asz, List<float> Iy, List<float> Iz,
+            List<float> E, List<float> G, List<float> p, bool shear,
+            double[,] FMech, double[,,] eqFMech, float[,,] P, IReadOnlyList<LoadCase> loadCases)
+        {
+            var capacity = P.GetLength(1);
+            for (var lc = 0; lc < loadCases.Count; lc++)
+            {
+                var loads = loadCases[lc].InternalConcentratedLoads;
+                // GetInternalForces scans P up to 10*nE entries, so that is the hard limit.
+                if (loads.Count > capacity)
+                    throw new Exception($"Load case {lc + 1} has {loads.Count} internal concentrated loads; at most {capacity} (10 per element) are supported.");
+
+                for (var i = 0; i < loads.Count; i++)
+                {
+                    var icl = loads[i];
+                    var n = icl.ElementIdx;
+                    if (n < 0 || n >= nE)
+                        throw new Exception($"Internal concentrated load element {n + 1} out of range (LC {lc + 1}).");
+                    var a = icl.X;
+                    if (a < 0 || a > L[n])
+                        throw new Exception($"Internal concentrated load location {a} out of range [0, {L[n]}] (LC {lc + 1}, element {n + 1}).");
+
+                    // GetInternalForces expects the element id at P[n, 0] to be 1-based
+                    // (mirrors upstream's `(int)P[n][1] == m+1` check); store n+1.
+                    P[lc, i, 0] = n + 1;
+                    P[lc, i, 1] = (float)icl.Load.X;
+                    P[lc, i, 2] = (float)icl.Load.Y;
+                    P[lc, i, 3] = (float)icl.Load.Z;
+                    P[lc, i, 4] = (float)a;
+
+                    var Ksy = shear ? 12.0 * E[n] * Iz[n] / (G[n] * Asy[n] * Le[n] * Le[n]) : 0.0;
+                    var Ksz = shear ? 12.0 * E[n] * Iy[n] / (G[n] * Asz[n] * Le[n] * Le[n]) : 0.0;
+                    var local = PointLoadFixedEndForces(icl.Load, a, L[n], Ksy, Ksz);
+                    var t = CoordinateTransform.CoordTrans(xyz, L[n], N1[n], N2[n], p[n]);
+                    var global = Enumerable.Range(0, 12)
+                        .Select(k => local[k - k % 3] * t[k % 3] + local[k - k % 3 + 1] * t[k % 3 + 3] + local[k - k % 3 + 2] * t[k % 3 + 6])
+                        .ToArray();
+
+                    for (var k = 0; k < 12; k++) eqFMech[lc, n, k] += global[k];
+                    for (var k = 0; k < 6; k++) FMech[lc, 6 * N1[n] + k] += global[k];
+                    for (var k = 6; k < 12; k++) FMech[lc, 6 * N2[n] - 6 + k] += global[k];
+                }
+            }
+        }
+
+        /// <summary>
+        /// Fixed-end forces in local coordinates for a point load at distance <paramref name="a"/>
+        /// from node 1, ordered Nx1, Vy1, Vz1, Mx1, My1, Mz1, Nx2, Vy2, Vz2, Mx2, My2, Mz2.
+        /// </summary>
+        /// <remarks>
+        /// The transverse terms are upstream's (frame3dd_io.c:1297-1310). The axial terms
+        /// deliberately differ: upstream has Nx1 = Px*a/L, Nx2 = Px*b/L, which hands the larger
+        /// share to the far node. The correct split is Nx1 = Px*b/L, Nx2 = Px*a/L, matching the
+        /// trapezoidal axial formulas in <see cref="AssembleLoads"/> reduced to a point. Do not
+        /// restore the upstream axial lines when re-syncing; see InternalConcentratedAxialLoadTest.
+        /// </remarks>
+        private static double[] PointLoadFixedEndForces(Vec3 load, double a, double Ln, double Ksy, double Ksz)
+        {
+            double Px = load.X, Py = load.Y, Pz = load.Z;
+            var b = Ln - a;
+            var L2 = Ln * Ln;
+            var L3 = L2 * Ln;
+            var cy = 1.0 / (1.0 + Ksy);
+            var cz = 1.0 / (1.0 + Ksz);
+            var sy = Ksy / (1.0 + Ksy);
+            var sz = Ksz / (1.0 + Ksz);
+            return new[]
+            {
+                Px * b / Ln,
+                cz * Py * b * b * (3.0 * a + b) / L3 + sz * Py * b / Ln,
+                cy * Pz * b * b * (3.0 * a + b) / L3 + sy * Pz * b / Ln,
+                0.0,
+                -cy * Pz * a * b * b / L2 - sy * Pz * a * b / (2.0 * Ln),
+                cz * Py * a * b * b / L2 + sz * Py * a * b / (2.0 * Ln),
+                Px * a / Ln,
+                cz * Py * a * a * (3.0 * b + a) / L3 + sz * Py * a / Ln,
+                cy * Pz * a * a * (3.0 * b + a) / L3 + sy * Pz * a / Ln,
+                0.0,
+                cy * Pz * a * a * b / L2 + sy * Pz * a * b / (2.0 * Ln),
+                -cz * Py * a * a * b / L2 - sz * Py * a * b / (2.0 * Ln),
+            };
         }
 
         public static (List<NodeDisplacement> nodeDisplacements, List<FrameElementEndForce> frameElementEndForces, List<ReactionOutput> reactionOutputs)

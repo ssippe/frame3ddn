@@ -49,10 +49,18 @@ file formats this port also supports).
 | Concentrated nodal loads | ✅ | ✅ |
 | Uniformly-distributed element loads | ✅ | ✅ |
 | Trapezoidally-distributed element loads | ✅ | ✅ |
-| Concentrated interior point loads | ✅ | ✅ |
+| Concentrated interior point loads | ✅ | ✅ ¹ |
 | Temperature loads | ✅ | ✅ |
 | Prescribed displacements at restrained DoFs | ✅ | ✅ |
 | Self-weight gravity loading | ✅ | ✅ |
+
+¹ **Deliberate divergence from upstream.** Upstream `frame3dd_io.c` splits the *axial* (local x)
+component of an interior point load the wrong way round (`Nx1 = Px*a/L`, giving the larger share
+to the far node). Frame3ddn uses `Nx1 = Px*b/L`, `Nx2 = Px*a/L`, consistent with upstream's own
+trapezoidal axial formulas. Reactions, end forces and axial internal forces for models with an
+axial interior point load therefore differ from upstream `.out` files, which cannot be used as a
+reference for that case — see `InternalConcentratedAxialLoadTest`. Transverse components match
+upstream.
 
 ### Computed output
 

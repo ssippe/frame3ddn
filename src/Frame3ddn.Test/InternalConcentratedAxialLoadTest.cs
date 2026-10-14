@@ -130,6 +130,22 @@ namespace Frame3ddn.Test
         }
 
         /// <summary>
+        /// The P buffer holds 10 interior loads per element; exceeding it must fail with a message
+        /// that names the limit rather than an IndexOutOfRangeException.
+        /// </summary>
+        [Fact]
+        public void InteriorLoads_MoreThanTenPerElement_ThrowsWithLimit()
+        {
+            var loads = Enumerable.Range(0, 11)
+                .Select(i => new InternalConcentratedLoad(0, new Vec3(Px, 0.0, 0.0), 100.0 * i))
+                .ToList();
+            var input = BuildInput(loads, node2FreeInX: false);
+
+            var ex = Assert.Throws<System.Exception>(() => new Solver().Solve(input));
+            Assert.Contains("at most 10", ex.Message);
+        }
+
+        /// <summary>
         /// Solves the fully fixed fixture and returns the signed global X reactions at node 1 and
         /// node 2.
         /// </summary>
@@ -152,7 +168,11 @@ namespace Frame3ddn.Test
         /// reactions are exactly the fixed-end forces under test. <paramref name="node2FreeInX"/>
         /// releases node 2 in global X only, making the bar axially determinate.
         /// </remarks>
-        private static Input BuildInput(double a, bool node2FreeInX)
+        private static Input BuildInput(double a, bool node2FreeInX) =>
+            BuildInput(new List<InternalConcentratedLoad> { new InternalConcentratedLoad(0, new Vec3(Px, 0.0, 0.0), a) },
+                node2FreeInX);
+
+        private static Input BuildInput(List<InternalConcentratedLoad> interiorLoads, bool node2FreeInX)
         {
             var nodes = new List<Node>
             {
@@ -183,7 +203,7 @@ namespace Frame3ddn.Test
                 new List<TrapLoad>(),
                 new List<PrescribedDisplacement>(),
                 new List<TemperatureLoad>(),
-                new List<InternalConcentratedLoad> { new InternalConcentratedLoad(0, new Vec3(Px, 0.0, 0.0), a) });
+                interiorLoads);
 
             return new Input("Axial interior concentrated load", nodes, elements, reactionInputs,
                 new List<LoadCase> { loadCase },
